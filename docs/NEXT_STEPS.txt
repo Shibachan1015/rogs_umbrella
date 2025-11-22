@@ -1,0 +1,23 @@
+次のステップ
+===========
+
+1. DBユーザー環境変数
+   - `ROGS_DB_USER`/`ROGS_DB_PASS`/`ROGS_DB_HOST` をローカル環境で設定し、`mix test` 実行時に `config/test.exs` の共通設定が正しく参照されるようにする。
+
+2. マイグレーション適用
+   - `cd /Users/takashiba/Shibachan1015/phoenix/dev/rogs-chat/apps/rogs_comm`
+   - `mix ecto.migrate` を実行して `rooms` テーブルを作成する。
+
+3. ルームUI・APIの統合
+   - `RogsComm.Rooms` コンテキストを LiveView/Channel から呼び出せるようにコントローラまたは LiveView を実装する。
+   - ルーム作成フォーム、一覧表示、公開/非公開切り替えなど最小UIを `rogs_comm_web` に追加して手動検証を容易にする。
+
+4. リアルタイム連携の準備
+   - Phoenix PubSub/PRESENCE 用のトピック命名規約を決め、ルーム参加・メッセージ配信・シグナリングイベントのイベント設計を記述する。
+   - 後続のテキストチャット・WebRTCシグナリングタスクを分解し、必要な追加マイグレーション（メッセージ/参加者テーブルなど）を洗い出す。
+
+5. 自動テスト拡張
+   - ルーム作成LiveViewやAPI層に対する `conn_case` / `live_view` テストを追加し、画面レベルでの回 regresionを防ぐ。
+   - `mix precommit` で全体テストを実行し、Umbrella全体でのビルド安定性を確認する。
+
+

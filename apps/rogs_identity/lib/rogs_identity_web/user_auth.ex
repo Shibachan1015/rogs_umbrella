@@ -295,6 +295,30 @@ defmodule RogsIdentityWeb.UserAuth do
   end
 
   @doc """
+  Plug for API routes that require the user to be authenticated and email confirmed.
+  Returns JSON error response if not authenticated or email not confirmed.
+  """
+  def require_email_confirmed_api(conn, _opts) do
+    case conn.assigns.current_scope do
+      %{user: user} when not is_nil(user) ->
+        if Accounts.email_confirmed?(user) do
+          conn
+        else
+          conn
+          |> put_status(:forbidden)
+          |> json(%{error: "Email confirmation required"})
+          |> halt()
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+        |> halt()
+    end
+  end
+
+  @doc """
   Fetches the current scope for API routes.
   Similar to fetch_current_scope_for_user but optimized for API.
   """

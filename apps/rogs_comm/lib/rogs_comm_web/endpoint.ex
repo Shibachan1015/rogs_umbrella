@@ -4,15 +4,16 @@ defmodule RogsCommWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  # Using the same session key as rogs_identity to share sessions
   @session_options [
     store: :cookie,
-    key: "_rogs_comm_key",
-    signing_salt: "pC9fQl8Y",
+    key: "_rogs_identity_key",
+    signing_salt: "ZBs41IVB",
     same_site: "Lax"
   ]
 
   socket "/socket", RogsCommWeb.UserSocket,
-    websocket: true,
+    websocket: [connect_info: [session: @session_options]],
     longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket,

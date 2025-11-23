@@ -11,16 +11,25 @@ defmodule RogsComm.Messages do
 
   @doc """
   Lists messages for a room, returning them in chronological order.
+  Excludes deleted messages by default.
   """
   def list_messages(room_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
+    include_deleted = Keyword.get(opts, :include_deleted, false)
 
     Message
     |> where([m], m.room_id == ^room_id)
+    |> maybe_filter_deleted(include_deleted)
     |> order_by([m], desc: m.inserted_at)
     |> limit(^limit)
     |> Repo.all()
     |> Enum.reverse()
+  end
+
+  defp maybe_filter_deleted(query, true), do: query
+
+  defp maybe_filter_deleted(query, false) do
+    where(query, [m], m.is_deleted == false)
   end
 
   @doc """
@@ -47,10 +56,29 @@ defmodule RogsComm.Messages do
   end
 
   @doc """
-  Deletes a message.
+  Deletes a message (hard delete).
   """
   def delete_message(%Message{} = message) do
     Repo.delete(message)
+  end
+
+  @doc """
+  Soft deletes a message by marking it as deleted.
+  """
+  def soft_delete_message(%Message{} = message) do
+    message
+    |> Ecto.Changeset.change(is_deleted: true)
+    |> Repo.update()
+  end
+
+  @doc """
+  Edits a message content and updates edited_at timestamp.
+  """
+  def edit_message(%Message{} = message, attrs) do
+    message
+    |> Message.changeset(attrs)
+    |> Ecto.Changeset.change(edited_at: DateTime.utc_now())
+    |> Repo.update()
   end
 
   @doc """

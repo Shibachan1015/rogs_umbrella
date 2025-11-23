@@ -3,14 +3,15 @@ defmodule Shinkanki.Card do
   Defines card structures for Action Cards and Talent Cards in Shinkanki.
   """
 
-  @type card_type :: :action | :talent | :project
+  @type card_type :: :action | :talent | :project | :event
 
   @type t :: %__MODULE__{
           id: atom(),
           type: card_type(),
           name: String.t(),
           description: String.t(),
-          cost: integer(), # For action cards (P)
+          # For action cards (P)
+          cost: integer(),
           # Base effect for action cards
           effect: map(),
           # Tags for compatibility (e.g., :nature, :craft, :community)
@@ -18,7 +19,9 @@ defmodule Shinkanki.Card do
           # For talent cards: tags they boost
           compatible_tags: list(atom()),
           # For project cards: unlock condition
-          unlock_condition: map()
+          unlock_condition: map(),
+          # For project cards: required progress (number of talents needed)
+          required_progress: integer()
         }
 
   defstruct [
@@ -30,14 +33,15 @@ defmodule Shinkanki.Card do
     effect: %{},
     tags: [],
     compatible_tags: [],
-    unlock_condition: %{}
+    unlock_condition: %{},
+    required_progress: 0
   ]
 
   @doc """
-  Returns the list of all available cards (Actions, Talents, Projects).
+  Returns the list of all available cards (Actions, Talents, Projects, Events).
   """
   def list_cards do
-    list_actions() ++ list_talents() ++ list_projects()
+    list_actions() ++ list_talents() ++ list_projects() ++ list_events()
   end
 
   @doc """
@@ -54,6 +58,21 @@ defmodule Shinkanki.Card do
   Returns only project cards.
   """
   def list_projects, do: projects()
+
+  @doc """
+  Returns only event cards.
+  """
+  def list_events, do: events()
+
+  @doc """
+  Gets an event card by ID.
+  """
+  def get_event(id) do
+    case get_card(id) do
+      %__MODULE__{type: :event} = card -> card
+      _ -> nil
+    end
+  end
 
   @doc """
   Gets a card by its ID.
@@ -153,7 +172,8 @@ defmodule Shinkanki.Card do
         name: "修理 (Repair)",
         description: "Fix broken things.",
         cost: 5,
-        effect: %{social: 2, forest: 2}, # Reduce waste
+        # Reduce waste
+        effect: %{social: 2, forest: 2},
         tags: [:fix, :craft]
       }
     ]
@@ -313,21 +333,238 @@ defmodule Shinkanki.Card do
         id: :p_forest_fest,
         type: :project,
         name: "森の祝祭 (Forest Festival)",
-        description: "A grand festival in the forest.",
-        cost: 50, # High cost
+        description: "A grand festival in the forest. Requires 4 talents to complete.",
+        # High cost
+        cost: 50,
         effect: %{forest: 10, culture: 10, social: 10},
         tags: [:event, :nature, :community],
-        unlock_condition: %{forest: 80, culture: 60}
+        unlock_condition: %{forest: 80, culture: 60},
+        required_progress: 4
       },
       %__MODULE__{
         id: :p_market,
         type: :project,
         name: "定期市 (Regular Market)",
-        description: "Establish a regular market system.",
+        description: "Establish a regular market system. Requires 3 talents to complete.",
         cost: 30,
         effect: %{currency: 30, social: 5},
         tags: [:biz, :system],
-        unlock_condition: %{social: 70}
+        unlock_condition: %{social: 70},
+        required_progress: 3
+      }
+    ]
+  end
+
+  # --- Event Cards (イベントカード) ---
+  # 25 cards: disasters, festivals, divine blessings, old economy temptations
+  defp events do
+    [
+      # === 災害系 (Disasters) - 8 cards ===
+      %__MODULE__{
+        id: :e_drought,
+        type: :event,
+        name: "大干ばつ (Great Drought)",
+        description: "長い干ばつが森を枯らす。",
+        effect: %{forest: -10, currency: -5},
+        tags: [:disaster, :nature]
+      },
+      %__MODULE__{
+        id: :e_flood,
+        type: :event,
+        name: "大洪水 (Great Flood)",
+        description: "洪水が文化遺産を破壊する。",
+        effect: %{culture: -8, forest: -5},
+        tags: [:disaster, :nature]
+      },
+      %__MODULE__{
+        id: :e_pestilence,
+        type: :event,
+        name: "疫病 (Pestilence)",
+        description: "疫病がコミュニティを分断する。",
+        effect: %{social: -10, culture: -5},
+        tags: [:disaster, :community]
+      },
+      %__MODULE__{
+        id: :e_wildfire,
+        type: :event,
+        name: "山火事 (Wildfire)",
+        description: "山火事が森を焼き尽くす。",
+        effect: %{forest: -15},
+        tags: [:disaster, :nature]
+      },
+      %__MODULE__{
+        id: :e_cultural_loss,
+        type: :event,
+        name: "文化の喪失 (Cultural Loss)",
+        description: "伝統が失われていく。",
+        effect: %{culture: -12},
+        tags: [:disaster, :culture]
+      },
+      %__MODULE__{
+        id: :e_conflict,
+        type: :event,
+        name: "対立 (Conflict)",
+        description: "コミュニティ内で対立が起きる。",
+        effect: %{social: -12, currency: -10},
+        tags: [:disaster, :community]
+      },
+      %__MODULE__{
+        id: :e_erosion,
+        type: :event,
+        name: "土壌流失 (Soil Erosion)",
+        description: "土壌が失われ、森が弱る。",
+        effect: %{forest: -8, culture: -3},
+        tags: [:disaster, :nature]
+      },
+      %__MODULE__{
+        id: :e_isolation,
+        type: :event,
+        name: "孤立 (Isolation)",
+        description: "人々が孤立し、つながりが薄れる。",
+        effect: %{social: -8, forest: -3},
+        tags: [:disaster, :community]
+      },
+
+      # === 祭り・祝福系 (Festivals & Blessings) - 10 cards ===
+      %__MODULE__{
+        id: :e_harvest_festival,
+        type: :event,
+        name: "収穫祭 (Harvest Festival)",
+        description: "豊作を祝う祭りが開かれる。",
+        effect: %{forest: 8, culture: 5, social: 5},
+        tags: [:festival, :nature]
+      },
+      %__MODULE__{
+        id: :e_cultural_festival,
+        type: :event,
+        name: "文化祭 (Cultural Festival)",
+        description: "文化を祝う祭りが開かれる。",
+        effect: %{culture: 10, social: 5},
+        tags: [:festival, :culture]
+      },
+      %__MODULE__{
+        id: :e_community_gathering,
+        type: :event,
+        name: "コミュニティの集い (Community Gathering)",
+        description: "人々が集まり、絆を深める。",
+        effect: %{social: 10, culture: 3},
+        tags: [:festival, :community]
+      },
+      %__MODULE__{
+        id: :e_divine_blessing,
+        type: :event,
+        name: "神々の加護 (Divine Blessing)",
+        description: "神々が世界に祝福を与える。",
+        effect: %{forest: 5, culture: 5, social: 5, currency: 10},
+        tags: [:blessing, :divine]
+      },
+      %__MODULE__{
+        id: :e_rain,
+        type: :event,
+        name: "恵みの雨 (Blessing Rain)",
+        description: "恵みの雨が森を潤す。",
+        effect: %{forest: 12},
+        tags: [:blessing, :nature]
+      },
+      %__MODULE__{
+        id: :e_artistic_awakening,
+        type: :event,
+        name: "芸術の目覚め (Artistic Awakening)",
+        description: "新しい芸術が生まれる。",
+        effect: %{culture: 12},
+        tags: [:blessing, :culture]
+      },
+      %__MODULE__{
+        id: :e_unity,
+        type: :event,
+        name: "結束 (Unity)",
+        description: "人々が結束し、力を合わせる。",
+        effect: %{social: 12, currency: 5},
+        tags: [:blessing, :community]
+      },
+      %__MODULE__{
+        id: :e_nature_recovery,
+        type: :event,
+        name: "自然の回復 (Nature Recovery)",
+        description: "自然が回復し始める。",
+        effect: %{forest: 8, culture: 3},
+        tags: [:blessing, :nature]
+      },
+      %__MODULE__{
+        id: :e_tradition_revival,
+        type: :event,
+        name: "伝統の復興 (Tradition Revival)",
+        description: "古い伝統が再び息づく。",
+        effect: %{culture: 8, social: 3},
+        tags: [:blessing, :culture]
+      },
+      %__MODULE__{
+        id: :e_mutual_aid,
+        type: :event,
+        name: "相互扶助 (Mutual Aid)",
+        description: "人々が互いに助け合う。",
+        effect: %{social: 8, forest: 3},
+        tags: [:blessing, :community]
+      },
+
+      # === 旧経済の誘惑 (Old Economy Temptations) - 4 cards ===
+      %__MODULE__{
+        id: :e_quick_profit,
+        type: :event,
+        name: "急な利益 (Quick Profit)",
+        description: "短期的な利益がもたらされるが、代償がある。",
+        effect: %{currency: 30, forest: -5, culture: -5},
+        tags: [:temptation, :economy]
+      },
+      %__MODULE__{
+        id: :e_industrial_boom,
+        type: :event,
+        name: "産業ブーム (Industrial Boom)",
+        description: "産業が発展するが、環境に負担がかかる。",
+        effect: %{currency: 25, forest: -8, social: -3},
+        tags: [:temptation, :economy]
+      },
+      %__MODULE__{
+        id: :e_speculation,
+        type: :event,
+        name: "投機 (Speculation)",
+        description: "投機で一時的な富が生まれるが、不安定さが増す。",
+        effect: %{currency: 20, social: -8, culture: -3},
+        tags: [:temptation, :economy]
+      },
+      %__MODULE__{
+        id: :e_short_term_gain,
+        type: :event,
+        name: "短期的な利益 (Short-term Gain)",
+        description: "短期的な利益がもたらされるが、長期的な損失がある。",
+        effect: %{currency: 15, forest: -3, culture: -3, social: -3},
+        tags: [:temptation, :economy]
+      },
+
+      # === 特殊イベント (Special Events) - 3 cards ===
+      %__MODULE__{
+        id: :e_balance,
+        type: :event,
+        name: "調和 (Balance)",
+        description: "すべてが調和し、バランスが取れる。",
+        effect: %{forest: 5, culture: 5, social: 5, currency: 10},
+        tags: [:special, :balance]
+      },
+      %__MODULE__{
+        id: :e_windfall,
+        type: :event,
+        name: "予期せぬ収入 (Windfall)",
+        description: "予期せぬ収入が入る。",
+        effect: %{currency: 20},
+        tags: [:special, :economy]
+      },
+      %__MODULE__{
+        id: :e_wisdom,
+        type: :event,
+        name: "知恵の光 (Light of Wisdom)",
+        description: "古い知恵が新たな光を放つ。",
+        effect: %{culture: 8, social: 5, currency: 5},
+        tags: [:special, :wisdom]
       }
     ]
   end

@@ -14,6 +14,9 @@ defmodule RogsCommWeb.ChatLive do
 
   alias RogsComm.Messages
   alias RogsComm.Rooms
+  alias RogsCommWeb.Presence
+
+  on_mount {RogsCommWeb.UserAuthHooks, :assign_current_user}
 
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
@@ -25,26 +28,42 @@ defmodule RogsCommWeb.ChatLive do
          |> redirect(to: ~p"/")}
 
       room ->
+        display_name = socket.assigns[:display_name] || "anonymous"
+
         socket =
           socket
           |> assign(:room, room)
           |> assign(:room_id, room_id)
           |> assign(:rooms, Rooms.list_rooms())
-          |> assign_new(:display_name, fn -> "anonymous" end)
           |> assign(:form, to_form(%{"content" => ""}))
-          |> assign(
-            :name_form,
-            to_form(%{"display_name" => socket.assigns[:display_name] || "anonymous"})
-          )
+          |> assign(:name_form, to_form(%{"display_name" => display_name}))
+          |> assign(:presences, %{})
+          |> assign(:typing_users, %{})
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
           topic = topic(room_id)
           RogsCommWeb.Endpoint.subscribe(topic)
           messages = Messages.list_messages(room_id, limit: 50)
-          {:ok, stream(socket, :messages, messages)}
-        else
+
+          presences =
+            try do
+              Presence.list(topic)
+            rescue
+              _ -> %{}
+            end
+
+          socket =
+            socket
+            |> assign(:presences, presences)
+            |> stream(:messages, messages)
+
           {:ok, socket}
+        else
+          {:ok,
+           socket
+           |> assign(:presences, %{})
+           |> stream(:messages, [])}
         end
     end
   end
@@ -64,8 +83,10 @@ defmodule RogsCommWeb.ChatLive do
       {:noreply, socket}
     else
       room_id = socket.assigns.room_id
-      user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
-      user_email = socket.assigns[:display_name] || "anonymous"
+      user_id = socket.assigns[:current_user_id] || Ecto.UUID.generate()
+
+      user_email =
+        socket.assigns[:current_user_email] || socket.assigns[:display_name] || "anonymous"
 
       params = %{
         content: trimmed,
@@ -101,6 +122,52 @@ defmodule RogsCommWeb.ChatLive do
      |> assign(:name_form, to_form(%{"display_name" => display_name}))}
   end
 
+  def handle_event("edit_message", %{"message_id" => message_id, "content" => content}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns[:current_user_id]
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.edit_message(message, %{content: content}) do
+          {:ok, updated_message} ->
+            payload = %{
+              id: updated_message.id,
+              content: updated_message.content,
+              edited_at: updated_message.edited_at
+            }
+
+            RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "メッセージの編集に失敗しました")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+    end
+  end
+
+  def handle_event("delete_message", %{"message_id" => message_id}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns[:current_user_id]
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.soft_delete_message(message) do
+          {:ok, _deleted_message} ->
+            RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_deleted", %{id: message_id})
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "メッセージの削除に失敗しました")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+    end
+  end
+
   @impl true
   def handle_info(
         %Phoenix.Socket.Broadcast{topic: topic, event: "new_message", payload: payload},
@@ -114,7 +181,8 @@ defmodule RogsCommWeb.ChatLive do
         content: payload.content,
         user_id: payload.user_id,
         user_email: payload.user_email,
-        inserted_at: payload.inserted_at
+        inserted_at: payload.inserted_at,
+        edited_at: Map.get(payload, :edited_at)
       }
 
       {:noreply, stream(socket, :messages, [message])}
@@ -123,17 +191,101 @@ defmodule RogsCommWeb.ChatLive do
     end
   end
 
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "message_edited", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      # Update existing message in stream
+      {:noreply,
+       socket
+       |> stream_insert(
+         :messages,
+         %{
+           id: payload.id,
+           content: payload.content,
+           edited_at: payload.edited_at
+         },
+         at: -1
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "message_deleted", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      {:noreply, stream_delete(socket, :messages, payload.id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users =
+        socket.assigns.typing_users
+        |> Map.put(payload.user_id, payload.user_email)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_stopped_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users = Map.delete(socket.assigns.typing_users, payload.user_id)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
+    topic = topic(socket.assigns.room_id)
+    presences = Presence.list(topic)
+    {:noreply, assign(socket, :presences, presences)}
+  end
+
   defp broadcast_payload(message) do
     %{
       id: message.id,
       content: message.content,
       user_id: message.user_id,
       user_email: message.user_email,
-      inserted_at: message.inserted_at
+      inserted_at: message.inserted_at,
+      edited_at: message.edited_at
     }
   end
 
   defp topic(room_id), do: "room:#{room_id}"
+
+  defp list_presences(presences) do
+    presences
+    |> Enum.map(fn {user_id, %{metas: [meta | _]}} ->
+      {user_id, meta}
+    end)
+  end
 
   @impl true
   def render(assigns) do
@@ -144,6 +296,7 @@ defmodule RogsCommWeb.ChatLive do
         class="flex h-screen"
         data-room-id={@room_id}
         data-display-name={@display_name}
+        phx-hook="TypingHook"
       >
         <aside class="w-64 border-r bg-base-200 px-4 py-6 space-y-6">
           <div>
@@ -185,6 +338,21 @@ defmodule RogsCommWeb.ChatLive do
               </button>
             </.form>
           </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+              Online ({Enum.count(@presences)})
+            </h2>
+            <div class="mt-3 space-y-2">
+              <div
+                :for={{user_id, meta} <- list_presences(@presences)}
+                class="flex items-center gap-2 text-sm"
+              >
+                <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                <span class="text-base-content">{meta.user_email || "anonymous"}</span>
+              </div>
+            </div>
+          </div>
         </aside>
 
         <div class="flex flex-1 flex-col">
@@ -194,14 +362,45 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
-            <div :for={{id, message} <- @streams.messages} id={id} class="flex flex-col">
-              <div class="text-sm text-gray-500">
-                <span class="font-semibold text-gray-900">{message.user_email}</span>
-                <span class="ml-2">
-                  {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
-                </span>
+            <div
+              :for={{id, message} <- @streams.messages}
+              id={id}
+              class="flex flex-col group hover:bg-gray-50 p-2 rounded"
+            >
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                  <span class="font-semibold text-gray-900">{message.user_email}</span>
+                  <span class="ml-2">
+                    {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
+                  </span>
+                  <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-gray-400">
+                    (編集済み)
+                  </span>
+                </div>
+                <div
+                  :if={Map.get(message, :user_id) == @current_user_id}
+                  class="opacity-0 group-hover:opacity-100 flex gap-2"
+                >
+                  <button
+                    phx-click="edit_message"
+                    phx-value-message_id={message.id}
+                    class="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    編集
+                  </button>
+                  <button
+                    phx-click="delete_message"
+                    phx-value-message_id={message.id}
+                    class="text-xs text-red-600 hover:text-red-800"
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
               <p class="text-gray-800 text-base">{message.content}</p>
+            </div>
+            <div :if={map_size(@typing_users) > 0} class="text-sm text-gray-500 italic mt-2">
+              {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
             </div>
           </div>
 

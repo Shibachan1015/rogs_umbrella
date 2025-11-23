@@ -114,6 +114,11 @@ defmodule RogsIdentity.Plug do
   defp get_login_url do
     # Default to rogs_identity login URL
     # Can be configured via application config
-    Application.get_env(:rogs_identity, :login_url, "http://localhost:4000/users/log-in")
+    login_url = Application.get_env(:rogs_identity, :login_url, "/users/log-in")
+    # If it's a full URL, extract just the path
+    case URI.parse(login_url) do
+      %URI{path: path} when path != "" -> path
+      _ -> login_url
+    end
   end
 end

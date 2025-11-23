@@ -1222,4 +1222,34 @@ defmodule ShinkankiWebWeb.GameLive do
       }
     ]
   end
+
+  defp mock_game_history do
+    [
+      %{
+        turn: 8,
+        time: "14:30",
+        message: "プレイヤー1が「植林」カードを使用しました。F +5"
+      },
+      %{
+        turn: 8,
+        time: "14:28",
+        message: "イベント「神々の加護」が発生しました。F +2, K +2, S +1"
+      },
+      %{
+        turn: 7,
+        time: "14:25",
+        message: "減衰フェーズ: 空環ポイントが10%減衰しました"
+      },
+      %{
+        turn: 7,
+        time: "14:20",
+        message: "プレイヤー2が「祭事」カードを使用しました。K +5, S +3"
+      },
+      %{
+        turn: 6,
+        time: "14:15",
+        message: "プロジェクト「森の祝祭」に才能カードが捧げられました"
+      }
+    ]
+  end
 end

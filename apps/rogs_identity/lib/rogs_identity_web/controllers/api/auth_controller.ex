@@ -24,8 +24,7 @@ defmodule RogsIdentityWeb.Api.AuthController do
             id: user.id,
             email: user.email,
             name: user.name
-          },
-          token: token
+          }
         })
     end
   end
@@ -42,11 +41,10 @@ defmodule RogsIdentityWeb.Api.AuthController do
             id: user.id,
             email: user.email,
             name: user.name
-          },
-          token: session_token
+          }
         })
 
-      _ ->
+      {:error, _} ->
         conn
         |> put_status(:unauthorized)
         |> json(%{error: "Invalid or expired token"})
@@ -76,8 +74,7 @@ defmodule RogsIdentityWeb.Api.AuthController do
             email: user.email,
             name: user.name,
             confirmed_at: user.confirmed_at
-          },
-          token: token
+          }
         })
 
       {:error, changeset} ->
@@ -108,7 +105,8 @@ defmodule RogsIdentityWeb.Api.AuthController do
             id: user.id,
             email: user.email,
             name: user.name,
-            confirmed_at: user.confirmed_at
+            confirmed_at: user.confirmed_at,
+            email_confirmed: Accounts.email_confirmed?(user)
           }
         })
 

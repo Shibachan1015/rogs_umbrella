@@ -64,20 +64,58 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
 
   @impl true
   def handle_event("submit", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
-      Accounts.deliver_password_reset_instructions(
-        user,
-        &url(~p"/users/reset-password/#{&1}")
-      )
+    # Check rate limit
+    key = "password_reset:#{email}"
+    attempt_count = RogsIdentityWeb.Plug.RateLimit.get_attempt_count(key, 3600)
+
+    if attempt_count >= 3 do
+      {:noreply,
+       socket
+       |> put_flash(:error, "Too many password reset requests. Please try again later.")}
+    else
+      if user = Accounts.get_user_by_email(email) do
+        Accounts.deliver_password_reset_instructions(
+          user,
+          &url(~p"/users/reset-password/#{&1}")
+        )
+      end
+
+      # Record attempt
+      record_password_reset_attempt(key)
+
+      info =
+        "If your email is in our system, you will receive instructions to reset your password shortly."
+
+      {:noreply,
+       socket
+       |> put_flash(:info, info)
+       |> push_navigate(to: ~p"/users/log-in")}
     end
+  end
 
-    info =
-      "If your email is in our system, you will receive instructions to reset your password shortly."
+  defp record_password_reset_attempt(key) do
+    table = get_or_create_rate_limit_table()
+    now = System.system_time(:second)
 
-    {:noreply,
-     socket
-     |> put_flash(:info, info)
-     |> push_navigate(to: ~p"/users/log-in")}
+    case :ets.lookup(table, key) do
+      [] ->
+        :ets.insert(table, {key, [now]})
+
+      [{^key, timestamps}] ->
+        window_start = now - 3600
+        filtered_timestamps = Enum.filter(timestamps, fn ts -> ts >= window_start end)
+        :ets.insert(table, {key, [now | filtered_timestamps]})
+    end
+  end
+
+  defp get_or_create_rate_limit_table do
+    case :ets.whereis(:rate_limit_table) do
+      :undefined ->
+        :ets.new(:rate_limit_table, [:set, :public, :named_table])
+
+      table ->
+        table
+    end
   end
 
   defp local_mail_adapter? do

@@ -17,10 +17,29 @@ defmodule RogsIdentityWeb.Router do
     plug :accepts, ["json"]
     plug :fetch_session
     plug RogsIdentityWeb.UserAuth, action: :fetch_current_scope_for_api
+    plug RogsIdentityWeb.Plug.SecurityHeaders
+    # Note: CSRF protection is not needed for API endpoints using token-based auth
+    # The session-based authentication already provides protection
   end
 
   pipeline :api_authenticated do
     plug RogsIdentityWeb.UserAuth, action: :require_authenticated_api
+  end
+
+  pipeline :rate_limit_login do
+    plug RogsIdentityWeb.Plug.RateLimit,
+      max_attempts: 5,
+      window_seconds: 300,
+      key_type: :login,
+      error_message: "Too many login attempts. Please try again later."
+  end
+
+  pipeline :rate_limit_password_reset do
+    plug RogsIdentityWeb.Plug.RateLimit,
+      max_attempts: 3,
+      window_seconds: 3600,
+      key_type: :password_reset,
+      error_message: "Too many password reset requests. Please try again later."
   end
 
   scope "/", RogsIdentityWeb do
@@ -31,7 +50,7 @@ defmodule RogsIdentityWeb.Router do
 
   # API routes
   scope "/api/auth", RogsIdentityWeb.Api do
-    pipe_through :api
+    pipe_through [:api, :rate_limit_login]
 
     post "/login", AuthController, :login
     post "/register", AuthController, :register
@@ -41,6 +60,11 @@ defmodule RogsIdentityWeb.Router do
     pipe_through [:api, :api_authenticated]
 
     get "/me", AuthController, :me
+  end
+
+  scope "/api/auth", RogsIdentityWeb.Api do
+    pipe_through :api
+
     post "/logout", AuthController, :logout
   end
 
@@ -86,7 +110,13 @@ defmodule RogsIdentityWeb.Router do
       live "/users/reset-password/:token", UserLive.ResetPassword, :edit
     end
 
-    post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  # Login with rate limiting
+  scope "/", RogsIdentityWeb do
+    pipe_through [:browser, :rate_limit_login]
+
+    post "/users/log-in", UserSessionController, :create
   end
 end

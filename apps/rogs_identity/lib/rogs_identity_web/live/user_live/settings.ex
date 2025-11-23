@@ -16,6 +16,29 @@ defmodule RogsIdentityWeb.UserLive.Settings do
         </.header>
       </div>
 
+      <div :if={!@email_confirmed} class="alert alert-warning mb-4">
+        <.icon name="hero-exclamation-triangle" class="size-6 shrink-0" />
+        <div>
+          <p class="font-semibold">Email not confirmed</p>
+          <p>Please confirm your email address to access all features.</p>
+          <button
+            phx-click="resend_confirmation"
+            phx-disable-with="Sending..."
+            class="btn btn-sm btn-primary mt-2"
+          >
+            Resend confirmation email
+          </button>
+        </div>
+      </div>
+
+      <div :if={@email_confirmed} class="alert alert-success mb-4">
+        <.icon name="hero-check-circle" class="size-6 shrink-0" />
+        <div>
+          <p class="font-semibold">Email confirmed</p>
+          <p>Your email address has been confirmed.</p>
+        </div>
+      </div>
+
       <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
         <.input
           field={@name_form[:name]}
@@ -102,6 +125,7 @@ defmodule RogsIdentityWeb.UserLive.Settings do
     socket =
       socket
       |> assign(:current_email, user.email)
+      |> assign(:email_confirmed, Accounts.email_confirmed?(user))
       |> assign(:name_form, to_form(name_changeset, as: "user"))
       |> assign(:email_form, to_form(email_changeset, as: "user"))
       |> assign(:password_form, to_form(password_changeset, as: "user"))
@@ -197,6 +221,28 @@ defmodule RogsIdentityWeb.UserLive.Settings do
 
       changeset ->
         {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
+    end
+  end
+
+  @impl true
+  def handle_event("resend_confirmation", _params, socket) do
+    user = socket.assigns.current_scope.user
+
+    if !Accounts.email_confirmed?(user) do
+      Accounts.deliver_confirmation_instructions(
+        user,
+        &url(~p"/users/log-in/#{&1}")
+      )
+
+      {:noreply,
+       socket
+       |> put_flash(
+         :info,
+         "If your email is in our system, you will receive confirmation instructions shortly."
+       )
+       |> assign(:email_confirmed, Accounts.email_confirmed?(user))}
+    else
+      {:noreply, socket}
     end
   end
 end

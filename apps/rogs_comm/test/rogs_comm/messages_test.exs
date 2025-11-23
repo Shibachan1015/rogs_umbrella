@@ -5,6 +5,7 @@ defmodule RogsComm.MessagesTest do
   alias RogsComm.Messages
   alias RogsComm.Messages.Message
   alias RogsComm.Repo
+  alias RogsComm.Rooms
 
   import RogsComm.MessagesFixtures
   import RogsComm.RoomsFixtures
@@ -94,6 +95,31 @@ defmodule RogsComm.MessagesTest do
     test "returns changeset" do
       message = message_fixture()
       assert %Ecto.Changeset{} = Messages.change_message(message)
+    end
+  end
+
+  describe "integrity rules" do
+    test "cascades delete when room removed" do
+      room = room_fixture()
+      message = message_fixture(%{room: room})
+
+      {:ok, _} = Rooms.delete_room(room)
+
+      assert_raise Ecto.NoResultsError, fn -> Messages.get_message!(message.id) end
+    end
+
+    test "validates content length" do
+      room = room_fixture()
+
+      long_attrs = %{
+        content: String.duplicate("あ", 6000),
+        user_id: Ecto.UUID.generate(),
+        user_email: "user@example.com",
+        room_id: room.id
+      }
+
+      assert {:error, changeset} = Messages.create_message(long_attrs)
+      assert "should be at most 5000 character(s)" in errors_on(changeset).content
     end
   end
 end

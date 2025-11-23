@@ -29,7 +29,13 @@ defmodule RogsCommWeb.ChatLive do
           socket
           |> assign(:room, room)
           |> assign(:room_id, room_id)
+          |> assign(:rooms, Rooms.list_rooms())
+          |> assign_new(:display_name, fn -> "anonymous" end)
           |> assign(:form, to_form(%{"content" => ""}))
+          |> assign(
+            :name_form,
+            to_form(%{"display_name" => socket.assigns[:display_name] || "anonymous"})
+          )
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -59,7 +65,7 @@ defmodule RogsCommWeb.ChatLive do
     else
       room_id = socket.assigns.room_id
       user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
-      user_email = socket.assigns[:user_email] || "anonymous"
+      user_email = socket.assigns[:display_name] || "anonymous"
 
       params = %{
         content: trimmed,
@@ -79,6 +85,20 @@ defmodule RogsCommWeb.ChatLive do
           {:noreply, put_flash(socket, :error, "メッセージの送信に失敗しました")}
       end
     end
+  end
+
+  def handle_event("set_name", %{"display_name" => name}, socket) do
+    trimmed =
+      name
+      |> to_string()
+      |> String.trim()
+
+    display_name = if trimmed == "", do: "anonymous", else: trimmed
+
+    {:noreply,
+     socket
+     |> assign(:display_name, display_name)
+     |> assign(:name_form, to_form(%{"display_name" => display_name}))}
   end
 
   @impl true
@@ -119,42 +139,91 @@ defmodule RogsCommWeb.ChatLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="flex flex-col h-screen">
-        <div class="bg-white shadow-sm border-b px-4 py-3">
-          <h1 class="text-xl font-semibold text-gray-900">{@room.name}</h1>
-          <p class="text-sm text-gray-500">{@room.topic}</p>
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
-          <div :for={{id, message} <- @streams.messages} id={id} class="flex flex-col">
-            <div class="text-sm text-gray-500">
-              <span class="font-semibold text-gray-900">{message.user_email}</span>
-              <span class="ml-2">
-                {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
-              </span>
-            </div>
-            <p class="text-gray-800 text-base">{message.content}</p>
+      <div
+        id="chat-root"
+        class="flex h-screen"
+        data-room-id={@room_id}
+        data-display-name={@display_name}
+      >
+        <aside class="w-64 border-r bg-base-200 px-4 py-6 space-y-6">
+          <div>
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+              Rooms
+            </h2>
+            <nav class="mt-3 space-y-2">
+              <.link
+                :for={room <- @rooms}
+                navigate={~p"/rooms/#{room.id}/chat"}
+                class={[
+                  "block rounded-lg px-3 py-2 text-sm font-medium transition",
+                  room.id == @room_id && "bg-base-100 shadow-sm",
+                  room.id != @room_id && "hover:bg-base-300/60"
+                ]}
+              >
+                <div class="text-base-content">{room.name}</div>
+                <p class="text-xs text-base-content/60 truncate">{room.topic}</p>
+              </.link>
+            </nav>
           </div>
-        </div>
 
-        <div class="bg-white border-t px-4 py-3">
-          <.form for={@form} id="chat-form" phx-submit="submit">
-            <div class="flex space-x-2">
-              <.input
-                field={@form[:content]}
-                type="text"
-                placeholder="メッセージを入力..."
-                class="flex-1"
-                autocomplete="off"
-              />
+          <div>
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+              Display name
+            </h2>
+            <.form
+              for={@name_form}
+              phx-submit="set_name"
+              id="display-name-form"
+              class="mt-2 space-y-2"
+            >
+              <.input field={@name_form[:display_name]} type="text" placeholder="anonymous" />
               <button
                 type="submit"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                class="w-full rounded-md bg-base-content/80 px-3 py-2 text-sm text-base-100"
               >
-                送信
+                更新
               </button>
+            </.form>
+          </div>
+        </aside>
+
+        <div class="flex flex-1 flex-col">
+          <div class="bg-white shadow-sm border-b px-4 py-3">
+            <h1 class="text-xl font-semibold text-gray-900">{@room.name}</h1>
+            <p class="text-sm text-gray-500">{@room.topic}</p>
+          </div>
+
+          <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
+            <div :for={{id, message} <- @streams.messages} id={id} class="flex flex-col">
+              <div class="text-sm text-gray-500">
+                <span class="font-semibold text-gray-900">{message.user_email}</span>
+                <span class="ml-2">
+                  {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
+                </span>
+              </div>
+              <p class="text-gray-800 text-base">{message.content}</p>
             </div>
-          </.form>
+          </div>
+
+          <div class="bg-white border-t px-4 py-3">
+            <.form for={@form} id="chat-form" phx-submit="submit">
+              <div class="flex space-x-2">
+                <.input
+                  field={@form[:content]}
+                  type="text"
+                  placeholder="メッセージを入力..."
+                  class="flex-1"
+                  autocomplete="off"
+                />
+                <button
+                  type="submit"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  送信
+                </button>
+              </div>
+            </.form>
+          </div>
         </div>
       </div>
     </Layouts.app>

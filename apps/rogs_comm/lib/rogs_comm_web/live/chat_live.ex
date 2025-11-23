@@ -14,6 +14,7 @@ defmodule RogsCommWeb.ChatLive do
 
   alias RogsComm.Messages
   alias RogsComm.Rooms
+  alias RogsCommWeb.Presence
 
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
@@ -42,7 +43,13 @@ defmodule RogsCommWeb.ChatLive do
           topic = topic(room_id)
           RogsCommWeb.Endpoint.subscribe(topic)
           messages = Messages.list_messages(room_id, limit: 50)
-          {:ok, stream(socket, :messages, messages)}
+
+          socket =
+            socket
+            |> assign(:presences, Presence.list(topic))
+            |> stream(:messages, messages)
+
+          {:ok, socket}
         else
           {:ok, socket}
         end
@@ -123,6 +130,13 @@ defmodule RogsCommWeb.ChatLive do
     end
   end
 
+  @impl true
+  def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
+    topic = topic(socket.assigns.room_id)
+    presences = Presence.list(topic)
+    {:noreply, assign(socket, :presences, presences)}
+  end
+
   defp broadcast_payload(message) do
     %{
       id: message.id,
@@ -134,6 +148,13 @@ defmodule RogsCommWeb.ChatLive do
   end
 
   defp topic(room_id), do: "room:#{room_id}"
+
+  defp list_presences(presences) do
+    presences
+    |> Enum.map(fn {user_id, %{metas: [meta | _]}} ->
+      {user_id, meta}
+    end)
+  end
 
   @impl true
   def render(assigns) do
@@ -184,6 +205,21 @@ defmodule RogsCommWeb.ChatLive do
                 更新
               </button>
             </.form>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+              Online ({Enum.count(@presences)})
+            </h2>
+            <div class="mt-3 space-y-2">
+              <div
+                :for={{user_id, meta} <- list_presences(@presences)}
+                class="flex items-center gap-2 text-sm"
+              >
+                <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                <span class="text-base-content">{meta.user_email || "anonymous"}</span>
+              </div>
+            </div>
           </div>
         </aside>
 

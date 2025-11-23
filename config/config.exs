@@ -1,5 +1,18 @@
 import Config
 
+config :rogs_identity, :scopes,
+  user: [
+    default: true,
+    module: RogsIdentity.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:user, :id],
+    schema_key: :user_id,
+    schema_type: :binary_id,
+    schema_table: :users,
+    test_data_fixture: RogsIdentity.AccountsFixtures,
+    test_setup_helper: :register_and_log_in_user
+  ]
+
 # --- 1. 各アプリのRepo設定 ---
 config :rogs_identity,
   ecto_repos: [RogsIdentity.Repo],
@@ -28,6 +41,9 @@ config :rogs_identity, RogsIdentityWeb.Endpoint,
   ],
   pubsub_server: RogsIdentity.PubSub,
   live_view: [signing_salt: "ZBs41IVB"]
+
+config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Local
+
 
 config :rogs_comm, RogsCommWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,

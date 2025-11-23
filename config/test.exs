@@ -1,5 +1,8 @@
 import Config
 
+# Only in tests, remove the complexity from the password hashing algorithm
+config :bcrypt_elixir, :log_rounds, 1
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :shinkanki_web, ShinkankiWebWeb.Endpoint,
@@ -23,7 +26,7 @@ config :phoenix_live_view,
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :shinkanki, Shinkanki.Repo,
-  username: "postgres",
+  username: "takashiba",
   password: "postgres",
   hostname: "localhost",
   database: "shinkanki_test#{System.get_env("MIX_TEST_PARTITION")}",
@@ -49,7 +52,7 @@ config :phoenix, :plug_init_mode, :runtime
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :rogs_comm, RogsComm.Repo,
-  username: "postgres",
+  username: "takashiba",
   password: "postgres",
   hostname: "localhost",
   database: "rogs_comm_test#{System.get_env("MIX_TEST_PARTITION")}",
@@ -79,7 +82,7 @@ config :phoenix_live_view,
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :rogs_identity, RogsIdentity.Repo,
-  username: "postgres",
+  username: "takashiba",
   password: "postgres",
   hostname: "localhost",
   database: "rogs_identity_test#{System.get_env("MIX_TEST_PARTITION")}",
@@ -103,31 +106,7 @@ config :phoenix, :plug_init_mode, :runtime
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
-# Configure your database
-#
-# The MIX_TEST_PARTITION environment variable can be used
-# to provide built-in test partitioning in CI environment.
-# Run `mix help test` for more information.
-config :rogs, Rogs.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "rogs_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
-
-# We don't run a server during test. If one is required,
-# you can enable the server option below.
-config :rogs_web, RogsWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "csnjiTZtZULDNlS6nqQShgZbtEDap3+CtQPkk5gpMJBZIuPTtc7dNcCFAjbZ/D9+",
-  server: false
-
-# Print only warnings and errors during test
-config :logger, level: :warning
-
-# In test we don't send emails
-config :rogs, Rogs.Mailer, adapter: Swoosh.Adapters.Test
+config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

@@ -26,6 +26,10 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
+      |> assign(:active_projects, mock_active_projects())
+      |> assign(:show_project_contribute, false)
+      |> assign(:project_contribute_id, nil)
+      |> assign(:selected_talent_for_contribution, nil)
 
     socket =
       if connected?(socket) do
@@ -547,6 +551,14 @@ defmodule ShinkankiWebWeb.GameLive do
       <% end %>
     </div>
 
+    <!-- Project Contribute Modal -->
+    <.project_contribute_modal
+      show={@show_project_contribute}
+      project={get_project_by_id(@project_contribute_id, assigns)}
+      available_talents={@player_talents}
+      id="project-contribute-modal"
+    />
+
     <!-- Event Modal -->
     <.event_modal
       show={@show_event_modal}
@@ -666,7 +678,7 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, assign(socket, :show_event_modal, false)}
   end
 
-  def handle_event("add_talent_to_card", %{"talent-id" => talent_id, "card-id" => card_id}, socket) do
+  def handle_event("add_talent_to_card", %{"talent-id" => _talent_id, "card-id" => card_id}, socket) do
     # Open talent selector for this card
     {:noreply,
      socket
@@ -726,6 +738,49 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:show_talent_selector, false)
      |> assign(:talent_selector_card_id, nil)
      |> assign(:selected_talents_for_card, [])}
+  end
+
+  def handle_event("open_project_contribute", %{"project-id" => project_id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_project_contribute, true)
+     |> assign(:project_contribute_id, project_id)
+     |> assign(:selected_talent_for_contribution, nil)}
+  end
+
+  def handle_event("contribute_talent", %{"talent-id" => talent_id, "project-id" => _project_id}, socket) do
+    {:noreply, assign(socket, :selected_talent_for_contribution, talent_id)}
+  end
+
+  def handle_event("confirm_talent_contribution", _params, socket) do
+    project_id = socket.assigns.project_contribute_id
+    talent_id = socket.assigns.selected_talent_for_contribution
+
+    if project_id && talent_id do
+      # In real implementation, this would update the project progress
+      toast = %{
+        id: Ecto.UUID.generate(),
+        kind: :success,
+        message: "才能カードをプロジェクトに捧げました"
+      }
+
+      {:noreply,
+       socket
+       |> assign(:show_project_contribute, false)
+       |> assign(:project_contribute_id, nil)
+       |> assign(:selected_talent_for_contribution, nil)
+       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_project_contribute", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_project_contribute, false)
+     |> assign(:project_contribute_id, nil)
+     |> assign(:selected_talent_for_contribution, nil)}
   end
 
   def handle_event("execute_action", %{"action" => action}, socket) do
@@ -939,4 +994,44 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   defp get_selected_card_tags(_card_id, _assigns), do: []
+
+  defp mock_active_projects do
+    [
+      %{
+        id: :p_forest_fest,
+        name: "森の祝祭",
+        description: "森と文化が共に栄える大規模な祝祭を開催する。",
+        cost: 50,
+        progress: 25,
+        effect: %{forest: 10, culture: 10, social: 10},
+        unlock_condition: %{forest: 80, culture: 60},
+        is_unlocked: true,
+        is_completed: false,
+        contributed_talents: [
+          %{name: "育てる才能"},
+          %{name: "企画の才能"}
+        ]
+      },
+      %{
+        id: :p_market,
+        name: "定期市",
+        description: "定期的な市場システムを確立する。",
+        cost: 30,
+        progress: 0,
+        effect: %{currency: 30, social: 5},
+        unlock_condition: %{social: 70},
+        is_unlocked: false,
+        is_completed: false,
+        contributed_talents: []
+      }
+    ]
+  end
+
+  defp get_project_by_id(project_id, assigns) when is_binary(project_id) or is_atom(project_id) do
+    Enum.find(assigns.active_projects, fn p ->
+      (p[:id] || p["id"]) == project_id
+    end)
+  end
+
+  defp get_project_by_id(_project_id, _assigns), do: nil
 end

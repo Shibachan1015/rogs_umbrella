@@ -521,6 +521,258 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders a project card - a collaborative project that players work on together.
+  """
+  attr :title, :string, required: true
+  attr :description, :string, required: true
+  attr :cost, :integer, required: true
+  attr :progress, :integer, default: 0
+  attr :effect, :map, default: %{}
+  attr :unlock_condition, :map, default: %{}
+  attr :is_unlocked, :boolean, default: false
+  attr :is_completed, :boolean, default: false
+  attr :contributed_talents, :list, default: []
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  def project_card(assigns) do
+    progress_percentage = if assigns.cost > 0, do: min(100, trunc(assigns.progress / assigns.cost * 100)), else: 0
+    is_unlockable = check_unlock_condition(assigns.unlock_condition, assigns)
+
+    assigns =
+      assigns
+      |> assign(:progress_percentage, progress_percentage)
+      |> assign(:is_unlockable, is_unlockable)
+
+    ~H"""
+    <div
+      class={[
+        "relative w-full max-w-sm bg-washi border-4 border-double shadow-lg rounded-lg p-4 transition-all duration-300",
+        if(@is_completed,
+          do: "border-kin bg-kin/5",
+          else: if(@is_unlocked, do: "border-matsu bg-matsu/5", else: "border-sumi/30 bg-sumi/5 opacity-60")
+        ),
+        @class
+      ]}
+      role="article"
+      aria-label={"プロジェクトカード: #{@title}"}
+      {@rest}
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-sumi/30">
+        <div class="flex items-center gap-2">
+          <div class="text-2xl">
+            {if @is_completed, do: "✨", else: if(@is_unlocked, do: "🏗️", else: "🔒")}
+          </div>
+          <h3 class="text-lg font-bold text-sumi writing-mode-vertical">
+            {@title}
+          </h3>
+        </div>
+        <div class="text-xs uppercase tracking-[0.3em] text-sumi/50">
+          プロジェクト
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-3">
+        <p class="text-sm leading-relaxed text-sumi">{@description}</p>
+      </div>
+
+      <!-- Unlock Condition -->
+      <%= if not @is_unlocked && map_size(@unlock_condition) > 0 do %>
+        <div class="mb-3 p-2 bg-sumi/10 border border-sumi/20 rounded">
+          <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">アンロック条件</div>
+          <div class="flex gap-2 text-xs">
+            <%= if Map.has_key?(@unlock_condition, :forest) or Map.has_key?(@unlock_condition, :f) do %>
+              <span class="text-matsu">F: {Map.get(@unlock_condition, :forest, Map.get(@unlock_condition, :f, 0))}</span>
+            <% end %>
+            <%= if Map.has_key?(@unlock_condition, :culture) or Map.has_key?(@unlock_condition, :k) do %>
+              <span class="text-sakura">K: {Map.get(@unlock_condition, :culture, Map.get(@unlock_condition, :k, 0))}</span>
+            <% end %>
+            <%= if Map.has_key?(@unlock_condition, :social) or Map.has_key?(@unlock_condition, :s) do %>
+              <span class="text-kohaku">S: {Map.get(@unlock_condition, :social, Map.get(@unlock_condition, :s, 0))}</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Progress Bar -->
+      <%= if @is_unlocked && not @is_completed do %>
+        <div class="mb-3">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-sumi/70">進捗</span>
+            <span class="text-xs font-semibold text-sumi">
+              {@progress} / {@cost}
+            </span>
+          </div>
+          <div class="w-full h-3 bg-sumi/10 rounded-full overflow-hidden border border-sumi/20">
+            <div
+              class="h-full bg-matsu transition-all duration-500"
+              style={"width: #{@progress_percentage}%"}
+              role="progressbar"
+              aria-valuenow={@progress}
+              aria-valuemin="0"
+              aria-valuemax={@cost}
+            >
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Contributed Talents -->
+      <%= if length(@contributed_talents) > 0 do %>
+        <div class="mb-3 pt-2 border-t border-sumi/20">
+          <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">捧げられた才能</div>
+          <div class="flex flex-wrap gap-1">
+            <%= for talent <- @contributed_talents do %>
+              <div class="px-2 py-1 bg-kin/20 border border-kin/30 rounded text-[10px] text-kin font-semibold">
+                {talent[:name] || talent["name"] || "才能"}
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Effect (Completed) -->
+      <%= if @is_completed && map_size(@effect) > 0 do %>
+        <div class="mt-3 pt-3 border-t border-kin/30">
+          <div class="text-xs uppercase tracking-[0.2em] text-kin/70 mb-2">完成恩恵</div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <%= if Map.has_key?(@effect, :forest) or Map.has_key?(@effect, :f) do %>
+              <div class="bg-matsu/10 border border-matsu/30 rounded p-2">
+                <div class="text-[10px] text-matsu/70 mb-1">F</div>
+                <div class="text-sm font-bold text-matsu">
+                  {format_effect_value(@effect[:forest] || @effect[:f])}
+                </div>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@effect, :culture) or Map.has_key?(@effect, :k) do %>
+              <div class="bg-sakura/10 border border-sakura/30 rounded p-2">
+                <div class="text-[10px] text-sakura/70 mb-1">K</div>
+                <div class="text-sm font-bold text-sakura">
+                  {format_effect_value(@effect[:culture] || @effect[:k])}
+                </div>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@effect, :social) or Map.has_key?(@effect, :s) do %>
+              <div class="bg-kohaku/10 border border-kohaku/30 rounded p-2">
+                <div class="text-[10px] text-kohaku/70 mb-1">S</div>
+                <div class="text-sm font-bold text-kohaku">
+                  {format_effect_value(@effect[:social] || @effect[:s])}
+                </div>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@effect, :currency) or Map.has_key?(@effect, :p) do %>
+              <div class="bg-kin/10 border border-kin/30 rounded p-2">
+                <div class="text-[10px] text-kin/70 mb-1">P</div>
+                <div class="text-sm font-bold text-kin">
+                  {format_effect_value(@effect[:currency] || @effect[:p])}
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp check_unlock_condition(_condition, _assigns) do
+    # In real implementation, this would check game state
+    # For now, return true for demo
+    true
+  end
+
+  @doc """
+  Renders a modal for contributing talent cards to a project.
+  """
+  attr :show, :boolean, default: false
+  attr :project, :map, default: nil
+  attr :available_talents, :list, default: []
+  attr :id, :string, default: "project-contribute-modal"
+  attr :rest, :global
+
+  def project_contribute_modal(assigns) do
+    ~H"""
+    <%= if @show && @project do %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        phx-click="close_project_contribute"
+        role="dialog"
+        aria-modal="true"
+        {@rest}
+      >
+        <div
+          class="relative bg-washi border-4 border-double border-matsu rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          phx-click-away="close_project_contribute"
+        >
+          <button
+            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+            phx-click="close_project_contribute"
+            aria-label="モーダルを閉じる"
+          >
+            <span class="text-lg font-bold">×</span>
+          </button>
+          <div class="p-6">
+            <h2 class="text-xl font-bold text-sumi mb-4">才能カードを捧げる</h2>
+
+            <.project_card
+              title={@project[:title] || @project["title"] || "プロジェクト"}
+              description={@project[:description] || @project["description"] || ""}
+              cost={@project[:cost] || @project["cost"] || 0}
+              progress={@project[:progress] || @project["progress"] || 0}
+              effect={@project[:effect] || @project["effect"] || %{}}
+              unlock_condition={@project[:unlock_condition] || @project["unlock_condition"] || %{}}
+              is_unlocked={@project[:is_unlocked] || @project["is_unlocked"] || true}
+              is_completed={@project[:is_completed] || @project["is_completed"] || false}
+              contributed_talents={@project[:contributed_talents] || @project["contributed_talents"] || []}
+              class="mb-4"
+            />
+
+            <div class="mt-4">
+              <h3 class="text-sm font-bold text-sumi mb-2">捧げる才能カードを選択</h3>
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto scrollbar-thin">
+                <%= for talent <- @available_talents do %>
+                  <%
+                    is_used = talent[:is_used] || talent["is_used"] || false
+                  %>
+                  <.talent_card
+                    title={talent[:name] || talent["name"] || "才能"}
+                    description={talent[:description] || talent["description"]}
+                    compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
+                    is_used={is_used}
+                    class="w-full"
+                    phx-click={if not is_used, do: "contribute_talent", else: nil}
+                    phx-value-talent-id={talent[:id] || talent["id"]}
+                    phx-value-project-id={@project[:id] || @project["id"]}
+                  />
+                <% end %>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <button
+                class="flex-1 bg-matsu text-washi px-4 py-2 rounded border border-sumi hover:bg-matsu/80 transition-colors text-sm font-semibold"
+                phx-click="confirm_talent_contribution"
+              >
+                確定
+              </button>
+              <button
+                class="flex-1 bg-washi text-sumi px-4 py-2 rounded border border-sumi hover:bg-sumi/5 transition-colors text-sm"
+                phx-click="close_project_contribute"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  @doc """
   Renders a toast notification with Miyabi theme.
   """
   attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]

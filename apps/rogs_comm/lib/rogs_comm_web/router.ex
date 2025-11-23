@@ -1,6 +1,8 @@
 defmodule RogsCommWeb.Router do
   use RogsCommWeb, :router
 
+  import RogsIdentity.Plug
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -8,6 +10,11 @@ defmodule RogsCommWeb.Router do
     plug :put_root_layout, html: {RogsCommWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_user
+  end
+
+  pipeline :authenticated do
+    plug :require_authenticated
   end
 
   pipeline :api do
@@ -18,6 +25,7 @@ defmodule RogsCommWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/rooms/:room_id/chat", ChatLive
   end
 
   # Other scopes may use custom stacks.

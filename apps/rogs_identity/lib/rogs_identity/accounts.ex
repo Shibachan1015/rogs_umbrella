@@ -128,6 +128,37 @@ defmodule RogsIdentity.Accounts do
   end
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for changing the user name.
+
+  ## Examples
+
+      iex> change_user_name(user)
+      %Ecto.Changeset{data: %User{}}
+
+  """
+  def change_user_name(user, attrs \\ %{}) do
+    User.name_changeset(user, attrs)
+  end
+
+  @doc """
+  Updates the user name.
+
+  ## Examples
+
+      iex> update_user_name(user, %{name: "John Doe"})
+      {:ok, %User{}}
+
+      iex> update_user_name(user, %{name: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_user_name(user, attrs) do
+    user
+    |> User.name_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates the user email using the given token.
 
   If the token matches, the user email is updated and the token is deleted.
@@ -287,6 +318,45 @@ defmodule RogsIdentity.Accounts do
     {encoded_token, user_token} = UserToken.build_email_token(user, "login")
     Repo.insert!(user_token)
     UserNotifier.deliver_login_instructions(user, magic_link_url_fun.(encoded_token))
+  end
+
+  @doc """
+  Delivers the password reset instructions to the given user.
+  """
+  def deliver_password_reset_instructions(%User{} = user, reset_url_fun)
+      when is_function(reset_url_fun, 1) do
+    {encoded_token, user_token} = UserToken.build_email_token(user, "reset_password")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_password_reset_instructions(user, reset_url_fun.(encoded_token))
+  end
+
+  @doc """
+  Gets the user by password reset token.
+  """
+  def get_user_by_password_reset_token(token) do
+    with {:ok, query} <- UserToken.verify_password_reset_token_query(token),
+         {user, _token} <- Repo.one(query) do
+      user
+    else
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Resets the user password using the given token.
+  """
+  def reset_user_password(token, attrs) do
+    with user when not is_nil(user) <- get_user_by_password_reset_token(token),
+         {:ok, query} <- UserToken.verify_password_reset_token_query(token),
+         {_user, user_token} <- Repo.one(query),
+         {:ok, user} <- update_user_password(user, attrs) do
+      # Delete the reset token after successful password reset
+      Repo.delete(user_token)
+      {:ok, user}
+    else
+      nil -> {:error, :invalid_token}
+      _ -> {:error, :invalid_token}
+    end
   end
 
   @doc """

@@ -43,9 +43,26 @@ defmodule RogsIdentity.Accounts.UserNotifier do
   """
   def deliver_login_instructions(user, url) do
     case user do
-      %User{confirmed_at: nil} -> deliver_confirmation_instructions(user, url)
+      %User{confirmed_at: nil} -> deliver_confirmation_instructions_private(user, url)
       _ -> deliver_magic_link_instructions(user, url)
     end
+  end
+
+  defp deliver_confirmation_instructions_private(user, url) do
+    deliver(user.email, "Confirmation instructions", """
+
+    ==============================
+
+    Hi #{user.email},
+
+    You can confirm your account by visiting the URL below:
+
+    #{url}
+
+    If you didn't create an account with us, please ignore this.
+
+    ==============================
+    """)
   end
 
   defp deliver_magic_link_instructions(user, url) do
@@ -65,7 +82,10 @@ defmodule RogsIdentity.Accounts.UserNotifier do
     """)
   end
 
-  defp deliver_confirmation_instructions(user, url) do
+  @doc """
+  Deliver confirmation instructions (public function for resending).
+  """
+  def deliver_confirmation_instructions(user, url) do
     deliver(user.email, "Confirmation instructions", """
 
     ==============================
@@ -77,6 +97,28 @@ defmodule RogsIdentity.Accounts.UserNotifier do
     #{url}
 
     If you didn't create an account with us, please ignore this.
+
+    ==============================
+    """)
+  end
+
+  @doc """
+  Deliver instructions to reset password.
+  """
+  def deliver_password_reset_instructions(user, url) do
+    deliver(user.email, "Reset password instructions", """
+
+    ==============================
+
+    Hi #{user.email},
+
+    You can reset your password by visiting the URL below:
+
+    #{url}
+
+    This link will expire in 6 hours.
+
+    If you didn't request this change, please ignore this.
 
     ==============================
     """)

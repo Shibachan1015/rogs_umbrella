@@ -6,6 +6,18 @@
 @source "../js";
 @source "../../lib/shinkanki_web_web";
 
+@theme {
+  --color-washi: #fcfaf2;
+  --color-washi-dark: #efece4;
+  --color-sumi: #1c1c1c;
+  --color-sumi-light: #444444;
+  --color-shu: #d3381c;
+  --color-matsu: #4a593d;
+  --color-kin: #c7b370;
+  --color-sakura: #eec4ce;
+  --color-kohaku: #bf783a;
+}
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
@@ -101,5 +113,251 @@
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* Chat message animations */
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes message-highlight {
+  0% {
+    background-color: var(--color-washi);
+    border-color: rgba(211, 56, 28, 0.2);
+  }
+  50% {
+    background-color: rgba(211, 56, 28, 0.05);
+    border-color: rgba(211, 56, 28, 0.4);
+  }
+  100% {
+    background-color: var(--color-washi);
+    border-color: rgba(28, 28, 28, 0.15);
+  }
+}
+
+.chat-message {
+  animation: message-slide-in 0.3s ease-out;
+  transition: all 0.2s ease-in-out;
+}
+
+.chat-message.new-message {
+  animation: message-slide-in 0.3s ease-out, message-highlight 2s ease-in-out;
+}
+
+.chat-message:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(28, 28, 28, 0.1);
+}
+
+/* Smooth scroll behavior for chat log */
+#chat-messages {
+  scroll-behavior: smooth;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Toast notification animations */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in;
+}
+
+/* Life Index circle gauge animations */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.life-index-value {
+  animation: count-up 0.5s ease-out;
+}
+
+.life-index-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* Circular progress ring */
+.circular-progress {
+  transform: rotate(-90deg);
+}
+
+.circular-progress circle {
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Validation error styles for Miyabi theme */
+.textarea-error,
+.input-error {
+  border-color: var(--color-shu) !important;
+  background-color: rgba(211, 56, 28, 0.05) !important;
+}
+
+.textarea-error:focus,
+.input-error:focus {
+  border-color: var(--color-shu) !important;
+  box-shadow: 0 0 0 3px rgba(211, 56, 28, 0.1) !important;
+}
+
+/* Error message animation */
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.error-shake {
+  animation: error-shake 0.5s ease-in-out;
+}
+
+/* Vertical writing mode for Japanese text (Ofuda cards) */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* Scrollbar styling for chat container */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-sumi::-webkit-scrollbar-thumb {
+  background-color: rgba(28, 28, 28, 0.3);
+  border-radius: 4px;
+}
+
+.scrollbar-thumb-sumi::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(28, 28, 28, 0.5);
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Phase indicator animations */
+@keyframes phase-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.phase-indicator [aria-current="step"] {
+  animation: phase-pulse 2s ease-in-out infinite;
+}
+
+/* Phase transition animation */
+@keyframes phase-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phase-indicator > div:last-child > div {
+  animation: phase-fade-in 0.5s ease-out;
+}
+
+/* Event card fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
 
 /* This file is for your main application CSS */

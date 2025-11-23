@@ -31,6 +31,13 @@ defmodule RogsIdentityWeb.UserLive.Registration do
             required
             phx-mounted={JS.focus()}
           />
+          <.input
+            field={@form[:name]}
+            type="text"
+            label="Display Name"
+            placeholder="Optional"
+            autocomplete="name"
+          />
 
           <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
             Create an account

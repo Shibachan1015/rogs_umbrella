@@ -16,6 +16,42 @@ defmodule RogsIdentityWeb.UserLive.Settings do
         </.header>
       </div>
 
+      <div :if={!@email_confirmed} class="alert alert-warning mb-4">
+        <.icon name="hero-exclamation-triangle" class="size-6 shrink-0" />
+        <div>
+          <p class="font-semibold">Email not confirmed</p>
+          <p>Please confirm your email address to access all features.</p>
+          <button
+            phx-click="resend_confirmation"
+            phx-disable-with="Sending..."
+            class="btn btn-sm btn-primary mt-2"
+          >
+            Resend confirmation email
+          </button>
+        </div>
+      </div>
+
+      <div :if={@email_confirmed} class="alert alert-success mb-4">
+        <.icon name="hero-check-circle" class="size-6 shrink-0" />
+        <div>
+          <p class="font-semibold">Email confirmed</p>
+          <p>Your email address has been confirmed.</p>
+        </div>
+      </div>
+
+      <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
+        <.input
+          field={@name_form[:name]}
+          type="text"
+          label="Display Name"
+          placeholder="Optional"
+          autocomplete="name"
+        />
+        <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
+      </.form>
+
+      <div class="divider" />
+
       <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
         <.input
           field={@email_form[:email]}
@@ -82,17 +118,50 @@ defmodule RogsIdentityWeb.UserLive.Settings do
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
+    name_changeset = Accounts.change_user_name(user, %{})
     email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
     password_changeset = Accounts.change_user_password(user, %{}, hash_password: false)
 
     socket =
       socket
       |> assign(:current_email, user.email)
-      |> assign(:email_form, to_form(email_changeset))
-      |> assign(:password_form, to_form(password_changeset))
+      |> assign(:email_confirmed, Accounts.email_confirmed?(user))
+      |> assign(:name_form, to_form(name_changeset, as: "user"))
+      |> assign(:email_form, to_form(email_changeset, as: "user"))
+      |> assign(:password_form, to_form(password_changeset, as: "user"))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("validate_name", params, socket) do
+    %{"user" => user_params} = params
+
+    name_form =
+      socket.assigns.current_scope.user
+      |> Accounts.change_user_name(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, name_form: name_form)}
+  end
+
+  def handle_event("update_name", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_scope.user
+    true = Accounts.sudo_mode?(user)
+
+    case Accounts.update_user_name(user, user_params) do
+      {:ok, _user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Display name updated successfully.")
+         |> assign(:name_form, to_form(Accounts.change_user_name(user, %{})))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, name_form: to_form(changeset))}
+    end
   end
 
   @impl true
@@ -152,6 +221,28 @@ defmodule RogsIdentityWeb.UserLive.Settings do
 
       changeset ->
         {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
+    end
+  end
+
+  @impl true
+  def handle_event("resend_confirmation", _params, socket) do
+    user = socket.assigns.current_scope.user
+
+    if !Accounts.email_confirmed?(user) do
+      Accounts.deliver_confirmation_instructions(
+        user,
+        &url(~p"/users/log-in/#{&1}")
+      )
+
+      {:noreply,
+       socket
+       |> put_flash(
+         :info,
+         "If your email is in our system, you will receive confirmation instructions shortly."
+       )
+       |> assign(:email_confirmed, Accounts.email_confirmed?(user))}
+    else
+      {:noreply, socket}
     end
   end
 end

@@ -25,6 +25,7 @@ defmodule RogsCommWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/rooms", RoomIndexLive, :index
     live "/rooms/:room_id/chat", ChatLive
   end
 

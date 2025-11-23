@@ -6,6 +6,7 @@ defmodule RogsCommWeb.UserSocket do
   use Phoenix.Socket
 
   channel "room:*", RogsCommWeb.ChatChannel
+  channel "signal:*", RogsCommWeb.SignalingChannel
 
   @impl true
   def connect(_params, socket, _connect_info) do

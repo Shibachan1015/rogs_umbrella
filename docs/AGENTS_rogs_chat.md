@@ -5,6 +5,12 @@ This is a web application written using the Phoenix web framework.
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
+### Worktree role memo
+
+- このエージェントは `rogs_comm` (Communication) ワークツリー担当。
+- 役目: ルーム管理・テキストチャット・WebSocket/Channel・LiveView UI プロトタイプの実装と維持。
+- `rogs_identity` / `rogs_ui` と連携して最終的なユーザー向けチャット体験に繋げること。
+
 ### Phoenix v1.8 guidelines
 
 - **Always** begin your LiveView templates with `<Layouts.app flash={@flash} ...>` which wraps all inner content

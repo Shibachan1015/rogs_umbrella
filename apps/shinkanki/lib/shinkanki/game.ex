@@ -8,6 +8,8 @@ defmodule Shinkanki.Game do
   @initial_hand_size 3
   @max_talents_per_action 2
   @deck_cycles 3
+  @min_players 1
+  @max_players 4
 
   defstruct [
     :room_id,
@@ -22,8 +24,8 @@ defmodule Shinkanki.Game do
     currency: 100,
     # Life Index (L) = F + K + S
     life_index: 150,
-    # :playing, :won, :lost
-    status: :playing,
+    # :waiting, :playing, :won, :lost
+    status: :waiting,
     # Ending type when game ends: :blessing, :purification, :uncertainty, :lament, :instant_loss
     ending_type: nil,
     # Current game phase: :event, :discussion, :action, :demurrage, :life_update, :judgment
@@ -56,7 +58,7 @@ defmodule Shinkanki.Game do
           social: integer(),
           currency: integer(),
           life_index: integer(),
-          status: :playing | :won | :lost,
+          status: :waiting | :playing | :won | :lost,
           ending_type: atom() | nil,
           phase: atom(),
           logs: list(),
@@ -112,8 +114,14 @@ defmodule Shinkanki.Game do
   """
   def join(%__MODULE__{} = game, player_id, name, talent_ids \\ nil) do
     cond do
-      game.status != :playing ->
+      game.status in [:won, :lost] ->
         {:error, :game_over}
+
+      game.status == :playing ->
+        {:error, :game_already_started}
+
+      length(game.player_order) >= @max_players ->
+        {:error, :max_players_reached}
 
       Map.has_key?(game.players, player_id) ->
         {:error, :already_joined}
@@ -318,6 +326,43 @@ defmodule Shinkanki.Game do
   end
 
   def mark_discussion_ready(_game, _player_id), do: {:error, :game_over}
+
+  @doc """
+  Starts the game if minimum player requirements are met.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def start_game(%__MODULE__{status: :waiting} = game) do
+    player_count = length(game.player_order)
+
+    cond do
+      player_count < @min_players ->
+        {:error, :not_enough_players}
+
+      player_count > @max_players ->
+        {:error, :too_many_players}
+
+      true ->
+        new_game =
+          game
+          |> Map.put(:status, :playing)
+          |> add_log("Game started with #{player_count} player(s)")
+
+        {:ok, new_game}
+    end
+  end
+
+  def start_game(%__MODULE__{status: :playing}), do: {:error, :game_already_started}
+  def start_game(_game), do: {:error, :game_over}
+
+  @doc """
+  Checks if the game can be started (meets minimum player requirements).
+  """
+  def can_start?(%__MODULE__{status: :waiting} = game) do
+    player_count = length(game.player_order)
+    player_count >= @min_players and player_count <= @max_players
+  end
+
+  def can_start?(_game), do: false
 
   @doc """
   Plays an action or project card with optional talent boosters.
@@ -543,7 +588,9 @@ defmodule Shinkanki.Game do
 
   defp advance_to_next_player(%__MODULE__{phase: :action, player_order: []} = game), do: game
 
-  defp advance_to_next_player(%__MODULE__{phase: :action, player_order: order, current_player_index: index} = game) do
+  defp advance_to_next_player(
+         %__MODULE__{phase: :action, player_order: order, current_player_index: index} = game
+       ) do
     next_index = rem(index + 1, length(order))
     %{game | current_player_index: next_index}
   end
@@ -553,7 +600,11 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the current player ID in action phase.
   """
-  def get_current_player(%__MODULE__{phase: :action, player_order: order, current_player_index: index}) do
+  def get_current_player(%__MODULE__{
+        phase: :action,
+        player_order: order,
+        current_player_index: index
+      }) do
     if order != [] and index < length(order) do
       Enum.at(order, index)
     else
@@ -565,7 +616,9 @@ defmodule Shinkanki.Game do
 
   defp get_current_player_name(game) do
     case get_current_player(game) do
-      nil -> "Unknown"
+      nil ->
+        "Unknown"
+
       player_id ->
         case Map.get(game.players, player_id) do
           nil -> "Unknown"

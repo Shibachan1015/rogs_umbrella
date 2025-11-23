@@ -31,17 +31,20 @@ defmodule Shinkanki.GameMultiplayerTest do
           event_deck: [],
           event_discard_pile: []
       }
+
       {:ok, game} = Game.join(game, "p1", "Player 1")
       {:ok, game} = Game.join(game, "p2", "Player 2")
 
       # First player can act
       hand1 = Map.get(game.hands, "p1", [])
+
       if hand1 != [] do
         assert {:ok, _} = Game.play_action(game, "p1", List.first(hand1), [])
       end
 
       # Second player cannot act yet (will get :not_your_turn error)
       hand2 = Map.get(game.hands, "p2", [])
+
       if hand2 != [] do
         assert {:error, :not_your_turn} = Game.play_action(game, "p2", List.first(hand2), [])
       end
@@ -55,6 +58,7 @@ defmodule Shinkanki.GameMultiplayerTest do
           event_deck: [],
           event_discard_pile: []
       }
+
       {:ok, game} = Game.join(game, "p1", "Player 1")
       {:ok, game} = Game.join(game, "p2", "Player 2")
 
@@ -63,6 +67,7 @@ defmodule Shinkanki.GameMultiplayerTest do
 
       # Play action as p1
       hand = Map.get(game.hands, "p1", [])
+
       if hand != [] do
         {:ok, new_game} = Game.play_action(game, "p1", List.first(hand), [])
 
@@ -79,6 +84,7 @@ defmodule Shinkanki.GameMultiplayerTest do
           event_deck: [],
           event_discard_pile: []
       }
+
       {:ok, game} = Game.join(game, "p1", "Player 1")
       {:ok, game} = Game.join(game, "p2", "Player 2")
 
@@ -87,6 +93,7 @@ defmodule Shinkanki.GameMultiplayerTest do
 
       # Try to play action as p2 when it's p1's turn
       hand = Map.get(game.hands, "p2", [])
+
       if hand != [] do
         assert {:error, :not_your_turn} = Game.play_action(game, "p2", List.first(hand), [])
       end
@@ -100,6 +107,7 @@ defmodule Shinkanki.GameMultiplayerTest do
           event_deck: [],
           event_discard_pile: []
       }
+
       {:ok, game} = Game.join(game, "p1", "Player 1")
       {:ok, game} = Game.join(game, "p2", "Player 2")
       {:ok, game} = Game.join(game, "p3", "Player 3")
@@ -108,6 +116,7 @@ defmodule Shinkanki.GameMultiplayerTest do
       # Start with p1
       assert Game.get_current_player(game) == "p1"
       hand1 = Map.get(game.hands, "p1", [])
+
       if hand1 != [] do
         {:ok, game} = Game.play_action(game, "p1", List.first(hand1), [])
         # Should advance to p2
@@ -115,6 +124,7 @@ defmodule Shinkanki.GameMultiplayerTest do
 
         # Play as p2
         hand2 = Map.get(game.hands, "p2", [])
+
         if hand2 != [] do
           {:ok, game} = Game.play_action(game, "p2", List.first(hand2), [])
           # Should advance to p3
@@ -145,6 +155,7 @@ defmodule Shinkanki.GameMultiplayerTest do
           event_deck: [],
           event_discard_pile: []
       }
+
       {:ok, game} = Game.join(game, "p1", "Player 1")
       {:ok, game} = Game.join(game, "p2", "Player 2")
 
@@ -164,13 +175,21 @@ defmodule Shinkanki.GameMultiplayerTest do
 
       # Advance player index by playing action
       hand = Map.get(game.hands, "p1", [])
+
       if hand != [] do
         {:ok, game} = Game.play_action(game, "p1", List.first(hand), [])
         assert game.current_player_index == 1
 
         # Mark all players ready and advance phase to complete turn
-        game = %{game | players: Map.update!(game.players, "p1", fn p -> %{p | is_ready: true} end)}
-        game = %{game | players: Map.update!(game.players, "p2", fn p -> %{p | is_ready: true} end)}
+        game = %{
+          game
+          | players: Map.update!(game.players, "p1", fn p -> %{p | is_ready: true} end)
+        }
+
+        game = %{
+          game
+          | players: Map.update!(game.players, "p2", fn p -> %{p | is_ready: true} end)
+        }
 
         # Next turn should reset index
         game_after_turn = Game.next_turn(game)
@@ -180,4 +199,3 @@ defmodule Shinkanki.GameMultiplayerTest do
     end
   end
 end
-

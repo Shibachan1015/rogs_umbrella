@@ -14,7 +14,7 @@ defmodule Shinkanki.GameServerTest do
       Shinkanki.subscribe_game(room_id)
 
       # 2. Start the game
-      assert {:ok, _pid} = Shinkanki.start_game(room_id)
+      assert {:ok, _pid} = Shinkanki.start_game_session(room_id)
 
       # 3. Verify initial state
       initial_state = Shinkanki.get_current_state(room_id)
@@ -42,7 +42,7 @@ defmodule Shinkanki.GameServerTest do
     end
 
     test "handles win condition flow", %{room_id: room_id} do
-      Shinkanki.start_game(room_id)
+      Shinkanki.start_game_session(room_id)
 
       # Force game to turn 20 with high stats (via multiple manual updates or just one if we exposed set_state,
       # but here we use update_stats logic which adds values.

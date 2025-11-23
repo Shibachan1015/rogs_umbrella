@@ -12,8 +12,9 @@ defmodule Shinkanki do
 
   @doc """
   Starts a new game session for the given room_id.
+  This creates a new GameServer process.
   """
-  def start_game(room_id) do
+  def start_game_session(room_id) do
     DynamicSupervisor.start_child(Shinkanki.GameSupervisor, {GameServer, room_id})
   end
 
@@ -107,6 +108,27 @@ defmodule Shinkanki do
     call_server(room_id, fn ->
       GameServer.mark_discussion_ready(room_id, player_id)
     end)
+  end
+
+  @doc """
+  Starts the game if minimum player requirements are met.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def start_game(room_id) do
+    call_server(room_id, fn ->
+      GameServer.start_game(room_id)
+    end)
+  end
+
+  @doc """
+  Checks if the game can be started.
+  Returns true or false.
+  """
+  def can_start?(room_id) do
+    case get_current_state(room_id) do
+      nil -> false
+      game -> Game.can_start?(game)
+    end
   end
 
   @doc """

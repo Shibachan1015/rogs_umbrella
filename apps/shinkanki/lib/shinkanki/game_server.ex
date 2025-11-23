@@ -51,6 +51,10 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), {:mark_discussion_ready, player_id})
   end
 
+  def start_game(room_id) do
+    GenServer.call(via_tuple(room_id), :start_game)
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end

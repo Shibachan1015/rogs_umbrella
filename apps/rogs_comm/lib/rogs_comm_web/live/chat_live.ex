@@ -38,6 +38,7 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:form, to_form(%{"content" => ""}))
           |> assign(:name_form, to_form(%{"display_name" => display_name}))
           |> assign(:presences, %{})
+          |> assign(:typing_users, %{})
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -206,7 +207,9 @@ defmodule RogsCommWeb.ChatLive do
            id: payload.id,
            content: payload.content,
            edited_at: payload.edited_at
-         }, at: -1)}
+         },
+         at: -1
+       )}
     else
       {:noreply, socket}
     end
@@ -220,6 +223,38 @@ defmodule RogsCommWeb.ChatLive do
 
     if topic == room_topic do
       {:noreply, stream_delete(socket, :messages, payload.id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users =
+        socket.assigns.typing_users
+        |> Map.put(payload.user_id, payload.user_email)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_stopped_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users = Map.delete(socket.assigns.typing_users, payload.user_id)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
     else
       {:noreply, socket}
     end
@@ -261,6 +296,7 @@ defmodule RogsCommWeb.ChatLive do
         class="flex h-screen"
         data-room-id={@room_id}
         data-display-name={@display_name}
+        phx-hook="TypingHook"
       >
         <aside class="w-64 border-r bg-base-200 px-4 py-6 space-y-6">
           <div>
@@ -362,6 +398,9 @@ defmodule RogsCommWeb.ChatLive do
                 </div>
               </div>
               <p class="text-gray-800 text-base">{message.content}</p>
+            </div>
+            <div :if={map_size(@typing_users) > 0} class="text-sm text-gray-500 italic mt-2">
+              {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
             </div>
           </div>
 

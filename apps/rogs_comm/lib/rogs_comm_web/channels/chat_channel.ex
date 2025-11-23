@@ -153,4 +153,26 @@ defmodule RogsCommWeb.ChatChannel do
         {:reply, {:error, %{reason: "message not found or unauthorized"}}, socket}
     end
   end
+
+  @impl true
+  def handle_in("typing_start", _params, socket) do
+    payload = %{
+      user_id: socket.assigns.user_id,
+      user_email: socket.assigns.user_email
+    }
+
+    broadcast_from(socket, "user_typing", payload)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_in("typing_stop", _params, socket) do
+    payload = %{
+      user_id: socket.assigns.user_id,
+      user_email: socket.assigns.user_email
+    }
+
+    broadcast_from(socket, "user_stopped_typing", payload)
+    {:noreply, socket}
+  end
 end

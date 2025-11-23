@@ -105,4 +105,52 @@ defmodule RogsCommWeb.ChatChannel do
   def handle_in("new_message", _params, socket) do
     {:reply, {:error, %{reason: "invalid parameters"}}, socket}
   end
+
+  @impl true
+  def handle_in("edit_message", %{"message_id" => message_id, "content" => content}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.edit_message(message, %{content: content}) do
+          {:ok, updated_message} ->
+            payload = %{
+              id: updated_message.id,
+              content: updated_message.content,
+              edited_at: updated_message.edited_at
+            }
+
+            broadcast(socket, "message_edited", payload)
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:reply, {:error, %{reason: "failed to edit message"}}, socket}
+        end
+
+      _ ->
+        {:reply, {:error, %{reason: "message not found or unauthorized"}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("delete_message", %{"message_id" => message_id}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.soft_delete_message(message) do
+          {:ok, _deleted_message} ->
+            broadcast(socket, "message_deleted", %{id: message_id})
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:reply, {:error, %{reason: "failed to delete message"}}, socket}
+        end
+
+      _ ->
+        {:reply, {:error, %{reason: "message not found or unauthorized"}}, socket}
+    end
+  end
 end

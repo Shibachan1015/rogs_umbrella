@@ -7,6 +7,7 @@ defmodule RogsCommWeb.SignalingChannel do
 
   alias Ecto.UUID
   alias RogsComm.Rooms
+  alias RogsComm.Signaling
   alias RogsCommWeb.RateLimiter
 
   @rtc_events ~w(offer answer ice-candidate)
@@ -38,8 +39,21 @@ defmodule RogsCommWeb.SignalingChannel do
       {:ok, :allowed} ->
         case normalize_payload(event, payload, socket) do
           {:ok, normalized} ->
+            # Log signaling session
+            room_id = socket.assigns.room_id
+            from_user_id = socket.assigns.user_id
+            to_user_id = Map.get(normalized, "to")
+
+            Signaling.create_session(%{
+              room_id: room_id,
+              from_user_id: from_user_id,
+              to_user_id: to_user_id,
+              event_type: event,
+              payload: normalized
+            })
+
             # If 'to' is specified, validate that the target user is in the room
-            case Map.get(normalized, "to") do
+            case to_user_id do
               nil ->
                 # Broadcast to all in room
                 broadcast(socket, event, normalized)

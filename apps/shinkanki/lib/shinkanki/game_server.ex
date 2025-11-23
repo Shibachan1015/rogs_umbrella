@@ -47,6 +47,10 @@ defmodule Shinkanki.GameServer do
     )
   end
 
+  def mark_discussion_ready(room_id, player_id) do
+    GenServer.call(via_tuple(room_id), {:mark_discussion_ready, player_id})
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end
@@ -162,6 +166,19 @@ defmodule Shinkanki.GameServer do
           talent_id: talent_id
         })
 
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:mark_discussion_ready, player_id}, _from, game) do
+    case Game.mark_discussion_ready(game, player_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "mark_discussion_ready", player_id, %{})
         broadcast_state(new_game)
         {:reply, ok, new_game}
 

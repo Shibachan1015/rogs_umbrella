@@ -271,6 +271,45 @@ defmodule Shinkanki.Game do
     do: {:error, :game_over}
 
   @doc """
+  Marks a player as ready in the discussion phase.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def mark_discussion_ready(%__MODULE__{status: :playing, phase: :discussion} = game, player_id) do
+    case Map.get(game.players, player_id) do
+      nil ->
+        {:error, :player_not_found}
+
+      player ->
+        if player.is_ready do
+          {:error, :already_ready}
+        else
+          new_game =
+            game
+            |> mark_player_ready(player_id)
+            |> add_log("#{player.name} is ready for action phase")
+
+          # Check if all players are ready and advance phase
+          final_game =
+            if all_players_discussion_ready?(new_game) do
+              new_game
+              |> add_log("All players ready - advancing to action phase")
+              |> set_phase(:action)
+            else
+              new_game
+            end
+
+          {:ok, final_game}
+        end
+    end
+  end
+
+  def mark_discussion_ready(%__MODULE__{phase: phase}, _player_id) when phase != :discussion do
+    {:error, :not_discussion_phase}
+  end
+
+  def mark_discussion_ready(_game, _player_id), do: {:error, :game_over}
+
+  @doc """
   Plays an action or project card with optional talent boosters.
   Note: For projects, this executes them immediately (legacy behavior).
   For new projects, use contribute_talent_to_project instead.
@@ -476,6 +515,24 @@ defmodule Shinkanki.Game do
 
   defp maybe_advance_turn(game), do: game
 
+  defp all_players_discussion_ready?(game) do
+    players = Map.values(game.players)
+
+    cond do
+      players == [] ->
+        false
+
+      Enum.all?(players, fn
+        %Player{is_ready: ready} -> ready
+        _ -> false
+      end) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
   defp reset_player_state(game) do
     players =
       Enum.into(game.players, %{}, fn {id, player} ->
@@ -556,11 +613,14 @@ defmodule Shinkanki.Game do
   defp take_from_deck(%{deck: []} = game, count, acc) do
     case game.discard_pile do
       [] ->
+        # No cards available - return what we have
         {Enum.reverse(acc), game}
 
       discard ->
+        # Deck is empty - reshuffle discard pile to create new deck
         reshuffled = Enum.shuffle(discard)
-        take_from_deck(%{game | deck: reshuffled, discard_pile: []}, count, acc)
+        game_with_log = add_log(game, "Deck reshuffled from discard pile (#{length(discard)} cards)")
+        take_from_deck(%{game_with_log | deck: reshuffled, discard_pile: []}, count, acc)
     end
   end
 
@@ -672,9 +732,15 @@ defmodule Shinkanki.Game do
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :discussion} = game) do
-    # Discussion phase - players can discuss, but no automatic action
-    # Phase will advance when players are ready (handled by next_phase)
-    game
+    # Discussion phase - players can discuss
+    # Check if all players are ready to advance to action phase
+    if all_players_discussion_ready?(game) do
+      game
+      |> add_log("All players ready - advancing to action phase")
+      |> set_phase(:action)
+    else
+      game
+    end
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game) do

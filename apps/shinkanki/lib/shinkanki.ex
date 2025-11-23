@@ -100,6 +100,16 @@ defmodule Shinkanki do
   end
 
   @doc """
+  Marks a player as ready in the discussion phase.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def mark_discussion_ready(room_id, player_id) do
+    call_server(room_id, fn ->
+      GameServer.mark_discussion_ready(room_id, player_id)
+    end)
+  end
+
+  @doc """
   Replays a game from action logs.
   Returns the final game state after replaying all actions.
   """

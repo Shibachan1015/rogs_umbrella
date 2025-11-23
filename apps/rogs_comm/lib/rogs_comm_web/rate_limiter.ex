@@ -58,4 +58,3 @@ defmodule RogsCommWeb.RateLimiter do
     )
   end
 end
-

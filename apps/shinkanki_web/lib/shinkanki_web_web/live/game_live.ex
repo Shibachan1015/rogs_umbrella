@@ -929,7 +929,7 @@ defmodule ShinkankiWebWeb.GameLive do
     # Show demurrage display (typically called when entering demurrage phase)
     previous = socket.assigns.game_state.currency
     current = trunc(previous * 0.9)  # 10% decay
-    
+
     {:noreply,
      socket
      |> assign(:show_demurrage, true)

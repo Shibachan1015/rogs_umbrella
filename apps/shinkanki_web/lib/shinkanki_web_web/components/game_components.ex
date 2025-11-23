@@ -1349,7 +1349,7 @@ defmodule ShinkankiWebWeb.GameComponents do
 
   def player_info_card(assigns) do
     role_data = get_role_data(assigns.role)
-    
+
     assigns =
       assigns
       |> assign(:role_data, role_data)

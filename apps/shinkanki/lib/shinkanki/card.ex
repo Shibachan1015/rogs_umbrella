@@ -19,7 +19,9 @@ defmodule Shinkanki.Card do
           # For talent cards: tags they boost
           compatible_tags: list(atom()),
           # For project cards: unlock condition
-          unlock_condition: map()
+          unlock_condition: map(),
+          # For project cards: required progress (number of talents needed)
+          required_progress: integer()
         }
 
   defstruct [
@@ -31,7 +33,8 @@ defmodule Shinkanki.Card do
     effect: %{},
     tags: [],
     compatible_tags: [],
-    unlock_condition: %{}
+    unlock_condition: %{},
+    required_progress: 0
   ]
 
   @doc """
@@ -330,22 +333,24 @@ defmodule Shinkanki.Card do
         id: :p_forest_fest,
         type: :project,
         name: "森の祝祭 (Forest Festival)",
-        description: "A grand festival in the forest.",
+        description: "A grand festival in the forest. Requires 4 talents to complete.",
         # High cost
         cost: 50,
         effect: %{forest: 10, culture: 10, social: 10},
         tags: [:event, :nature, :community],
-        unlock_condition: %{forest: 80, culture: 60}
+        unlock_condition: %{forest: 80, culture: 60},
+        required_progress: 4
       },
       %__MODULE__{
         id: :p_market,
         type: :project,
         name: "定期市 (Regular Market)",
-        description: "Establish a regular market system.",
+        description: "Establish a regular market system. Requires 3 talents to complete.",
         cost: 30,
         effect: %{currency: 30, social: 5},
         tags: [:biz, :system],
-        unlock_condition: %{social: 70}
+        unlock_condition: %{social: 70},
+        required_progress: 3
       }
     ]
   end

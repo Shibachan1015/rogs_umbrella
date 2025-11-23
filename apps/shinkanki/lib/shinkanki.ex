@@ -36,6 +36,13 @@ defmodule Shinkanki do
   end
 
   @doc """
+  Advances the game to the next phase.
+  """
+  def next_phase(room_id) do
+    call_server(room_id, fn -> GameServer.next_phase(room_id) end)
+  end
+
+  @doc """
   Updates the game statistics manually.
   """
   def update_stats(room_id, changes) do
@@ -79,6 +86,16 @@ defmodule Shinkanki do
   def ai_turn(room_id, player_id) do
     call_server(room_id, fn ->
       GameServer.ai_turn(room_id, player_id)
+    end)
+  end
+
+  @doc """
+  Contributes a talent card to a project to advance its progress.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def contribute_talent_to_project(room_id, player_id, project_id, talent_id) do
+    call_server(room_id, fn ->
+      GameServer.contribute_talent_to_project(room_id, player_id, project_id, talent_id)
     end)
   end
 

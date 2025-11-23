@@ -6,6 +6,18 @@
 @source "../js";
 @source "../../lib/shinkanki_web_web";
 
+@theme {
+  --color-washi: #fcfaf2;
+  --color-washi-dark: #efece4;
+  --color-sumi: #1c1c1c;
+  --color-sumi-light: #444444;
+  --color-shu: #d3381c;
+  --color-matsu: #4a593d;
+  --color-kin: #c7b370;
+  --color-sakura: #eec4ce;
+  --color-kohaku: #bf783a;
+}
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";

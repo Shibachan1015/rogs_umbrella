@@ -24,11 +24,59 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+// Chat scroll hook for auto-scrolling to new messages
+const ChatScroll = {
+  mounted() {
+    this.scrollToBottom()
+  },
+  updated() {
+    this.scrollToBottom()
+  },
+  scrollToBottom() {
+    const container = this.el
+    container.scrollTop = container.scrollHeight
+  }
+}
+
+// Toast auto-remove hook
+const ToastAutoRemove = {
+  mounted() {
+    setTimeout(() => {
+      this.el.classList.add("animate-slide-out-right")
+      setTimeout(() => {
+        this.el.remove()
+      }, 300)
+    }, 5000)
+  }
+}
+
+// Chat input hook for Enter key handling
+const ChatInput = {
+  mounted() {
+    this.handleKeyDown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        const form = this.el.closest("form")
+        if (form) {
+          const submitEvent = new Event("submit", { bubbles: true, cancelable: true })
+          form.dispatchEvent(submitEvent)
+        }
+      }
+    }
+    this.el.addEventListener("keydown", this.handleKeyDown)
+  },
+  destroyed() {
+    if (this.handleKeyDown) {
+      this.el.removeEventListener("keydown", this.handleKeyDown)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {},
+  hooks: {ChatScroll, ToastAutoRemove, ChatInput},
 })
 
 // Show progress bar on live navigation and form submits

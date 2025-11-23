@@ -12,13 +12,28 @@ defmodule ShinkankiWebWeb.GameComponents do
   attr :rest, :global
 
   def ofuda_card(assigns) do
+    disabled =
+      assigns[:rest][:"aria-disabled"] == true || assigns[:rest][:"aria-disabled"] == "true"
+
+    assigns = assign(assigns, :disabled, disabled)
+
     ~H"""
     <div
       class={[
-        "relative w-24 h-36 bg-washi border-2 border-sumi shadow-md flex flex-col items-center p-2 transition-transform hover:-translate-y-2 cursor-pointer select-none",
+        "relative w-24 h-36 bg-washi border-2 border-sumi shadow-md flex flex-col items-center p-2 transition-all duration-300 select-none",
+        if(@disabled,
+          do: "cursor-not-allowed opacity-50",
+          else:
+            "cursor-pointer hover:-translate-y-2 hover:shadow-xl hover:border-shu/50 active:scale-95"
+        ),
         "before:content-[''] before:absolute before:top-1 before:w-2 before:h-2 before:bg-sumi/10 before:rounded-full",
+        "focus:outline-none focus:ring-2 focus:ring-shu/50 focus:ring-offset-2",
         @class
       ]}
+      role="button"
+      tabindex={if @disabled, do: "-1", else: "0"}
+      aria-label={"カード: #{@title}, コスト: #{@cost}"}
+      aria-disabled={@disabled}
       {@rest}
     >
       <div class="w-full border-b border-sumi pb-1 text-center">
@@ -57,18 +72,63 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <button
       class={[
-        "w-16 h-16 rounded-full border-4 border-double flex items-center justify-center transition-transform active:scale-95 shadow-sm hover:shadow-md",
-        @color == "shu" && "border-shu text-shu bg-washi hover:bg-shu/5",
-        @color == "sumi" && "border-sumi text-sumi bg-washi hover:bg-sumi/5",
-        @color == "matsu" && "border-matsu text-matsu bg-washi hover:bg-matsu/5",
+        "rounded-full border-4 border-double flex items-center justify-center transition-all duration-200 shadow-sm",
+        "hover:shadow-md hover:scale-110",
+        "active:scale-90 active:shadow-inner",
+        "focus:outline-none focus:ring-2 focus:ring-offset-2",
+        @color == "shu" && "border-shu text-shu bg-washi hover:bg-shu/5 focus:ring-shu/50",
+        @color == "sumi" && "border-sumi text-sumi bg-washi hover:bg-sumi/5 focus:ring-sumi/50",
+        @color == "matsu" && "border-matsu text-matsu bg-washi hover:bg-matsu/5 focus:ring-matsu/50",
         @class
       ]}
+      aria-label={@label}
       {@rest}
     >
-      <span class="font-serif font-bold text-sm writing-mode-vertical leading-none">
+      <span class="font-serif font-bold text-xs md:text-sm writing-mode-vertical leading-none transition-transform duration-200">
         {@label}
       </span>
     </button>
+    """
+  end
+
+  @doc """
+  Renders a toast notification with Miyabi theme.
+  """
+  attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]
+  attr :message, :string, required: true
+  attr :id, :string, default: nil
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  def toast(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class={[
+        "fixed top-4 right-4 z-50 min-w-[300px] max-w-md p-4 rounded-lg border-2 shadow-lg animate-slide-in-right",
+        @kind == :success && "bg-washi border-matsu text-sumi",
+        @kind == :error && "bg-washi border-shu text-sumi",
+        @kind == :info && "bg-washi border-sumi text-sumi",
+        @kind == :warning && "bg-washi border-kohaku text-sumi",
+        @class
+      ]}
+      role="alert"
+      aria-live="assertive"
+      {@rest}
+    >
+      <div class="flex items-start gap-3">
+        <div class={[
+          "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+          @kind == :success && "bg-matsu/20 text-matsu",
+          @kind == :error && "bg-shu/20 text-shu",
+          @kind == :info && "bg-sumi/20 text-sumi",
+          @kind == :warning && "bg-kohaku/20 text-kohaku"
+        ]}>
+          {if @kind == :success, do: "✓", else: if(@kind == :error, do: "✕", else: "ℹ")}
+        </div>
+        <p class="flex-1 text-sm leading-relaxed">{@message}</p>
+      </div>
+    </div>
     """
   end
 end

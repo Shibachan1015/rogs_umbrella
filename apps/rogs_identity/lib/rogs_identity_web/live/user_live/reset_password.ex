@@ -92,7 +92,13 @@ defmodule RogsIdentityWeb.UserLive.ResetPassword do
          |> put_flash(:info, "Password reset successfully.")
          |> push_navigate(to: ~p"/users/log-in")}
 
-      {:error, changeset} ->
+      {:error, :invalid_token} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Invalid or expired reset token.")
+         |> push_navigate(to: ~p"/users/forgot-password")}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, Map.put(changeset, :action, :insert))}
     end
   end

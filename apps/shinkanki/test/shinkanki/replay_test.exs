@@ -70,14 +70,27 @@ defmodule Shinkanki.ReplayTest do
     end
   end
 
-  defp apply_action_log_manual(game, %ActionLog{action: "join_player", player_id: player_id, payload: payload}) do
-    case Game.join(game, player_id, payload[:name] || payload["name"], payload[:talent_ids] || payload["talent_ids"]) do
+  defp apply_action_log_manual(game, %ActionLog{
+         action: "join_player",
+         player_id: player_id,
+         payload: payload
+       }) do
+    case Game.join(
+           game,
+           player_id,
+           payload[:name] || payload["name"],
+           payload[:talent_ids] || payload["talent_ids"]
+         ) do
       {:ok, new_game} -> new_game
       _ -> game
     end
   end
 
-  defp apply_action_log_manual(game, %ActionLog{action: "play_action", player_id: player_id, payload: payload}) do
+  defp apply_action_log_manual(game, %ActionLog{
+         action: "play_action",
+         player_id: player_id,
+         payload: payload
+       }) do
     action_id = payload[:action_id] || payload["action_id"]
     talent_ids = payload[:talent_ids] || payload["talent_ids"] || []
 

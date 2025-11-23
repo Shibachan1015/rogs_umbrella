@@ -103,7 +103,8 @@ defmodule Shinkanki.GameActionTest do
       # Event cards can reduce stats, so we use a more lenient check
       assert game_after_project.forest >= 70
       assert game_after_project.culture >= 50
-      assert game_after_project.social >= 0  # Event cards can reduce social significantly
+      # Event cards can reduce social significantly
+      assert game_after_project.social >= 0
 
       # Project cost: 50. After action, currency is 950.
       # But since turn advances (1 player ready), demurrage applies: floor(950 * 0.9) = 855

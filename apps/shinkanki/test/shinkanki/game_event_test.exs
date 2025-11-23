@@ -46,9 +46,10 @@ defmodule Shinkanki.GameEventTest do
 
       # Check that event is logged
       assert length(new_game.logs) > 0
+
       assert Enum.any?(new_game.logs, fn log ->
-        String.contains?(log, "Event:")
-      end)
+               String.contains?(log, "Event:")
+             end)
     end
 
     test "event card effect is applied correctly" do
@@ -70,18 +71,27 @@ defmodule Shinkanki.GameEventTest do
     end
 
     test "event discard pile is used when event deck is empty" do
-      game = %Game{Game.new("room_1") | event_deck: [], event_discard_pile: [:e_harvest_festival, :e_drought]}
+      game = %Game{
+        Game.new("room_1")
+        | event_deck: [],
+          event_discard_pile: [:e_harvest_festival, :e_drought]
+      }
 
       # Should reshuffle discard pile and draw from it
       new_game = Game.next_turn(game)
 
       # Event should be drawn from reshuffled discard
       assert new_game.current_event != nil
-      assert length(new_game.event_discard_pile) < 2  # One card was drawn
+      # One card was drawn
+      assert length(new_game.event_discard_pile) < 2
     end
 
     test "current event is cleared and moved to discard at turn end" do
-      game = %Game{Game.new("room_1") | current_event: :e_harvest_festival, event_discard_pile: []}
+      game = %Game{
+        Game.new("room_1")
+        | current_event: :e_harvest_festival,
+          event_discard_pile: []
+      }
 
       # Advance turn
       new_game = Game.next_turn(game)
@@ -114,16 +124,22 @@ defmodule Shinkanki.GameEventTest do
 
       # Check that disaster events have negative effects
       disaster = Enum.find(events, &(&1.id == :e_drought))
-      assert disaster.effect.forest < 0 || disaster.effect.culture < 0 || disaster.effect.social < 0
+
+      assert disaster.effect.forest < 0 || disaster.effect.culture < 0 ||
+               disaster.effect.social < 0
 
       # Check that festival events have positive effects
       festival = Enum.find(events, &(&1.id == :e_harvest_festival))
-      assert festival.effect.forest > 0 || festival.effect.culture > 0 || festival.effect.social > 0
+
+      assert festival.effect.forest > 0 || festival.effect.culture > 0 ||
+               festival.effect.social > 0
 
       # Check that temptation events increase currency but may have negative side effects
       temptation = Enum.find(events, &(&1.id == :e_quick_profit))
       assert temptation.effect.currency > 0
-      assert temptation.effect.forest < 0 || temptation.effect.culture < 0 || temptation.effect.social < 0
+
+      assert temptation.effect.forest < 0 || temptation.effect.culture < 0 ||
+               temptation.effect.social < 0
     end
   end
 end

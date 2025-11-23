@@ -38,6 +38,8 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:selected_role, nil)
       |> assign(:player_role, nil)
       |> assign(:players, mock_players())
+      |> assign(:show_demurrage, false)
+      |> assign(:previous_currency, 0)
 
     socket =
       if connected?(socket) do
@@ -99,11 +101,28 @@ defmodule ShinkankiWebWeb.GameLive do
             >
               {@game_state.room}
             </div>
-            <div
-              class="text-xs text-sumi/60"
-              aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
-            >
-              Turn {@game_state.turn} / {@game_state.max_turns}
+            <!-- Turn Progress -->
+            <div class="w-full">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs text-sumi/60" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
+                  Turn {@game_state.turn} / {@game_state.max_turns}
+                </span>
+                <span class="text-xs font-bold text-shu">
+                  {rem(@game_state.max_turns - @game_state.turn, @game_state.max_turns + 1)} ターン残り
+                </span>
+              </div>
+              <div class="w-full h-2 bg-sumi/10 rounded-full overflow-hidden border border-sumi/20">
+                <div
+                  class="h-full bg-shu transition-all duration-500"
+                  style={"width: #{trunc(@game_state.turn / @game_state.max_turns * 100)}%"}
+                  role="progressbar"
+                  aria-valuenow={@game_state.turn}
+                  aria-valuemin="1"
+                  aria-valuemax={@game_state.max_turns}
+                  aria-label={"ターン進行: #{@game_state.turn}/#{@game_state.max_turns}"}
+                >
+                </div>
+              </div>
             </div>
 
             <!-- Phase Indicator -->
@@ -897,6 +916,24 @@ defmodule ShinkankiWebWeb.GameLive do
      socket
      |> assign(:show_role_selection, false)
      |> assign(:selected_role, nil)}
+  end
+
+  def handle_event("close_demurrage", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_demurrage, false)
+     |> assign(:previous_currency, 0)}
+  end
+
+  def handle_event("show_demurrage", _params, socket) do
+    # Show demurrage display (typically called when entering demurrage phase)
+    previous = socket.assigns.game_state.currency
+    current = trunc(previous * 0.9)  # 10% decay
+    
+    {:noreply,
+     socket
+     |> assign(:show_demurrage, true)
+     |> assign(:previous_currency, previous)}
   end
 
   def handle_event("execute_action", %{"action" => action}, socket) do

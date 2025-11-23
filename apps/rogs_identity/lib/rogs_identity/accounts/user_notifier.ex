@@ -81,4 +81,26 @@ defmodule RogsIdentity.Accounts.UserNotifier do
     ==============================
     """)
   end
+
+  @doc """
+  Deliver instructions to reset password.
+  """
+  def deliver_password_reset_instructions(user, url) do
+    deliver(user.email, "Reset password instructions", """
+
+    ==============================
+
+    Hi #{user.email},
+
+    You can reset your password by visiting the URL below:
+
+    #{url}
+
+    This link will expire in 6 hours.
+
+    If you didn't request this change, please ignore this.
+
+    ==============================
+    """)
+  end
 end

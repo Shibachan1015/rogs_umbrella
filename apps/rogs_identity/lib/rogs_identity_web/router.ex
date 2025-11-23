@@ -15,6 +15,12 @@ defmodule RogsIdentityWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_session
+    plug RogsIdentityWeb.UserAuth, action: :fetch_current_scope_for_api
+  end
+
+  pipeline :api_authenticated do
+    plug RogsIdentityWeb.UserAuth, action: :require_authenticated_api
   end
 
   scope "/", RogsIdentityWeb do
@@ -23,10 +29,20 @@ defmodule RogsIdentityWeb.Router do
     get "/", PageController, :home
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", RogsIdentityWeb do
-  #   pipe_through :api
-  # end
+  # API routes
+  scope "/api/auth", RogsIdentityWeb.Api do
+    pipe_through :api
+
+    post "/login", AuthController, :login
+    post "/register", AuthController, :register
+  end
+
+  scope "/api/auth", RogsIdentityWeb.Api do
+    pipe_through [:api, :api_authenticated]
+
+    get "/me", AuthController, :me
+    post "/logout", AuthController, :logout
+  end
 
   # Enable LiveDashboard in development
   if Application.compile_env(:rogs_identity, :dev_routes) do
@@ -66,6 +82,8 @@ defmodule RogsIdentityWeb.Router do
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
       live "/users/log-in/:token", UserLive.Confirmation, :new
+      live "/users/forgot-password", UserLive.ForgotPassword, :new
+      live "/users/reset-password/:token", UserLive.ResetPassword, :edit
     end
 
     post "/users/log-in", UserSessionController, :create

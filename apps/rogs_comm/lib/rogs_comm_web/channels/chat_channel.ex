@@ -15,19 +15,33 @@ defmodule RogsCommWeb.ChatChannel do
       nil ->
         {:error, %{reason: "room not found"}}
 
-      _room ->
-        user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
-        user_email = socket.assigns[:user_email] || "anonymous"
+      room ->
+        topic = "room:#{room_id}"
 
-        socket =
-          socket
-          |> assign(:room_id, room_id)
-          |> assign(:user_id, user_id)
-          |> assign(:user_email, user_email)
+        # Check if room is full
+        current_participants =
+          try do
+            Presence.list(topic) |> map_size()
+          rescue
+            _ -> 0
+          end
 
-        send(self(), :after_join)
-        messages = Messages.list_messages(room_id, limit: 50)
-        {:ok, %{messages: messages}, socket}
+        if current_participants >= room.max_participants do
+          {:error, %{reason: "room is full"}}
+        else
+          user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
+          user_email = socket.assigns[:user_email] || "anonymous"
+
+          socket =
+            socket
+            |> assign(:room_id, room_id)
+            |> assign(:user_id, user_id)
+            |> assign(:user_email, user_email)
+
+          send(self(), :after_join)
+          messages = Messages.list_messages(room_id, limit: 50)
+          {:ok, %{messages: messages}, socket}
+        end
     end
   end
 

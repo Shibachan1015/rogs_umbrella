@@ -10,7 +10,8 @@ defmodule Shinkanki.Card do
           type: card_type(),
           name: String.t(),
           description: String.t(),
-          cost: integer(), # For action cards (P)
+          # For action cards (P)
+          cost: integer(),
           # Base effect for action cards
           effect: map(),
           # Tags for compatibility (e.g., :nature, :craft, :community)
@@ -168,7 +169,8 @@ defmodule Shinkanki.Card do
         name: "修理 (Repair)",
         description: "Fix broken things.",
         cost: 5,
-        effect: %{social: 2, forest: 2}, # Reduce waste
+        # Reduce waste
+        effect: %{social: 2, forest: 2},
         tags: [:fix, :craft]
       }
     ]
@@ -329,7 +331,8 @@ defmodule Shinkanki.Card do
         type: :project,
         name: "森の祝祭 (Forest Festival)",
         description: "A grand festival in the forest.",
-        cost: 50, # High cost
+        # High cost
+        cost: 50,
         effect: %{forest: 10, culture: 10, social: 10},
         tags: [:event, :nature, :community],
         unlock_condition: %{forest: 80, culture: 60}

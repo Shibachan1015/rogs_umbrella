@@ -24,6 +24,8 @@ defmodule Shinkanki.Game do
     life_index: 150,
     # :playing, :won, :lost
     status: :playing,
+    # Ending type when game ends: :blessing, :purification, :uncertainty, :lament, :instant_loss
+    ending_type: nil,
     logs: [],
     players: %{},
     deck: [],
@@ -45,6 +47,7 @@ defmodule Shinkanki.Game do
           currency: integer(),
           life_index: integer(),
           status: :playing | :won | :lost,
+          ending_type: atom() | nil,
           logs: list(),
           players: %{optional(String.t()) => Player.t()},
           deck: list(atom()),
@@ -66,6 +69,28 @@ defmodule Shinkanki.Game do
       event_deck: build_event_deck()
     }
   end
+
+  @doc """
+  Gets the ending type name in Japanese.
+  """
+  def ending_name(:blessing), do: "🌈 神々の祝福エンディング"
+  def ending_name(:purification), do: "🌿 浄化の兆しエンディング"
+  def ending_name(:uncertainty), do: "🌙 揺らぎの未来エンディング"
+  def ending_name(:lament), do: "🔥 神々の嘆き（文明崩壊）"
+  def ending_name(:instant_loss), do: "💀 即時ゲームオーバー"
+  def ending_name(nil), do: nil
+  def ending_name(_), do: nil
+
+  @doc """
+  Gets the ending description.
+  """
+  def ending_description(:blessing), do: "世界は神々の祝福に満ち、豊かな未来が約束されました。"
+  def ending_description(:purification), do: "世界は浄化の兆しを見せ、希望の光が差し込み始めました。"
+  def ending_description(:uncertainty), do: "世界の未来は揺らぎの中にあり、不確かな道が続きます。"
+  def ending_description(:lament), do: "神々は嘆き、文明は崩壊の危機に直面しています。"
+  def ending_description(:instant_loss), do: "森、文化、またはコミュニティのいずれかが失われ、世界は終わりを迎えました。"
+  def ending_description(nil), do: nil
+  def ending_description(_), do: nil
 
   @doc """
   Adds a player to the game. If talents are not provided, two default talents are assigned.
@@ -273,18 +298,36 @@ defmodule Shinkanki.Game do
 
   defp check_win_loss(game) do
     cond do
+      # 即時ゲームオーバー: F=0 or K=0 or S=0
       game.forest <= 0 or game.culture <= 0 or game.social <= 0 ->
-        %{game | status: :lost}
+        %{game | status: :lost, ending_type: :instant_loss}
 
+      # ターン20を超えた場合、Life Indexに基づいてエンディング判定
       game.turn > 20 ->
-        if game.life_index >= 40 do
-          %{game | status: :won}
-        else
-          %{game | status: :lost}
-        end
+        determine_ending(game)
 
       true ->
         game
+    end
+  end
+
+  defp determine_ending(game) do
+    cond do
+      # 🌈 神々の祝福エンディング (L >= 40)
+      game.life_index >= 40 ->
+        %{game | status: :won, ending_type: :blessing}
+
+      # 🌿 浄化の兆しエンディング (30 <= L < 40)
+      game.life_index >= 30 ->
+        %{game | status: :won, ending_type: :purification}
+
+      # 🌙 揺らぎの未来エンディング (20 <= L < 30)
+      game.life_index >= 20 ->
+        %{game | status: :lost, ending_type: :uncertainty}
+
+      # 🔥 神々の嘆き（文明崩壊）(L <= 19)
+      true ->
+        %{game | status: :lost, ending_type: :lament}
     end
   end
 

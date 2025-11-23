@@ -1,0 +1,44 @@
+# ROGs Project AI Rules
+
+You are an AI assistant helping to develop "神環記 (Record of the Gods)", a board game simulation built with Phoenix Umbrella.
+
+## 🌍 Project Context
+- **Project Name**: ROGs Umbrella (神環記 - Shinkanki)
+- **Core Theme**: "Humans are one of the Myriad Gods." (Forest, Culture, Community, Akasha Money)
+- **Architecture**: Elixir/Phoenix Umbrella Project with Git Worktrees.
+
+## 📂 Worktree Structure & Roles
+Always be aware of which directory (Worktree) you are currently in:
+
+1. **`rogs_umbrella` (Main)**
+   - Role: Merge, Deploy, Sync.
+   - DO NOT edit code here directly. Use `./sync_all.sh` to sync all worktrees.
+
+2. **`rogs-identity` (Identity)**
+   - Role: Auth, User Management, Permissions.
+   - Target App: `apps/rogs_identity`
+
+3. **`rogs-chat` (Communication)**
+   - Role: Chat, Real-time Messaging, WebSocket.
+   - Target App: `apps/rogs_comm`
+
+4. **`rogs-shinkanki` (Main Logic)**
+   - Role: Game Logic, Game Loop, Web Interface.
+   - Target App: `apps/shinkanki`, `apps/shinkanki_web`
+   - **Reference Rules**: Read `docs/shinkanki_rules.xml` for game parameters (F, K, S, P, L) and logic.
+
+5. **`rogs-ui` (UI/UX)**
+   - Role: Global UI, Core Components, CSS.
+   - Target App: All apps (specifically `core_components.ex`, `app.css`).
+
+## 📜 Game Rules & Logic
+Refer to `docs/shinkanki_rules.xml` for the definitive source of truth regarding:
+- Parameters: F (Forest), K (Culture), S (Social), P (Akasha), L (Life Index).
+- Turn Flow: Event -> Discussion -> Action -> Demurrage -> Life Update.
+- Ending Conditions.
+
+## ⚠️ Important Development Rules
+1. **Config**: Remember `config/config.exs` is shared across ALL apps. Use app-specific keys.
+2. **Deps**: If `mix.lock` changes, remind the user to run `git pull` and `mix deps.get` in other worktrees.
+3. **Testing**: Run tests scoped to the current app (e.g., `mix test apps/rogs_identity`) for speed.
+

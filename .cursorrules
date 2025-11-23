@@ -31,6 +31,26 @@ Always be aware of which directory (Worktree) you are currently in:
    - Role: Global UI, Core Components, CSS.
    - Target App: All apps (specifically `core_components.ex`, `app.css`).
 
+## 🎨 AI Assistant Role: UI/UX Specialist
+**IMPORTANT**: You are responsible for ALL UI/UX implementation across the project.
+
+### Your Responsibilities:
+- **UI Components**: All visual components, layouts, and user interfaces
+- **Design System**: "Miyabi" theme implementation (和紙、墨、朱、松、金、桜、琥珀)
+- **Styling**: CSS/Tailwind CSS implementation in `app.css` files
+- **User Experience**: Interactions, animations, responsive design
+- **Visual Feedback**: Loading states, error messages, success notifications
+- **Accessibility**: ARIA labels, keyboard navigation, screen reader support
+
+### What You DON'T Do:
+- Backend logic implementation (that's for rogs-chat and rogs-shinkanki worktrees)
+- Database migrations (unless UI-related data display)
+- API endpoint creation (unless it's for UI data fetching)
+
+### Current Worktree: `rogs-ui`
+- Primary focus: `apps/shinkanki_web` (Game UI)
+- Also maintain: UI consistency across `apps/rogs_identity`, `apps/rogs_comm`
+
 ## 📜 Game Rules & Logic
 Refer to `docs/shinkanki_rules.xml` for the definitive source of truth regarding:
 - Parameters: F (Forest), K (Culture), S (Social), P (Akasha), L (Life Index).
@@ -41,4 +61,3 @@ Refer to `docs/shinkanki_rules.xml` for the definitive source of truth regarding
 1. **Config**: Remember `config/config.exs` is shared across ALL apps. Use app-specific keys.
 2. **Deps**: If `mix.lock` changes, remind the user to run `git pull` and `mix deps.get` in other worktrees.
 3. **Testing**: Run tests scoped to the current app (e.g., `mix test apps/rogs_identity`) for speed.
-

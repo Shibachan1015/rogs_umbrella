@@ -37,6 +37,8 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:rooms, Rooms.list_rooms())
           |> assign(:form, to_form(%{"content" => ""}))
           |> assign(:name_form, to_form(%{"display_name" => display_name}))
+          |> assign(:presences, %{})
+          |> assign(:typing_users, %{})
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -44,14 +46,24 @@ defmodule RogsCommWeb.ChatLive do
           RogsCommWeb.Endpoint.subscribe(topic)
           messages = Messages.list_messages(room_id, limit: 50)
 
+          presences =
+            try do
+              Presence.list(topic)
+            rescue
+              _ -> %{}
+            end
+
           socket =
             socket
-            |> assign(:presences, Presence.list(topic))
+            |> assign(:presences, presences)
             |> stream(:messages, messages)
 
           {:ok, socket}
         else
-          {:ok, socket}
+          {:ok,
+           socket
+           |> assign(:presences, %{})
+           |> stream(:messages, [])}
         end
     end
   end
@@ -110,6 +122,52 @@ defmodule RogsCommWeb.ChatLive do
      |> assign(:name_form, to_form(%{"display_name" => display_name}))}
   end
 
+  def handle_event("edit_message", %{"message_id" => message_id, "content" => content}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns[:current_user_id]
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.edit_message(message, %{content: content}) do
+          {:ok, updated_message} ->
+            payload = %{
+              id: updated_message.id,
+              content: updated_message.content,
+              edited_at: updated_message.edited_at
+            }
+
+            RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "メッセージの編集に失敗しました")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+    end
+  end
+
+  def handle_event("delete_message", %{"message_id" => message_id}, socket) do
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns[:current_user_id]
+
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        case Messages.soft_delete_message(message) do
+          {:ok, _deleted_message} ->
+            RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_deleted", %{id: message_id})
+            {:noreply, socket}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "メッセージの削除に失敗しました")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+    end
+  end
+
   @impl true
   def handle_info(
         %Phoenix.Socket.Broadcast{topic: topic, event: "new_message", payload: payload},
@@ -123,10 +181,80 @@ defmodule RogsCommWeb.ChatLive do
         content: payload.content,
         user_id: payload.user_id,
         user_email: payload.user_email,
-        inserted_at: payload.inserted_at
+        inserted_at: payload.inserted_at,
+        edited_at: Map.get(payload, :edited_at)
       }
 
       {:noreply, stream(socket, :messages, [message])}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "message_edited", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      # Update existing message in stream
+      {:noreply,
+       socket
+       |> stream_insert(
+         :messages,
+         %{
+           id: payload.id,
+           content: payload.content,
+           edited_at: payload.edited_at
+         },
+         at: -1
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "message_deleted", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      {:noreply, stream_delete(socket, :messages, payload.id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users =
+        socket.assigns.typing_users
+        |> Map.put(payload.user_id, payload.user_email)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{topic: topic, event: "user_stopped_typing", payload: payload},
+        socket
+      ) do
+    room_topic = topic(socket.assigns.room_id)
+
+    if topic == room_topic do
+      typing_users = Map.delete(socket.assigns.typing_users, payload.user_id)
+
+      {:noreply, assign(socket, :typing_users, typing_users)}
     else
       {:noreply, socket}
     end
@@ -145,7 +273,8 @@ defmodule RogsCommWeb.ChatLive do
       content: message.content,
       user_id: message.user_id,
       user_email: message.user_email,
-      inserted_at: message.inserted_at
+      inserted_at: message.inserted_at,
+      edited_at: message.edited_at
     }
   end
 
@@ -167,6 +296,7 @@ defmodule RogsCommWeb.ChatLive do
         class="flex h-screen"
         data-room-id={@room_id}
         data-display-name={@display_name}
+        phx-hook="TypingHook"
       >
         <aside class="w-64 border-r bg-base-200 px-4 py-6 space-y-6">
           <div>
@@ -232,14 +362,45 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
-            <div :for={{id, message} <- @streams.messages} id={id} class="flex flex-col">
-              <div class="text-sm text-gray-500">
-                <span class="font-semibold text-gray-900">{message.user_email}</span>
-                <span class="ml-2">
-                  {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
-                </span>
+            <div
+              :for={{id, message} <- @streams.messages}
+              id={id}
+              class="flex flex-col group hover:bg-gray-50 p-2 rounded"
+            >
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                  <span class="font-semibold text-gray-900">{message.user_email}</span>
+                  <span class="ml-2">
+                    {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
+                  </span>
+                  <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-gray-400">
+                    (編集済み)
+                  </span>
+                </div>
+                <div
+                  :if={Map.get(message, :user_id) == @current_user_id}
+                  class="opacity-0 group-hover:opacity-100 flex gap-2"
+                >
+                  <button
+                    phx-click="edit_message"
+                    phx-value-message_id={message.id}
+                    class="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    編集
+                  </button>
+                  <button
+                    phx-click="delete_message"
+                    phx-value-message_id={message.id}
+                    class="text-xs text-red-600 hover:text-red-800"
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
               <p class="text-gray-800 text-base">{message.content}</p>
+            </div>
+            <div :if={map_size(@typing_users) > 0} class="text-sm text-gray-500 italic mt-2">
+              {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
             </div>
           </div>
 

@@ -13,6 +13,8 @@ defmodule RogsComm.Messages.Message do
     field :content, :string
     field :user_id, :binary_id
     field :user_email, :string
+    field :is_deleted, :boolean, default: false
+    field :edited_at, :utc_datetime
     belongs_to :room, RogsComm.Rooms.Room
 
     timestamps(type: :utc_datetime)

@@ -28,7 +28,8 @@ defmodule Shinkanki.Game do
     players: %{},
     deck: [],
     discard_pile: [],
-    hands: %{}
+    hands: %{},
+    available_projects: []
   ]
 
   @type t :: %__MODULE__{
@@ -44,7 +45,8 @@ defmodule Shinkanki.Game do
           players: %{optional(String.t()) => Player.t()},
           deck: list(atom()),
           discard_pile: list(atom()),
-          hands: %{optional(String.t()) => list(atom())}
+          hands: %{optional(String.t()) => list(atom())},
+          available_projects: list(atom())
         }
 
   @doc """
@@ -92,6 +94,7 @@ defmodule Shinkanki.Game do
     |> apply_demurrage()
     |> advance_turn_counter()
     |> reset_player_state()
+    |> check_projects_unlock()
     |> update_life_index()
     |> check_win_loss()
   end
@@ -104,6 +107,7 @@ defmodule Shinkanki.Game do
   def update_stats(%__MODULE__{status: :playing} = game, changes) do
     game
     |> apply_changes(changes)
+    |> check_projects_unlock()
     |> update_life_index()
     |> check_win_loss()
   end
@@ -138,47 +142,94 @@ defmodule Shinkanki.Game do
   def play_card(_game, _card_id), do: {:error, :game_over}
 
   @doc """
-  Plays an action card with optional talent boosters.
+  Plays an action or project card with optional talent boosters.
   """
   def play_action(%__MODULE__{} = game, player_id, action_id, talent_ids \\ []) do
     with {:status, :playing} <- {:status, game.status},
          {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
-         {:action, %Card{type: :action} = action} <- {:action, Card.get_action(action_id)},
-         {:hand, {:ok, game_without_card}} <-
-           {:hand, remove_card_from_hand(game, player_id, action_id)},
+         {:action, %Card{} = card} <- get_action_or_project(game, action_id),
+         {:hand, {:ok, game_without_card}} <- handle_card_consumption(game, player_id, card),
          :ok <- validate_talents(player, talent_ids),
          true <- length(talent_ids) <= @max_talents_per_action,
-         {:currency, true} <- {:currency, game_without_card.currency >= action.cost} do
-      bonus = calculate_bonus(action, talent_ids)
+         {:currency, true} <- {:currency, game_without_card.currency >= card.cost} do
+      bonus = calculate_bonus(card, talent_ids)
 
       effect =
-        Map.new(action.effect, fn {key, val} ->
+        Map.new(card.effect, fn {key, val} ->
           {key, val + bonus}
         end)
 
       new_game =
         game_without_card
-        |> pay_cost(action.cost)
+        |> pay_cost(card.cost)
         |> apply_changes(effect)
         |> update_life_index()
         |> check_win_loss()
-        |> add_log("#{player.name} played action #{action.name} (+#{bonus})")
+        |> add_log("#{player.name} played #{card.name} (+#{bonus})")
         |> mark_player_used_talents(player_id, talent_ids)
         |> mark_player_ready(player_id)
-        |> add_to_discard(action_id)
-        |> draw_cards(player_id, 1)
+        # Only replenish if it was a regular action card
+        |> maybe_replenish_hand(player_id, card.type)
+        |> check_projects_unlock()
         |> maybe_advance_turn()
 
       {:ok, new_game}
     else
       {:status, _} -> {:error, :game_over}
       {:player, nil} -> {:error, :player_not_found}
-      {:action, nil} -> {:error, :action_not_found}
+      {:action, {:error, reason}} -> {:error, reason}
       {:hand, {:error, reason}} -> {:error, reason}
       {:currency, false} -> {:error, :not_enough_currency}
       {:error, reason} -> {:error, reason}
       _ -> {:error, :invalid_request}
     end
+  end
+
+  defp get_action_or_project(game, card_id) do
+    case Card.get_action(card_id) do
+      nil ->
+        case Card.get_project(card_id) do
+          nil ->
+            {:action, {:error, :action_not_found}}
+
+          project ->
+            if project.id in game.available_projects do
+              {:action, project}
+            else
+              {:action, {:error, :project_not_unlocked}}
+            end
+        end
+
+      action ->
+        {:action, action}
+    end
+  end
+
+  defp handle_card_consumption(game, player_id, %Card{type: :action} = card) do
+    case remove_card_from_hand(game, player_id, card.id) do
+      {:ok, new_game} -> {:hand, {:ok, add_to_discard(new_game, card.id)}}
+      error -> {:hand, error}
+    end
+  end
+
+  # Projects are not in hand, so no consumption/discard logic needed for them
+  defp handle_card_consumption(game, _player_id, %Card{type: :project}), do: {:hand, {:ok, game}}
+
+  defp maybe_replenish_hand(game, player_id, :action), do: draw_cards(game, player_id, 1)
+  defp maybe_replenish_hand(game, _player_id, _type), do: game
+
+  defp check_projects_unlock(game) do
+    unlocked =
+      Card.list_projects()
+      |> Enum.filter(fn project ->
+        Enum.all?(project.unlock_condition, fn {key, val} ->
+          Map.get(game, key, 0) >= val
+        end)
+      end)
+      |> Enum.map(& &1.id)
+      |> Enum.uniq()
+
+    %{game | available_projects: Enum.uniq(game.available_projects ++ unlocked)}
   end
 
   defp apply_demurrage(game) do

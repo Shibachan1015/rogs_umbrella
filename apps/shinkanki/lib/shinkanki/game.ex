@@ -29,7 +29,11 @@ defmodule Shinkanki.Game do
     deck: [],
     discard_pile: [],
     hands: %{},
-    available_projects: []
+    available_projects: [],
+    # Event card system
+    event_deck: [],
+    event_discard_pile: [],
+    current_event: nil
   ]
 
   @type t :: %__MODULE__{
@@ -46,7 +50,10 @@ defmodule Shinkanki.Game do
           deck: list(atom()),
           discard_pile: list(atom()),
           hands: %{optional(String.t()) => list(atom())},
-          available_projects: list(atom())
+          available_projects: list(atom()),
+          event_deck: list(atom()),
+          event_discard_pile: list(atom()),
+          current_event: atom() | nil
         }
 
   @doc """
@@ -55,7 +62,8 @@ defmodule Shinkanki.Game do
   def new(room_id) do
     %__MODULE__{
       room_id: room_id,
-      deck: build_deck()
+      deck: build_deck(),
+      event_deck: build_event_deck()
     }
   end
 
@@ -87,12 +95,14 @@ defmodule Shinkanki.Game do
 
   @doc """
   Advances the game to the next turn.
-  Applies demurrage to currency, resets players, and checks win/loss conditions.
+  Draws an event card, applies demurrage to currency, resets players, and checks win/loss conditions.
   """
   def next_turn(%__MODULE__{status: :playing} = game) do
     game
-    |> apply_demurrage()
+    |> clear_current_event()
     |> advance_turn_counter()
+    |> draw_and_apply_event()
+    |> apply_demurrage()
     |> reset_player_state()
     |> check_projects_unlock()
     |> update_life_index()
@@ -430,5 +440,71 @@ defmodule Shinkanki.Game do
 
   defp add_to_discard(game, card_id) do
     %{game | discard_pile: [card_id | game.discard_pile]}
+  end
+
+  # === Event Card System ===
+
+  defp build_event_deck do
+    Card.list_events()
+    |> Enum.map(& &1.id)
+    |> Enum.shuffle()
+  end
+
+  defp draw_and_apply_event(game) do
+    case take_from_event_deck(game, 1, []) do
+      {[event_id], updated_game} ->
+        event = Card.get_event(event_id)
+
+        if event do
+          updated_game
+          |> apply_event_effect(event)
+          |> set_current_event(event_id)
+          |> add_log("Event: #{event.name}")
+        else
+          updated_game
+        end
+
+      {[], updated_game} ->
+        # No event cards available (shouldn't happen, but handle gracefully)
+        updated_game
+    end
+  end
+
+  defp apply_event_effect(game, %Card{} = event) do
+    apply_changes(game, event.effect)
+  end
+
+  defp set_current_event(game, event_id) do
+    %{game | current_event: event_id}
+  end
+
+  defp take_from_event_deck(game, 0, acc), do: {Enum.reverse(acc), game}
+
+  defp take_from_event_deck(%{event_deck: []} = game, count, acc) do
+    case game.event_discard_pile do
+      [] ->
+        # No more event cards - reshuffle if we have any, otherwise return what we have
+        {Enum.reverse(acc), game}
+
+      discard ->
+        # Reshuffle event discard pile
+        reshuffled = Enum.shuffle(discard)
+        take_from_event_deck(%{game | event_deck: reshuffled, event_discard_pile: []}, count, acc)
+    end
+  end
+
+  defp take_from_event_deck(%{event_deck: [card | rest]} = game, count, acc) do
+    take_from_event_deck(%{game | event_deck: rest}, count - 1, [card | acc])
+  end
+
+  # Clear current event at the end of turn (before next event is drawn)
+  defp clear_current_event(game) do
+    case game.current_event do
+      nil ->
+        game
+
+      event_id ->
+        %{game | current_event: nil, event_discard_pile: [event_id | game.event_discard_pile]}
+    end
   end
 end

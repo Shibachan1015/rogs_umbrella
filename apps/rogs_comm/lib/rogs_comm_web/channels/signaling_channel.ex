@@ -7,6 +7,7 @@ defmodule RogsCommWeb.SignalingChannel do
 
   alias Ecto.UUID
   alias RogsComm.Rooms
+  alias RogsCommWeb.RateLimiter
 
   @rtc_events ~w(offer answer ice-candidate)
   @allowed_events @rtc_events ++ ~w(peer-ready)
@@ -30,26 +31,35 @@ defmodule RogsCommWeb.SignalingChannel do
 
   @impl true
   def handle_in(event, payload, socket) when event in @rtc_events do
-    case normalize_payload(event, payload, socket) do
-      {:ok, normalized} ->
-        # If 'to' is specified, validate that the target user is in the room
-        case Map.get(normalized, "to") do
-          nil ->
-            # Broadcast to all in room
-            broadcast(socket, event, normalized)
-            {:noreply, socket}
+    user_id = socket.assigns.user_id
 
-          target_user_id when is_binary(target_user_id) ->
-            # Validate target user is in room (basic check - could be enhanced with Presence)
-            broadcast(socket, event, normalized)
-            {:noreply, socket}
+    # Rate limit check: 5 events per second per user
+    case RateLimiter.check(user_id, limit: 5, window_seconds: 1) do
+      {:ok, :allowed} ->
+        case normalize_payload(event, payload, socket) do
+          {:ok, normalized} ->
+            # If 'to' is specified, validate that the target user is in the room
+            case Map.get(normalized, "to") do
+              nil ->
+                # Broadcast to all in room
+                broadcast(socket, event, normalized)
+                {:noreply, socket}
 
-          _ ->
-            {:reply, {:error, %{reason: "invalid target user"}}, socket}
+              target_user_id when is_binary(target_user_id) ->
+                # Validate target user is in room (basic check - could be enhanced with Presence)
+                broadcast(socket, event, normalized)
+                {:noreply, socket}
+
+              _ ->
+                {:reply, {:error, %{reason: "invalid target user"}}, socket}
+            end
+
+          {:error, reason} ->
+            {:reply, {:error, %{reason: reason}}, socket}
         end
 
-      {:error, reason} ->
-        {:reply, {:error, %{reason: reason}}, socket}
+      {:error, :rate_limited} ->
+        {:reply, {:error, %{reason: "rate limit exceeded"}}, socket}
     end
   end
 

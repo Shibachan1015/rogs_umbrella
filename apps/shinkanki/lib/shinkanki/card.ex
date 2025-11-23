@@ -16,7 +16,9 @@ defmodule Shinkanki.Card do
           # Tags for compatibility (e.g., :nature, :craft, :community)
           tags: list(atom()),
           # For talent cards: tags they boost
-          compatible_tags: list(atom())
+          compatible_tags: list(atom()),
+          # For project cards: unlock condition
+          unlock_condition: map()
         }
 
   defstruct [
@@ -27,7 +29,8 @@ defmodule Shinkanki.Card do
     :cost,
     effect: %{},
     tags: [],
-    compatible_tags: []
+    compatible_tags: [],
+    unlock_condition: %{}
   ]
 
   @doc """
@@ -63,8 +66,9 @@ defmodule Shinkanki.Card do
   Gets an action card by ID.
   """
   def get_action(id) do
-    with %__MODULE__{type: :action} = card <- get_card(id) do
-      card
+    case get_card(id) do
+      %__MODULE__{type: :action} = card -> card
+      _ -> nil
     end
   end
 
@@ -72,8 +76,9 @@ defmodule Shinkanki.Card do
   Gets a talent card by ID.
   """
   def get_talent(id) do
-    with %__MODULE__{type: :talent} = card <- get_card(id) do
-      card
+    case get_card(id) do
+      %__MODULE__{type: :talent} = card -> card
+      _ -> nil
     end
   end
 
@@ -81,8 +86,9 @@ defmodule Shinkanki.Card do
   Gets a project card by ID.
   """
   def get_project(id) do
-    with %__MODULE__{type: :project} = card <- get_card(id) do
-      card
+    case get_card(id) do
+      %__MODULE__{type: :project} = card -> card
+      _ -> nil
     end
   end
 
@@ -310,7 +316,8 @@ defmodule Shinkanki.Card do
         description: "A grand festival in the forest.",
         cost: 50, # High cost
         effect: %{forest: 10, culture: 10, social: 10},
-        tags: [:event, :nature, :community]
+        tags: [:event, :nature, :community],
+        unlock_condition: %{forest: 80, culture: 60}
       },
       %__MODULE__{
         id: :p_market,
@@ -319,7 +326,8 @@ defmodule Shinkanki.Card do
         description: "Establish a regular market system.",
         cost: 30,
         effect: %{currency: 30, social: 5},
-        tags: [:biz, :system]
+        tags: [:biz, :system],
+        unlock_condition: %{social: 70}
       }
     ]
   end

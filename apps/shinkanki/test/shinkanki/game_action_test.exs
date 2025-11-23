@@ -71,5 +71,37 @@ defmodule Shinkanki.GameActionTest do
 
       assert {:ok, _g3} = Game.play_action(g2, "player_1", card_turn2, [:t_craft])
     end
+
+    test "project unlock and execution" do
+      # Set up game with enough currency and safe stats to avoid instant loss
+      game = %Game{Game.new("room") | currency: 1000, forest: 10, culture: 10, social: 10}
+      {:ok, game} = Game.join(game, "p1", "Player 1")
+
+      project_id = :p_forest_fest
+
+      # 1. Try playing project before unlock (should fail)
+      # :p_forest_fest requires forest: 80, culture: 60
+      assert {:error, :project_not_unlocked} = Game.play_action(game, "p1", project_id)
+
+      # 2. Update stats to unlock project (and avoid losing)
+      # Trigger update via update_stats (which calls check_projects_unlock)
+      # +70 forest -> 80, +50 culture -> 60
+      game_unlocked = Game.update_stats(game, forest: 70, culture: 50)
+
+      assert game_unlocked.status == :playing
+      assert project_id in game_unlocked.available_projects
+
+      # 3. Play project
+      # Project effect: +10 to all stats
+      assert {:ok, game_after_project} = Game.play_action(game_unlocked, "p1", project_id)
+
+      assert game_after_project.forest == 90
+      assert game_after_project.culture == 70
+      assert game_after_project.social == 20
+
+      # Project cost: 50. After action, currency is 950.
+      # But since turn advances (1 player ready), demurrage applies: floor(950 * 0.9) = 855
+      assert game_after_project.currency == 855
+    end
   end
 end

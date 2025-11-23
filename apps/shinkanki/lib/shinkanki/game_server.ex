@@ -16,6 +16,10 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), :next_turn)
   end
 
+  def next_phase(room_id) do
+    GenServer.call(via_tuple(room_id), :next_phase)
+  end
+
   def update_stats(room_id, changes) do
     GenServer.call(via_tuple(room_id), {:update_stats, changes})
   end
@@ -34,6 +38,13 @@ defmodule Shinkanki.GameServer do
 
   def ai_turn(room_id, player_id) do
     GenServer.call(via_tuple(room_id), {:ai_turn, player_id})
+  end
+
+  def contribute_talent_to_project(room_id, player_id, project_id, talent_id) do
+    GenServer.call(
+      via_tuple(room_id),
+      {:contribute_talent_to_project, player_id, project_id, talent_id}
+    )
   end
 
   defp via_tuple(room_id) do
@@ -56,6 +67,14 @@ defmodule Shinkanki.GameServer do
   def handle_call(:next_turn, _from, game) do
     new_game = Game.next_turn(game)
     log_action(new_game, "next_turn", nil, %{})
+    broadcast_state(new_game)
+    {:reply, new_game, new_game}
+  end
+
+  @impl true
+  def handle_call(:next_phase, _from, game) do
+    new_game = Game.next_phase(game)
+    log_action(new_game, "next_phase", nil, %{phase: new_game.phase})
     broadcast_state(new_game)
     {:reply, new_game, new_game}
   end
@@ -85,7 +104,11 @@ defmodule Shinkanki.GameServer do
   def handle_call({:play_action, player_id, action_id, talent_ids}, _from, game) do
     case Game.play_action(game, player_id, action_id, talent_ids) do
       {:ok, new_game} = ok ->
-        log_action(new_game, "play_action", player_id, %{action_id: action_id, talent_ids: talent_ids})
+        log_action(new_game, "play_action", player_id, %{
+          action_id: action_id,
+          talent_ids: talent_ids
+        })
+
         broadcast_state(new_game)
         {:reply, ok, new_game}
 
@@ -113,13 +136,34 @@ defmodule Shinkanki.GameServer do
       {:ok, action_id, talent_ids} ->
         case Game.play_action(game, player_id, action_id, talent_ids) do
           {:ok, new_game} = ok ->
-            log_action(new_game, "play_action", player_id, %{action_id: action_id, talent_ids: talent_ids})
+            log_action(new_game, "play_action", player_id, %{
+              action_id: action_id,
+              talent_ids: talent_ids
+            })
+
             broadcast_state(new_game)
             {:reply, ok, new_game}
 
           error ->
             {:reply, error, game}
         end
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:contribute_talent_to_project, player_id, project_id, talent_id}, _from, game) do
+    case Game.contribute_talent_to_project(game, player_id, project_id, talent_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "contribute_talent_to_project", player_id, %{
+          project_id: project_id,
+          talent_id: talent_id
+        })
+
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
 
       error ->
         {:reply, error, game}

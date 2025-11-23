@@ -26,12 +26,18 @@ defmodule Shinkanki.Game do
     status: :playing,
     # Ending type when game ends: :blessing, :purification, :uncertainty, :lament, :instant_loss
     ending_type: nil,
+    # Current game phase: :event, :discussion, :action, :demurrage, :life_update, :judgment
+    phase: :event,
     logs: [],
     players: %{},
     deck: [],
     discard_pile: [],
     hands: %{},
     available_projects: [],
+    # Project progress tracking: %{project_id => %{progress: integer, contributors: [player_id]}}
+    project_progress: %{},
+    # Completed projects (to prevent re-contribution)
+    completed_projects: [],
     # Event card system
     event_deck: [],
     event_discard_pile: [],
@@ -48,12 +54,15 @@ defmodule Shinkanki.Game do
           life_index: integer(),
           status: :playing | :won | :lost,
           ending_type: atom() | nil,
+          phase: atom(),
           logs: list(),
           players: %{optional(String.t()) => Player.t()},
           deck: list(atom()),
           discard_pile: list(atom()),
           hands: %{optional(String.t()) => list(atom())},
           available_projects: list(atom()),
+          project_progress: map(),
+          completed_projects: list(atom()),
           event_deck: list(atom()),
           event_discard_pile: list(atom()),
           current_event: atom() | nil
@@ -120,21 +129,54 @@ defmodule Shinkanki.Game do
 
   @doc """
   Advances the game to the next turn.
-  Draws an event card, applies demurrage to currency, resets players, and checks win/loss conditions.
+  Resets phase to :event and automatically progresses through all phases until judgment.
+  This maintains backward compatibility with existing code that expects next_turn to complete a full turn.
   """
   def next_turn(%__MODULE__{status: :playing} = game) do
-    game
-    |> clear_current_event()
-    |> advance_turn_counter()
-    |> draw_and_apply_event()
-    |> apply_demurrage()
-    |> reset_player_state()
-    |> check_projects_unlock()
-    |> update_life_index()
-    |> check_win_loss()
+    result =
+      game
+      |> clear_current_event()
+      |> advance_turn_counter()
+      |> set_phase(:event)
+      # Event -> Discussion
+      |> execute_phase()
+      # Discussion -> Action
+      |> then(&next_phase/1)
+      # Action -> Demurrage -> Life Update -> Judgment
+      |> then(&next_phase/1)
+
+    # Execute judgment phase if we're still playing and in judgment phase
+    if result.status == :playing and result.phase == :judgment do
+      execute_phase(result)
+    else
+      result
+    end
   end
 
   def next_turn(game), do: game
+
+  @doc """
+  Advances to the next phase in the turn flow.
+  Executes the current phase (which may auto-advance), then if still in same phase, advances to next.
+  """
+  def next_phase(%__MODULE__{status: :playing} = game) do
+    # Execute current phase (some phases auto-advance)
+    executed_game = execute_phase(game)
+
+    # If phase didn't change, manually advance to next phase
+    if executed_game.phase == game.phase and executed_game.status == :playing do
+      new_phase = get_next_phase(game.phase)
+
+      executed_game
+      |> set_phase(new_phase)
+      |> execute_phase()
+    else
+      # Phase already advanced by execute_phase, or game ended
+      executed_game
+    end
+  end
+
+  def next_phase(game), do: game
 
   @doc """
   Updates game statistics (Forest, Culture, Social, Currency).
@@ -177,7 +219,61 @@ defmodule Shinkanki.Game do
   def play_card(_game, _card_id), do: {:error, :game_over}
 
   @doc """
+  Contributes a talent card to a project to advance its progress.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def contribute_talent_to_project(
+        %__MODULE__{status: :playing} = game,
+        player_id,
+        project_id,
+        talent_id
+      ) do
+    with {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
+         {:project, %Card{} = project} <- {:project, Card.get_project(project_id)},
+         {:unlocked, true} <- {:unlocked, project_id in game.available_projects},
+         {:talent, true} <- {:talent, Enum.member?(player.talents, talent_id)},
+         {:not_used, true} <- {:not_used, not Enum.member?(player.used_talents, talent_id)},
+         {:not_completed, true} <- {:not_completed, not is_project_completed?(game, project_id)} do
+      # Add progress to project
+      new_progress = get_project_progress(game, project_id) + 1
+
+      updated_progress =
+        Map.put(game.project_progress, project_id, %{
+          progress: new_progress,
+          contributors: get_project_contributors(game, project_id) ++ [player_id]
+        })
+
+      new_game =
+        %{game | project_progress: updated_progress}
+        |> mark_player_used_talents(player_id, [talent_id])
+        |> add_log(
+          "#{player.name} contributed talent to #{project.name} (#{new_progress}/#{project.required_progress})"
+        )
+
+      # Check if project is completed
+      if new_progress >= project.required_progress do
+        complete_project(new_game, project_id, project)
+      else
+        {:ok, new_game}
+      end
+    else
+      {:player, nil} -> {:error, :player_not_found}
+      {:project, nil} -> {:error, :project_not_found}
+      {:unlocked, false} -> {:error, :project_not_unlocked}
+      {:talent, false} -> {:error, :talent_not_owned}
+      {:not_used, false} -> {:error, :talent_already_used}
+      {:not_completed, false} -> {:error, :project_already_completed}
+      _ -> {:error, :invalid_request}
+    end
+  end
+
+  def contribute_talent_to_project(_game, _player_id, _project_id, _talent_id),
+    do: {:error, :game_over}
+
+  @doc """
   Plays an action or project card with optional talent boosters.
+  Note: For projects, this executes them immediately (legacy behavior).
+  For new projects, use contribute_talent_to_project instead.
   """
   def play_action(%__MODULE__{} = game, player_id, action_id, talent_ids \\ []) do
     with {:status, :playing} <- {:status, game.status},
@@ -359,7 +455,7 @@ defmodule Shinkanki.Game do
     end
   end
 
-  defp maybe_advance_turn(%__MODULE__{} = game) do
+  defp maybe_advance_turn(%__MODULE__{status: :playing, phase: :action} = game) do
     players = Map.values(game.players)
 
     cond do
@@ -370,12 +466,15 @@ defmodule Shinkanki.Game do
         %Player{is_ready: ready} -> ready
         _ -> false
       end) ->
-        next_turn(game)
+        # All players ready - advance to demurrage phase
+        next_phase(game)
 
       true ->
         game
     end
   end
+
+  defp maybe_advance_turn(game), do: game
 
   defp reset_player_state(game) do
     players =
@@ -549,5 +648,134 @@ defmodule Shinkanki.Game do
       event_id ->
         %{game | current_event: nil, event_discard_pile: [event_id | game.event_discard_pile]}
     end
+  end
+
+  # === Phase Management System ===
+
+  defp set_phase(game, phase) do
+    %{game | phase: phase}
+  end
+
+  defp get_next_phase(:event), do: :discussion
+  defp get_next_phase(:discussion), do: :action
+  defp get_next_phase(:action), do: :demurrage
+  defp get_next_phase(:demurrage), do: :life_update
+  defp get_next_phase(:life_update), do: :judgment
+  # Next turn starts
+  defp get_next_phase(:judgment), do: :event
+  defp get_next_phase(_), do: :event
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :event} = game) do
+    game
+    |> draw_and_apply_event()
+    |> set_phase(:discussion)
+  end
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :discussion} = game) do
+    # Discussion phase - players can discuss, but no automatic action
+    # Phase will advance when players are ready (handled by next_phase)
+    game
+  end
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game) do
+    # Action phase - players can play cards
+    # Phase will advance when all players are ready (handled by maybe_advance_turn or next_phase)
+    game
+  end
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :demurrage} = game) do
+    game
+    |> apply_demurrage()
+    |> set_phase(:life_update)
+
+    # Don't recursively call execute_phase - let next_phase handle it
+  end
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :life_update} = game) do
+    game
+    |> reset_player_state()
+    |> check_projects_unlock()
+    |> update_life_index()
+    |> set_phase(:judgment)
+
+    # Don't recursively call execute_phase - let next_phase handle it
+  end
+
+  defp execute_phase(%__MODULE__{status: :playing, phase: :judgment} = game) do
+    updated_game = check_win_loss(game)
+
+    if updated_game.status == :playing do
+      # Game continues - next turn starts with event phase
+      # But don't execute event phase yet - that happens on next_turn
+      set_phase(updated_game, :event)
+    else
+      # Game ended - stay in judgment phase
+      set_phase(updated_game, :judgment)
+    end
+  end
+
+  defp execute_phase(game), do: game
+
+  # === Project Progress Management ===
+
+  defp get_project_progress(game, project_id) do
+    case Map.get(game.project_progress, project_id) do
+      nil -> 0
+      %{progress: progress} -> progress
+      _ -> 0
+    end
+  end
+
+  defp get_project_contributors(game, project_id) do
+    case Map.get(game.project_progress, project_id) do
+      nil -> []
+      %{contributors: contributors} -> contributors
+      _ -> []
+    end
+  end
+
+  defp is_project_completed?(game, project_id) do
+    # Check if project is in completed_projects list
+    project_id in game.completed_projects
+  end
+
+  defp complete_project(game, project_id, %Card{} = project) do
+    new_game =
+      game
+      |> pay_cost(project.cost)
+      |> apply_changes(project.effect)
+      |> update_life_index()
+      |> check_win_loss()
+      |> add_log("Project #{project.name} completed! Effect applied.")
+      |> mark_project_completed(project_id)
+      |> remove_project_from_progress(project_id)
+
+    {:ok, new_game}
+  end
+
+  defp mark_project_completed(game, project_id) do
+    %{game | completed_projects: [project_id | game.completed_projects]}
+  end
+
+  defp remove_project_from_progress(game, project_id) do
+    %{game | project_progress: Map.delete(game.project_progress, project_id)}
+  end
+
+  @doc """
+  Gets the current phase name in Japanese.
+  """
+  def phase_name(:event), do: "イベントフェーズ"
+  def phase_name(:discussion), do: "相談フェーズ"
+  def phase_name(:action), do: "アクションフェーズ"
+  def phase_name(:demurrage), do: "減衰フェーズ"
+  def phase_name(:life_update), do: "生命更新フェーズ"
+  def phase_name(:judgment), do: "判定フェーズ"
+  def phase_name(_), do: "不明"
+
+  @doc """
+  Checks if the game is in a specific phase.
+  """
+  def in_phase?(%__MODULE__{} = game, phase) do
+    game.phase == phase
   end
 end

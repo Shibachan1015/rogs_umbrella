@@ -59,7 +59,17 @@ defmodule Shinkanki.GameTest do
 
     test "detects win condition after turn 20" do
       # Set up a game at turn 20 with high Life Index
-      game = %Game{Game.new("room_1") | turn: 20, life_index: 150}
+      # Need to set forest, culture, social to match life_index
+      game = %Game{
+        Game.new("room_1")
+        | turn: 20,
+          forest: 50,
+          culture: 50,
+          social: 50,
+          life_index: 150,
+          event_deck: [],
+          event_discard_pile: []
+      }
 
       # Advance to turn 21 (Game Over check)
       won_game = Game.next_turn(game)

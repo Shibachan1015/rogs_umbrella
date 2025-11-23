@@ -86,7 +86,7 @@ defmodule RogsIdentityWeb.UserLive.ResetPassword do
   @impl true
   def handle_event("reset_password", %{"user" => user_params}, socket) do
     case Accounts.reset_user_password(socket.assigns.token, user_params) do
-      {:ok, user} ->
+      {:ok, _user} ->
         {:noreply,
          socket
          |> put_flash(:info, "Password reset successfully.")

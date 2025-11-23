@@ -19,6 +19,13 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:user_email, "anonymous")
       |> assign(:toasts, [])
       |> assign(:selected_card_id, nil)
+      |> assign(:current_phase, :event)
+      |> assign(:current_event, mock_current_event())
+      |> assign(:show_event_modal, false)
+      |> assign(:player_talents, mock_player_talents())
+      |> assign(:selected_talents_for_card, [])
+      |> assign(:show_talent_selector, false)
+      |> assign(:talent_selector_card_id, nil)
 
     socket =
       if connected?(socket) do
@@ -70,7 +77,7 @@ defmodule ShinkankiWebWeb.GameLive do
           >
             <.icon name="hero-x-mark" class="w-4 h-4" />
           </button>
-          <div class="p-4 border-b-2 border-sumi text-center space-y-1">
+          <div class="p-4 border-b-2 border-sumi text-center space-y-3">
             <div class="text-[10px] uppercase tracking-[0.6em] text-sumi/60" aria-label="ルーム名">
               Room
             </div>
@@ -85,6 +92,11 @@ defmodule ShinkankiWebWeb.GameLive do
               aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
             >
               Turn {@game_state.turn} / {@game_state.max_turns}
+            </div>
+
+            <!-- Phase Indicator -->
+            <div class="pt-2 border-t border-sumi/30">
+              <.phase_indicator current_phase={@current_phase} />
             </div>
           </div>
 
@@ -214,13 +226,26 @@ defmodule ShinkankiWebWeb.GameLive do
             </.form>
           </div>
         </aside>
-        
+
     <!-- Main Board -->
         <main
           class="flex-1 relative overflow-hidden flex items-center justify-center p-2 sm:p-4 md:p-8 lg:ml-0"
           role="main"
           aria-label="ゲームボード"
         >
+          <!-- Event Card Display (Event Phase) -->
+          <%= if @current_phase == :event && @current_event do %>
+            <div class="w-full max-w-md mx-auto animate-fade-in">
+              <.event_card
+                title={@current_event[:title] || @current_event["title"] || "イベント"}
+                description={@current_event[:description] || @current_event["description"] || ""}
+                effect={@current_event[:effect] || @current_event["effect"] || %{}}
+                category={@current_event[:category] || @current_event["category"] || :neutral}
+                phx-click="show_event_modal"
+                class="cursor-pointer hover:scale-105 transition-transform"
+              />
+            </div>
+          <% else %>
           <div
             class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
             role="region"
@@ -280,7 +305,7 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
-            
+
     <!-- Gauges -->
             <div
               class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
@@ -363,7 +388,7 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             </div>
           </div>
-          
+
     <!-- Actions (Stamps) -->
           <div
             class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
@@ -380,9 +405,10 @@ defmodule ShinkankiWebWeb.GameLive do
               phx-value-action={button.action || button.label}
             />
           </div>
+          <% end %>
         </main>
       </div>
-      
+
     <!-- Bottom Hand -->
       <div
         class="h-32 md:h-48 bg-washi-dark border-t-4 border-sumi z-30 relative shadow-[0_-10px_20px_rgba(0,0,0,0.1)] overflow-hidden"
@@ -397,35 +423,136 @@ defmodule ShinkankiWebWeb.GameLive do
           role="group"
           aria-label="手札カード"
         >
-          <.ofuda_card
-            :for={card <- @hand_cards}
-            id={card.id}
-            title={card.title}
-            cost={card.cost}
-            type={card.type}
-            phx-click="select_card"
-            phx-dblclick="use_card"
-            phx-value-card-id={card.id}
-            class={
-              [
-                "hover:z-10 w-16 h-24 md:w-24 md:h-36",
-                if(@selected_card_id == card.id,
-                  do: "ring-4 ring-shu/50 border-shu scale-105",
-                  else: ""
-                ),
-                if(@game_state.currency < card.cost,
-                  do: "opacity-50 cursor-not-allowed",
-                  else: "cursor-pointer"
-                )
-              ]
-              |> Enum.filter(&(&1 != ""))
-              |> Enum.join(" ")
-            }
-            aria-disabled={@game_state.currency < card.cost}
-          />
+          <%= for card <- @hand_cards do %>
+            <%
+              # Check if this card has talents stacked
+              card_talents = get_card_talents(card.id, assigns)
+            %>
+            <div class="relative">
+              <%= if length(card_talents) > 0 do %>
+                <.action_card_with_talents
+                  title={card.title}
+                  cost={card.cost}
+                  type={card.type}
+                  talent_cards={card_talents}
+                  tags={card[:tags] || card["tags"] || []}
+                  phx-click="select_card"
+                  phx-dblclick="use_card"
+                  phx-value-card-id={card.id}
+                  class={
+                    [
+                      "hover:z-10 w-16 h-24 md:w-24 md:h-36",
+                      if(@selected_card_id == card.id,
+                        do: "ring-4 ring-shu/50 border-shu scale-105",
+                        else: ""
+                      ),
+                      if(@game_state.currency < card.cost,
+                        do: "opacity-50 cursor-not-allowed",
+                        else: "cursor-pointer"
+                      )
+                    ]
+                    |> Enum.filter(&(&1 != ""))
+                    |> Enum.join(" ")
+                  }
+                />
+              <% else %>
+                <.ofuda_card
+                  id={card.id}
+                  title={card.title}
+                  cost={card.cost}
+                  type={card.type}
+                  phx-click="select_card"
+                  phx-dblclick="use_card"
+                  phx-value-card-id={card.id}
+                  class={
+                    [
+                      "hover:z-10 w-16 h-24 md:w-24 md:h-36",
+                      if(@selected_card_id == card.id,
+                        do: "ring-4 ring-shu/50 border-shu scale-105",
+                        else: ""
+                      ),
+                      if(@game_state.currency < card.cost,
+                        do: "opacity-50 cursor-not-allowed",
+                        else: "cursor-pointer"
+                      )
+                    ]
+                    |> Enum.filter(&(&1 != ""))
+                    |> Enum.join(" ")
+                  }
+                  aria-disabled={@game_state.currency < card.cost}
+                />
+              <% end %>
+            </div>
+          <% end %>
         </div>
       </div>
+
+    <!-- Talent Cards Area (Action Phase) -->
+      <%= if @current_phase == :action && length(@player_talents) > 0 do %>
+        <div
+          class="h-24 md:h-28 bg-kin/5 border-t-2 border-kin z-20 relative overflow-hidden"
+          role="region"
+          aria-label="才能カード"
+        >
+          <div class="absolute -top-3 md:-top-4 left-1/2 transform -translate-x-1/2 bg-kin text-washi px-3 md:px-4 py-0.5 rounded-t-lg font-bold shadow-md border-x-2 border-t-2 border-sumi text-[10px] md:text-xs z-10">
+            才能カード
+          </div>
+          <div
+            class="h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-3 px-4 md:px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-kin scrollbar-track-transparent pb-2 pt-2"
+            role="group"
+            aria-label="利用可能な才能カード"
+          >
+            <.talent_card
+              :for={talent <- @player_talents}
+              title={talent[:name] || talent["name"] || "才能"}
+              description={talent[:description] || talent["description"]}
+              compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
+              is_used={talent[:is_used] || talent["is_used"] || false}
+              is_selected={Enum.member?(@selected_talents_for_card, talent[:id] || talent["id"])}
+              class="w-14 h-18 md:w-16 md:h-20"
+            />
+          </div>
+        </div>
+      <% end %>
+
+    <!-- Talent Selector Modal -->
+      <%= if @show_talent_selector && @talent_selector_card_id do %>
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          phx-click="close_talent_selector"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            class="relative bg-washi border-4 border-double border-kin rounded-lg shadow-2xl max-w-lg w-full mx-4"
+            phx-click-away="close_talent_selector"
+          >
+            <button
+              class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+              phx-click="close_talent_selector"
+              aria-label="モーダルを閉じる"
+            >
+              <span class="text-lg font-bold">×</span>
+            </button>
+            <div class="p-6">
+              <.talent_selector
+                available_talents={@player_talents}
+                selected_talent_ids={@selected_talents_for_card}
+                action_card_tags={get_selected_card_tags(@talent_selector_card_id, assigns)}
+                max_selection={2}
+              />
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
+
+    <!-- Event Modal -->
+    <.event_modal
+      show={@show_event_modal}
+      event={@current_event}
+      id="event-modal"
+    />
 
     <!-- Toast notifications -->
     <div class="fixed top-4 right-4 z-50 space-y-2">
@@ -531,6 +658,76 @@ defmodule ShinkankiWebWeb.GameLive do
     end
   end
 
+  def handle_event("show_event_modal", _params, socket) do
+    {:noreply, assign(socket, :show_event_modal, true)}
+  end
+
+  def handle_event("close_event_modal", _params, socket) do
+    {:noreply, assign(socket, :show_event_modal, false)}
+  end
+
+  def handle_event("add_talent_to_card", %{"talent-id" => talent_id, "card-id" => card_id}, socket) do
+    # Open talent selector for this card
+    {:noreply,
+     socket
+     |> assign(:show_talent_selector, true)
+     |> assign(:talent_selector_card_id, card_id)
+     |> assign(:selected_talents_for_card, [])}
+  end
+
+  def handle_event("toggle_talent", %{"talent-id" => talent_id}, socket) do
+    current_selected = socket.assigns.selected_talents_for_card
+
+    new_selected =
+      if Enum.member?(current_selected, talent_id) do
+        List.delete(current_selected, talent_id)
+      else
+        if length(current_selected) < 2 do
+          [talent_id | current_selected]
+        else
+          current_selected
+        end
+      end
+
+    {:noreply, assign(socket, :selected_talents_for_card, new_selected)}
+  end
+
+  def handle_event("confirm_talent_selection", _params, socket) do
+    card_id = socket.assigns.talent_selector_card_id
+    selected_talents = socket.assigns.selected_talents_for_card
+
+    # Update card with talents (in real implementation, this would update game state)
+    # For now, we'll just show a toast
+    toast = %{
+      id: Ecto.UUID.generate(),
+      kind: :success,
+      message: "才能カードを#{length(selected_talents)}枚選択しました"
+    }
+
+    {:noreply,
+     socket
+     |> assign(:show_talent_selector, false)
+     |> assign(:talent_selector_card_id, nil)
+     |> assign(:selected_talents_for_card, [])
+     |> update(:toasts, fn toasts -> [toast | toasts] end)}
+  end
+
+  def handle_event("cancel_talent_selection", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_talent_selector, false)
+     |> assign(:talent_selector_card_id, nil)
+     |> assign(:selected_talents_for_card, [])}
+  end
+
+  def handle_event("close_talent_selector", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_talent_selector, false)
+     |> assign(:talent_selector_card_id, nil)
+     |> assign(:selected_talents_for_card, [])}
+  end
+
   def handle_event("execute_action", %{"action" => action}, socket) do
     # TODO: Implement actual action logic when backend is ready
     toast_id = "toast-#{System.unique_integer([:positive])}"
@@ -606,7 +803,8 @@ defmodule ShinkankiWebWeb.GameLive do
       social: 10,
       currency: 128,
       demurrage: -12,
-      life_index_target: 40
+      life_index_target: 40,
+      phase: :action
     }
   end
 
@@ -691,4 +889,54 @@ defmodule ShinkankiWebWeb.GameLive do
       %{label: "寄付", color: "sumi", action: "donate"}
     ]
   end
+
+  defp mock_current_event do
+    %{
+      title: "神々の加護",
+      description: "古来より伝わる神々の加護が降り注ぎ、森と文化が共に栄える。",
+      effect: %{forest: 2, culture: 2, social: 1},
+      category: :blessing
+    }
+  end
+
+  defp mock_player_talents do
+    [
+      %{
+        id: :t_craft,
+        name: "手しごとの才能",
+        description: "Good at making things.",
+        compatible_tags: [:craft, :make, :fix],
+        is_used: false
+      },
+      %{
+        id: :t_grow,
+        name: "育てる才能",
+        description: "Good at growing plants and people.",
+        compatible_tags: [:nature, :grow, :edu],
+        is_used: false
+      },
+      %{
+        id: :t_listen,
+        name: "聴く才能",
+        description: "Good at listening and care.",
+        compatible_tags: [:community, :care, :dialogue],
+        is_used: false
+      }
+    ]
+  end
+
+  # Helper function to get talents for a specific card
+  defp get_card_talents(_card_id, _assigns) do
+    # In real implementation, this would check the game state
+    # For now, return empty list
+    []
+  end
+
+  # Helper function to get tags for a selected card
+  defp get_selected_card_tags(card_id, assigns) when is_binary(card_id) do
+    card = Enum.find(assigns.hand_cards, &(&1.id == card_id))
+    if card, do: card[:tags] || card["tags"] || [], else: []
+  end
+
+  defp get_selected_card_tags(_card_id, _assigns), do: []
 end

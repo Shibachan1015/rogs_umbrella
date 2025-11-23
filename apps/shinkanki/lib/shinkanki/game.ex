@@ -91,7 +91,7 @@ defmodule Shinkanki.Game do
     game
     |> apply_demurrage()
     |> advance_turn_counter()
-    |> reset_player_readiness()
+    |> reset_player_state()
     |> update_life_index()
     |> check_win_loss()
   end
@@ -163,6 +163,7 @@ defmodule Shinkanki.Game do
         |> update_life_index()
         |> check_win_loss()
         |> add_log("#{player.name} played action #{action.name} (+#{bonus})")
+        |> mark_player_used_talents(player_id, talent_ids)
         |> mark_player_ready(player_id)
         |> add_to_discard(action_id)
         |> draw_cards(player_id, 1)
@@ -243,6 +244,17 @@ defmodule Shinkanki.Game do
     end
   end
 
+  defp mark_player_used_talents(game, player_id, talent_ids) do
+    case Map.get(game.players, player_id) do
+      nil ->
+        game
+
+      player ->
+        updated_player = %{player | used_talents: player.used_talents ++ talent_ids}
+        %{game | players: Map.put(game.players, player_id, updated_player)}
+    end
+  end
+
   defp maybe_advance_turn(%__MODULE__{} = game) do
     players = Map.values(game.players)
 
@@ -261,10 +273,10 @@ defmodule Shinkanki.Game do
     end
   end
 
-  defp reset_player_readiness(game) do
+  defp reset_player_state(game) do
     players =
       Enum.into(game.players, %{}, fn {id, player} ->
-        {id, %{player | is_ready: false}}
+        {id, %{player | is_ready: false, used_talents: []}}
       end)
 
     %{game | players: players}
@@ -285,10 +297,21 @@ defmodule Shinkanki.Game do
   end
 
   defp validate_talents(%Player{} = player, talent_ids) do
-    if Enum.all?(talent_ids, &Enum.member?(player.talents, &1)) do
-      :ok
-    else
-      {:error, :invalid_talent}
+    cond do
+      # Check if player owns the talents
+      not Enum.all?(talent_ids, &Enum.member?(player.talents, &1)) ->
+        {:error, :invalid_talent}
+
+      # Check if talents were already used this turn
+      Enum.any?(talent_ids, &Enum.member?(player.used_talents, &1)) ->
+        {:error, :talent_already_used}
+
+      # Check for duplicates in the current request (must be distinct talents)
+      length(Enum.uniq(talent_ids)) != length(talent_ids) ->
+        {:error, :duplicate_talent_usage}
+
+      true ->
+        :ok
     end
   end
 

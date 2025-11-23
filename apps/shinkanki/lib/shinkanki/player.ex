@@ -7,10 +7,11 @@ defmodule Shinkanki.Player do
           id: String.t(),
           name: String.t(),
           talents: list(atom()),
+          used_talents: list(atom()),
           is_ready: boolean()
         }
 
-  defstruct [:id, :name, talents: [], is_ready: false]
+  defstruct [:id, :name, talents: [], used_talents: [], is_ready: false]
 
   @doc """
   Creates a new player.

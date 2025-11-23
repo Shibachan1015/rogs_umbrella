@@ -3,7 +3,7 @@ defmodule Shinkanki.Card do
   Defines card structures for Action Cards and Talent Cards in Shinkanki.
   """
 
-  @type card_type :: :action | :talent
+  @type card_type :: :action | :talent | :project
 
   @type t :: %__MODULE__{
           id: atom(),
@@ -31,10 +31,10 @@ defmodule Shinkanki.Card do
   ]
 
   @doc """
-  Returns the list of all available cards (Actions and Talents).
+  Returns the list of all available cards (Actions, Talents, Projects).
   """
   def list_cards do
-    list_actions() ++ list_talents()
+    list_actions() ++ list_talents() ++ list_projects()
   end
 
   @doc """
@@ -46,6 +46,11 @@ defmodule Shinkanki.Card do
   Returns only talent cards.
   """
   def list_talents, do: talents()
+
+  @doc """
+  Returns only project cards.
+  """
+  def list_projects, do: projects()
 
   @doc """
   Gets a card by its ID.
@@ -68,6 +73,15 @@ defmodule Shinkanki.Card do
   """
   def get_talent(id) do
     with %__MODULE__{type: :talent} = card <- get_card(id) do
+      card
+    end
+  end
+
+  @doc """
+  Gets a project card by ID.
+  """
+  def get_project(id) do
+    with %__MODULE__{type: :project} = card <- get_card(id) do
       card
     end
   end
@@ -282,6 +296,30 @@ defmodule Shinkanki.Card do
         name: "学びの才能 (Learn)",
         description: "Good at learning new things.",
         compatible_tags: [:research, :try]
+      }
+    ]
+  end
+
+  # --- Project Cards (共創プロジェクト) ---
+  defp projects do
+    [
+      %__MODULE__{
+        id: :p_forest_fest,
+        type: :project,
+        name: "森の祝祭 (Forest Festival)",
+        description: "A grand festival in the forest.",
+        cost: 50, # High cost
+        effect: %{forest: 10, culture: 10, social: 10},
+        tags: [:event, :nature, :community]
+      },
+      %__MODULE__{
+        id: :p_market,
+        type: :project,
+        name: "定期市 (Regular Market)",
+        description: "Establish a regular market system.",
+        cost: 30,
+        effect: %{currency: 30, social: 5},
+        tags: [:biz, :system]
       }
     ]
   end

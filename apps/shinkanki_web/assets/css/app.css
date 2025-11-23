@@ -312,4 +312,52 @@
   height: 6px;
 }
 
+/* Phase indicator animations */
+@keyframes phase-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.phase-indicator [aria-current="step"] {
+  animation: phase-pulse 2s ease-in-out infinite;
+}
+
+/* Phase transition animation */
+@keyframes phase-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phase-indicator > div:last-child > div {
+  animation: phase-fade-in 0.5s ease-out;
+}
+
+/* Event card fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
 /* This file is for your main application CSS */

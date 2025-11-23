@@ -41,3 +41,6 @@ config :rogs_comm, RogsCommWeb.Endpoint,
   code_reloader: true,
   check_origin: false,
   watchers: []
+
+# Swoosh設定（開発環境ではAPIクライアントを無効化）
+config :swoosh, :api_client, false

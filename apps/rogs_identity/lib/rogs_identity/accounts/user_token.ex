@@ -10,6 +10,7 @@ defmodule RogsIdentity.Accounts.UserToken do
   # since someone with access to the email may take over the account.
   @magic_link_validity_in_minutes 15
   @change_email_validity_in_days 7
+  @password_reset_validity_in_hours 6
   @session_validity_in_days 14
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -144,6 +145,34 @@ defmodule RogsIdentity.Accounts.UserToken do
         query =
           from token in by_token_and_context_query(hashed_token, context),
             where: token.inserted_at > ago(@change_email_validity_in_days, "day")
+
+        {:ok, query}
+
+      :error ->
+        :error
+    end
+  end
+
+  @doc """
+  Checks if the password reset token is valid and returns its underlying lookup query.
+
+  The query returns the user_token found by the token, if any.
+
+  The given token is valid if it matches its hashed counterpart in the
+  database and if it has not expired (after @password_reset_validity_in_hours).
+  The context must always be "reset_password".
+  """
+  def verify_password_reset_token_query(token) do
+    case Base.url_decode64(token, padding: false) do
+      {:ok, decoded_token} ->
+        hashed_token = :crypto.hash(@hash_algorithm, decoded_token)
+
+        query =
+          from token in by_token_and_context_query(hashed_token, "reset_password"),
+            join: user in assoc(token, :user),
+            where: token.inserted_at > ago(@password_reset_validity_in_hours, "hour"),
+            where: token.sent_to == user.email,
+            select: {user, token}
 
         {:ok, query}
 

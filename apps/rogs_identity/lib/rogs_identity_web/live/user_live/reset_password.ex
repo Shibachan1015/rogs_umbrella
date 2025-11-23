@@ -1,0 +1,104 @@
+defmodule RogsIdentityWeb.UserLive.ResetPassword do
+  use RogsIdentityWeb, :live_view
+
+  alias RogsIdentity.Accounts
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <div class="mx-auto max-w-sm space-y-4">
+        <div class="text-center">
+          <.header>
+            <p>Reset your password</p>
+            <:subtitle>
+              Enter your new password below
+            </:subtitle>
+          </.header>
+        </div>
+
+        <.form
+          :let={f}
+          for={@form}
+          id="reset_password_form"
+          phx-change="validate"
+          phx-submit="reset_password"
+        >
+          <.input
+            field={f[:password]}
+            type="password"
+            label="New password"
+            autocomplete="new-password"
+            required
+            phx-mounted={JS.focus()}
+          />
+          <.input
+            field={f[:password_confirmation]}
+            type="password"
+            label="Confirm new password"
+            autocomplete="new-password"
+            required
+          />
+
+          <.button class="btn btn-primary w-full" phx-disable-with="Resetting...">
+            Reset password
+          </.button>
+        </.form>
+
+        <div class="text-center">
+          <.link navigate={~p"/users/log-in"} class="text-sm font-semibold">
+            Back to log in
+          </.link>
+        </div>
+      </div>
+    </Layouts.app>
+    """
+  end
+
+  @impl true
+  def mount(%{"token" => token}, _session, socket) do
+    if user = Accounts.get_user_by_password_reset_token(token) do
+      changeset = Accounts.change_user_password(user)
+
+      {:ok,
+       socket
+       |> assign(:token, token)
+       |> assign(:user, user)
+       |> assign_form(changeset)}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Reset link is invalid or it has expired.")
+       |> push_navigate(to: ~p"/users/log-in")}
+    end
+  end
+
+  @impl true
+  def handle_event("validate", %{"user" => user_params}, socket) do
+    changeset =
+      socket.assigns.user
+      |> Accounts.change_user_password(user_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  @impl true
+  def handle_event("reset_password", %{"user" => user_params}, socket) do
+    case Accounts.reset_user_password(socket.assigns.token, user_params) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Password reset successfully.")
+         |> push_navigate(to: ~p"/users/log-in")}
+
+      {:error, changeset} ->
+        {:noreply, assign_form(socket, Map.put(changeset, :action, :insert))}
+    end
+  end
+
+  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
+    form = to_form(changeset, as: "user")
+    assign(socket, form: form)
+  end
+end

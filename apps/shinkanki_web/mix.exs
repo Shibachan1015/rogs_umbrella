@@ -44,6 +44,7 @@ defmodule ShinkankiWeb.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:rogs_identity, in_umbrella: true},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

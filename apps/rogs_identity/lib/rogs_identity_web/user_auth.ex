@@ -279,6 +279,45 @@ defmodule RogsIdentityWeb.UserAuth do
     end
   end
 
+  @doc """
+  Plug for API routes that require the user to be authenticated.
+  Returns JSON error response instead of redirecting.
+  """
+  def require_authenticated_api(conn, _opts) do
+    if conn.assigns.current_scope && conn.assigns.current_scope.user do
+      conn
+    else
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Authentication required"})
+      |> halt()
+    end
+  end
+
+  @doc """
+  Fetches the current scope for API routes.
+  Similar to fetch_current_scope_for_user but optimized for API.
+  """
+  def fetch_current_scope_for_api(conn, _opts) do
+    with {token, conn} <- ensure_user_token(conn),
+         {user, _token_inserted_at} <- Accounts.get_user_by_session_token(token) do
+      assign(conn, :current_scope, Scope.for_user(user))
+    else
+      nil -> assign(conn, :current_scope, Scope.for_user(nil))
+    end
+  end
+
+  # Plug implementation for fetch_current_scope_for_api
+  def init(opts), do: opts
+
+  def call(conn, opts) when is_list(opts) do
+    case Keyword.get(opts, :action) do
+      :fetch_current_scope_for_api -> fetch_current_scope_for_api(conn, opts)
+      :require_authenticated_api -> require_authenticated_api(conn, opts)
+      _ -> conn
+    end
+  end
+
   defp maybe_store_return_to(%{method: "GET"} = conn) do
     put_session(conn, :user_return_to, current_path(conn))
   end

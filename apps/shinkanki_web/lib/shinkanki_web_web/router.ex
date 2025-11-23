@@ -1,6 +1,8 @@
 defmodule ShinkankiWebWeb.Router do
   use ShinkankiWebWeb, :router
 
+  import RogsIdentity.Plug
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -8,6 +10,11 @@ defmodule ShinkankiWebWeb.Router do
     plug :put_root_layout, html: {ShinkankiWebWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_user
+  end
+
+  pipeline :authenticated do
+    plug :require_authenticated
   end
 
   pipeline :api do

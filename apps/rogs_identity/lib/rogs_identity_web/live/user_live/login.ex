@@ -87,6 +87,12 @@ defmodule RogsIdentityWeb.UserLive.Login do
             Log in only this time
           </.button>
         </.form>
+
+        <div class="text-center mt-4">
+          <.link navigate={~p"/users/forgot-password"} class="text-sm font-semibold">
+            Forgot your password?
+          </.link>
+        </div>
       </div>
     </Layouts.app>
     """

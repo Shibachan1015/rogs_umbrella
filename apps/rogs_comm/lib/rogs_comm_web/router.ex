@@ -7,6 +7,7 @@ defmodule RogsCommWeb.Router do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
+    plug RogsCommWeb.UserAssignPlug
     plug :put_root_layout, html: {RogsCommWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers

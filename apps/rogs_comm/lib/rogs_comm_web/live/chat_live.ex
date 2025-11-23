@@ -16,6 +16,8 @@ defmodule RogsCommWeb.ChatLive do
   alias RogsComm.Rooms
   alias RogsCommWeb.Presence
 
+  on_mount {RogsCommWeb.UserAuthHooks, :assign_current_user}
+
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
     case Rooms.fetch_room(room_id) do
@@ -26,17 +28,15 @@ defmodule RogsCommWeb.ChatLive do
          |> redirect(to: ~p"/")}
 
       room ->
+        display_name = socket.assigns[:display_name] || "anonymous"
+
         socket =
           socket
           |> assign(:room, room)
           |> assign(:room_id, room_id)
           |> assign(:rooms, Rooms.list_rooms())
-          |> assign_new(:display_name, fn -> "anonymous" end)
           |> assign(:form, to_form(%{"content" => ""}))
-          |> assign(
-            :name_form,
-            to_form(%{"display_name" => socket.assigns[:display_name] || "anonymous"})
-          )
+          |> assign(:name_form, to_form(%{"display_name" => display_name}))
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -71,8 +71,10 @@ defmodule RogsCommWeb.ChatLive do
       {:noreply, socket}
     else
       room_id = socket.assigns.room_id
-      user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
-      user_email = socket.assigns[:display_name] || "anonymous"
+      user_id = socket.assigns[:current_user_id] || Ecto.UUID.generate()
+
+      user_email =
+        socket.assigns[:current_user_email] || socket.assigns[:display_name] || "anonymous"
 
       params = %{
         content: trimmed,

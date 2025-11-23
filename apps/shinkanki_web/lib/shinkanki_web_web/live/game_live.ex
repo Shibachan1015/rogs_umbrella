@@ -1,48 +1,92 @@
 defmodule ShinkankiWebWeb.GameLive do
   use ShinkankiWebWeb, :live_view
 
-  alias RogsComm.PubSub
+  alias RogsComm.PubSub, as: CommPubSub
   alias RogsComm.Messages
+  alias Shinkanki
 
   def mount(params, _session, socket) do
-    # Get room_id from params or use default from game_state
-    room_id = params["room_id"] || mock_game_state().room
+    # Get room_id from params or generate new one
+    room_id = params["room_id"] || generate_room_id()
+
+    # Get user info from session (from rogs_identity)
+    user_id = socket.assigns[:current_user] && socket.assigns.current_user.id || Ecto.UUID.generate()
+    user_email = socket.assigns[:current_user] && socket.assigns.current_user.email || "anonymous"
+
+    # Start game session if not exists
+    case Shinkanki.get_current_state(room_id) do
+      nil ->
+        # Game doesn't exist, start a new one
+        case Shinkanki.start_game_session(room_id) do
+          {:ok, _pid} ->
+            :ok
+          {:error, {:already_started, _pid}} ->
+            :ok
+          error ->
+            IO.inspect(error, label: "Failed to start game session")
+        end
+
+      _game ->
+        :ok
+    end
+
+    # Join player to game
+    player_name = user_email || "Player #{String.slice(user_id, 0, 8)}"
+    case Shinkanki.join_player(room_id, user_id, player_name) do
+      {:ok, _game} ->
+        :ok
+      {:error, :already_joined} ->
+        :ok
+      {:error, :game_already_started} ->
+        :ok
+      error ->
+        IO.inspect(error, label: "Failed to join player")
+    end
+
+    # Get initial game state
+    game_state = Shinkanki.get_current_state(room_id) || %{}
 
     socket =
       socket
-      |> assign(:game_state, mock_game_state())
+      |> assign(:game_state, format_game_state(game_state))
       |> assign(:room_id, room_id)
-      |> assign(:hand_cards, mock_hand_cards())
+      |> assign(:user_id, user_id)
+      |> assign(:user_email, user_email)
+      |> assign(:player_name, player_name)
+      |> assign(:hand_cards, get_hand_cards(game_state, user_id))
       |> assign(:action_buttons, mock_actions())
       |> assign(:chat_form, chat_form())
-      |> assign(:user_id, Ecto.UUID.generate())
-      |> assign(:user_email, "anonymous")
       |> assign(:toasts, [])
       |> assign(:selected_card_id, nil)
-      |> assign(:current_phase, :event)
-      |> assign(:current_event, mock_current_event())
+      |> assign(:current_phase, game_state.phase || :event)
+      |> assign(:current_event, format_current_event(game_state))
       |> assign(:show_event_modal, false)
-      |> assign(:player_talents, mock_player_talents())
+      |> assign(:player_talents, get_player_talents(game_state, user_id))
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
-      |> assign(:active_projects, mock_active_projects())
+      |> assign(:active_projects, get_active_projects(game_state))
       |> assign(:show_project_contribute, false)
       |> assign(:project_contribute_id, nil)
       |> assign(:selected_talent_for_contribution, nil)
       |> assign(:show_action_confirm, false)
       |> assign(:confirm_card_id, nil)
       |> assign(:show_ending, false)
-      |> assign(:game_status, :playing)
+      |> assign(:game_status, game_state.status || :waiting)
       |> assign(:show_role_selection, false)
       |> assign(:selected_role, nil)
       |> assign(:player_role, nil)
+      |> assign(:can_start, Shinkanki.can_start?(room_id))
 
     socket =
       if connected?(socket) do
         # Subscribe to rogs_comm PubSub for real-time chat updates
-        topic = "room:#{room_id}"
-        Phoenix.PubSub.subscribe(PubSub, topic)
+        chat_topic = "room:#{room_id}"
+        Phoenix.PubSub.subscribe(CommPubSub, chat_topic)
+
+        # Subscribe to shinkanki PubSub for game state updates
+        game_topic = "shinkanki:game:#{room_id}"
+        Phoenix.PubSub.subscribe(Shinkanki.PubSub, game_topic)
 
         # Load initial messages from rogs_comm
         messages = load_messages(room_id)
@@ -656,10 +700,19 @@ defmodule ShinkankiWebWeb.GameLive do
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
 
     if card do
-      {:noreply,
-       socket
-       |> assign(:show_action_confirm, true)
-       |> assign(:confirm_card_id, card_id)}
+      # If card has tags that can use talents, show talent selector first
+      if card[:tags] && length(card[:tags]) > 0 do
+        {:noreply,
+         socket
+         |> assign(:show_talent_selector, true)
+         |> assign(:talent_selector_card_id, card_id)
+         |> assign(:selected_talents_for_card, [])}
+      else
+        {:noreply,
+         socket
+         |> assign(:show_action_confirm, true)
+         |> assign(:confirm_card_id, card_id)}
+      end
     else
       {:noreply, socket}
     end
@@ -668,31 +721,74 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("confirm_action", _params, socket) do
     card_id = socket.assigns.confirm_card_id
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
 
     if card && socket.assigns.game_state.currency >= card.cost do
-      # Get talent cards for this card (for future use)
-      _talent_cards = get_card_talents(card_id, socket.assigns)
+      # Get talent cards for this card
+      talent_ids = socket.assigns.selected_talents_for_card
+      card_id_atom = convert_to_atom(card_id)
 
-      # TODO: Implement actual card usage logic when backend is ready
-      toast_id = "toast-#{System.unique_integer([:positive])}"
+      case Shinkanki.play_action(room_id, user_id, card_id_atom, talent_ids) do
+        {:ok, _game} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
 
-      new_toast = %{
-        id: toast_id,
-        kind: :success,
-        message: "カード「#{card.title}」を使用しました。"
-      }
+          new_toast = %{
+            id: toast_id,
+            kind: :success,
+            message: "カード「#{card.title}」を使用しました。"
+          }
 
-      socket =
-        socket
-        |> assign(:selected_card_id, nil)
-        |> assign(:show_action_confirm, false)
-        |> assign(:confirm_card_id, nil)
-        |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+          socket =
+            socket
+            |> assign(:selected_card_id, nil)
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> assign(:selected_talents_for_card, [])
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
-      # Auto-remove toast after 3 seconds
-      Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
-      {:noreply, socket}
+          {:noreply, socket}
+
+        {:error, :not_your_turn} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "まだあなたのターンではありません。"
+          }
+
+          socket =
+            socket
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+
+        {:error, reason} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "カードの使用に失敗しました: #{inspect(reason)}"
+          }
+
+          socket =
+            socket
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+      end
     else
       toast_id = "toast-#{System.unique_integer([:positive])}"
 
@@ -756,23 +852,15 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("confirm_talent_selection", _params, socket) do
+    # Close talent selector and show action confirmation
     card_id = socket.assigns.talent_selector_card_id
-    selected_talents = socket.assigns.selected_talents_for_card
-
-    # Update card with talents (in real implementation, this would update game state)
-    # For now, we'll just show a toast
-    toast = %{
-      id: Ecto.UUID.generate(),
-      kind: :success,
-      message: "才能カードを#{length(selected_talents)}枚選択しました"
-    }
 
     {:noreply,
      socket
      |> assign(:show_talent_selector, false)
-     |> assign(:talent_selector_card_id, nil)
-     |> assign(:selected_talents_for_card, [])
-     |> update(:toasts, fn toasts -> [toast | toasts] end)}
+     |> assign(:show_action_confirm, true)
+     |> assign(:confirm_card_id, card_id)
+     |> assign(:talent_selector_card_id, nil)}
   end
 
   def handle_event("cancel_talent_selection", _params, socket) do
@@ -806,21 +894,42 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("confirm_talent_contribution", _params, socket) do
     project_id = socket.assigns.project_contribute_id
     talent_id = socket.assigns.selected_talent_for_contribution
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
 
     if project_id && talent_id do
-      # In real implementation, this would update the project progress
-      toast = %{
-        id: Ecto.UUID.generate(),
-        kind: :success,
-        message: "才能カードをプロジェクトに捧げました"
-      }
+      project_id_atom = convert_to_atom(project_id)
+      talent_id_atom = convert_to_atom(talent_id)
 
-      {:noreply,
-       socket
-       |> assign(:show_project_contribute, false)
-       |> assign(:project_contribute_id, nil)
-       |> assign(:selected_talent_for_contribution, nil)
-       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      case Shinkanki.contribute_talent_to_project(room_id, user_id, project_id_atom, talent_id_atom) do
+        {:ok, _game} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :success,
+            message: "才能カードをプロジェクトに捧げました"
+          }
+
+          {:noreply,
+           socket
+           |> assign(:show_project_contribute, false)
+           |> assign(:project_contribute_id, nil)
+           |> assign(:selected_talent_for_contribution, nil)
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+
+        {:error, reason} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :error,
+            message: "才能カードの貢献に失敗しました: #{inspect(reason)}"
+          }
+
+          {:noreply,
+           socket
+           |> assign(:show_project_contribute, false)
+           |> assign(:project_contribute_id, nil)
+           |> assign(:selected_talent_for_contribution, nil)
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      end
     else
       {:noreply, socket}
     end
@@ -912,6 +1021,22 @@ defmodule ShinkankiWebWeb.GameLive do
     }
 
     {:noreply, stream(socket, :chat_messages, [message])}
+  end
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
+    # Update game state when broadcast from GameServer
+    socket =
+      socket
+      |> assign(:game_state, format_game_state(game))
+      |> assign(:current_phase, game.phase || :event)
+      |> assign(:current_event, format_current_event(game))
+      |> assign(:game_status, game.status || :waiting)
+      |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
+      |> assign(:player_talents, get_player_talents(game, socket.assigns.user_id))
+      |> assign(:active_projects, get_active_projects(game))
+      |> assign(:can_start, Shinkanki.can_start?(socket.assigns.room_id))
+
+    {:noreply, socket}
   end
 
   def handle_info({:remove_toast, toast_id}, socket) do
@@ -1145,4 +1270,151 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_role_name(:community_light), do: "コミュニティの灯火"
   defp get_role_name(:akasha_engineer), do: "空環エンジニア"
   defp get_role_name(_), do: "不明"
+
+  # Helper functions to connect to Shinkanki context
+  defp generate_room_id do
+    "ROOM-#{System.unique_integer([:positive]) |> Integer.to_string() |> String.pad_leading(4, "0")}"
+  end
+
+  defp format_game_state(nil), do: mock_game_state()
+  defp format_game_state(%{} = game) do
+    %{
+      room: game.room_id || "UNKNOWN",
+      turn: game.turn || 1,
+      max_turns: 20,
+      forest: game.forest || 50,
+      culture: game.culture || 50,
+      social: game.social || 50,
+      currency: game.currency || 100,
+      demurrage: calculate_demurrage(game.currency || 100),
+      life_index_target: 40,
+      phase: game.phase || :event
+    }
+  end
+
+  defp calculate_demurrage(currency) do
+    new_currency = floor(currency * 0.9)
+    new_currency - currency
+  end
+
+  defp format_current_event(nil), do: nil
+  defp format_current_event(%{current_event: nil}), do: nil
+  defp format_current_event(%{current_event: event_id}) when is_atom(event_id) do
+    case Shinkanki.Card.get_event(event_id) do
+      nil -> nil
+      event ->
+        %{
+          title: event.name,
+          description: event.description,
+          effect: event.effect,
+          category: get_event_category(event.tags)
+        }
+    end
+  end
+  defp format_current_event(%{current_event: event_id}) when is_binary(event_id) do
+    event_id_atom = convert_to_atom(event_id)
+    format_current_event(%{current_event: event_id_atom})
+  end
+  defp format_current_event(_), do: nil
+
+  defp get_event_category(tags) when is_list(tags) do
+    cond do
+      Enum.member?(tags, :disaster) -> :disaster
+      Enum.member?(tags, :festival) -> :festival
+      Enum.member?(tags, :blessing) -> :blessing
+      Enum.member?(tags, :economy) -> :economy
+      true -> :neutral
+    end
+  end
+  defp get_event_category(_), do: :neutral
+
+  defp get_hand_cards(nil, _user_id), do: mock_hand_cards()
+  defp get_hand_cards(%{hands: hands} = _game, user_id) when is_map(hands) do
+    case Map.get(hands, user_id) do
+      nil -> []
+      card_ids when is_list(card_ids) ->
+        Enum.map(card_ids, fn card_id ->
+          case Shinkanki.Card.get_action(card_id) do
+            nil -> nil
+            card ->
+              %{
+                id: card.id,
+                title: card.name,
+                cost: card.cost || 0,
+                type: card.type || :action,
+                tags: card.tags || []
+              }
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+      _ -> []
+    end
+  end
+  defp get_hand_cards(_game, _user_id), do: mock_hand_cards()
+
+  defp get_player_talents(nil, _user_id), do: mock_player_talents()
+  defp get_player_talents(%{players: players} = _game, user_id) when is_map(players) do
+    case Map.get(players, user_id) do
+      nil -> []
+      player ->
+        Enum.map(player.talents || [], fn talent_id ->
+          talent_id_atom = convert_to_atom(talent_id)
+          case Shinkanki.Card.get_talent(talent_id_atom) do
+            nil -> nil
+            talent ->
+              %{
+                id: talent.id,
+                name: talent.name,
+                description: talent.description,
+                compatible_tags: talent.compatible_tags || [],
+                is_used: Enum.member?(player.used_talents || [], talent_id)
+              }
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+    end
+  end
+  defp get_player_talents(_game, _user_id), do: mock_player_talents()
+
+  defp get_active_projects(nil), do: mock_active_projects()
+  defp get_active_projects(%{available_projects: projects} = game) when is_list(projects) do
+    Enum.map(projects, fn project_id ->
+      project_id_atom = convert_to_atom(project_id)
+      case Shinkanki.Card.get_project(project_id_atom) do
+        nil -> nil
+        project ->
+          progress_data = Map.get(game.project_progress || %{}, project_id, %{})
+          progress = Map.get(progress_data, :progress, 0)
+          is_completed = Enum.member?(game.completed_projects || [], project_id)
+
+          %{
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            cost: project.cost || 0,
+            progress: progress,
+            required_progress: project.required_progress || 0,
+            effect: project.effect || %{},
+            unlock_condition: project.unlock_condition || %{},
+            is_unlocked: true,
+            is_completed: is_completed,
+            contributed_talents: []
+          }
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+  defp get_active_projects(_game), do: mock_active_projects()
+
+  defp convert_to_atom(id) when is_atom(id), do: id
+  defp convert_to_atom(id) when is_binary(id) do
+    try do
+      String.to_existing_atom(id)
+    rescue
+      ArgumentError ->
+        # If atom doesn't exist, try to create it (for development)
+        String.to_atom(id)
+    end
+  end
+  defp convert_to_atom(id), do: id
 end

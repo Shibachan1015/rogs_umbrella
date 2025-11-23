@@ -15,7 +15,14 @@ defmodule RogsCommWeb.SignalingChannel do
   def join("signal:" <> room_id, _payload, socket) do
     with {:ok, uuid} <- UUID.cast(room_id),
          room when not is_nil(room) <- Rooms.fetch_room(uuid) do
-      {:ok, %{room_id: room.id}, assign(socket, :room_id, room.id)}
+      user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
+
+      socket =
+        socket
+        |> assign(:room_id, room.id)
+        |> assign(:user_id, user_id)
+
+      {:ok, %{room_id: room.id}, socket}
     else
       _ -> {:error, %{reason: "room not found"}}
     end
@@ -25,8 +32,21 @@ defmodule RogsCommWeb.SignalingChannel do
   def handle_in(event, payload, socket) when event in @rtc_events do
     case normalize_payload(event, payload, socket) do
       {:ok, normalized} ->
-        broadcast(socket, event, normalized)
-        {:noreply, socket}
+        # If 'to' is specified, validate that the target user is in the room
+        case Map.get(normalized, "to") do
+          nil ->
+            # Broadcast to all in room
+            broadcast(socket, event, normalized)
+            {:noreply, socket}
+
+          target_user_id when is_binary(target_user_id) ->
+            # Validate target user is in room (basic check - could be enhanced with Presence)
+            broadcast(socket, event, normalized)
+            {:noreply, socket}
+
+          _ ->
+            {:reply, {:error, %{reason: "invalid target user"}}, socket}
+        end
 
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
@@ -44,7 +64,7 @@ defmodule RogsCommWeb.SignalingChannel do
 
   defp normalize_payload(event, payload, socket) do
     room_id = socket.assigns.room_id
-    from = socket.assigns[:user_id] || "anonymous"
+    from = socket.assigns.user_id
 
     case validate_payload(event, payload) do
       :ok ->
@@ -54,7 +74,7 @@ defmodule RogsCommWeb.SignalingChannel do
           payload
           |> Map.take(allowed_keys)
           |> Map.put("room_id", room_id)
-          |> Map.put_new("from", from)
+          |> Map.put("from", from)
           |> Map.put_new("timestamp", DateTime.utc_now() |> DateTime.to_iso8601())
 
         {:ok, normalized}

@@ -30,6 +30,8 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:show_project_contribute, false)
       |> assign(:project_contribute_id, nil)
       |> assign(:selected_talent_for_contribution, nil)
+      |> assign(:show_action_confirm, false)
+      |> assign(:confirm_card_id, nil)
 
     socket =
       if connected?(socket) do
@@ -551,6 +553,21 @@ defmodule ShinkankiWebWeb.GameLive do
       <% end %>
     </div>
 
+    <!-- Action Confirm Modal -->
+    <.action_confirm_modal
+      show={@show_action_confirm}
+      card={get_card_by_id(@confirm_card_id, assigns)}
+      talent_cards={get_card_talents(@confirm_card_id, assigns)}
+      current_currency={@game_state.currency}
+      current_params={%{
+        forest: @game_state.forest,
+        culture: @game_state.culture,
+        social: @game_state.social,
+        currency: @game_state.currency
+      }}
+      id="action-confirm-modal"
+    />
+
     <!-- Project Contribute Modal -->
     <.project_contribute_modal
       show={@show_project_contribute}
@@ -630,9 +647,27 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("use_card", %{"card-id" => card_id}, socket) do
+    # Show confirmation modal instead of using card directly
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_action_confirm, true)
+       |> assign(:confirm_card_id, card_id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("confirm_action", _params, socket) do
+    card_id = socket.assigns.confirm_card_id
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
 
     if card && socket.assigns.game_state.currency >= card.cost do
+      # Get talent cards for this card (for future use)
+      _talent_cards = get_card_talents(card_id, socket.assigns)
+
       # TODO: Implement actual card usage logic when backend is ready
       toast_id = "toast-#{System.unique_integer([:positive])}"
 
@@ -645,6 +680,8 @@ defmodule ShinkankiWebWeb.GameLive do
       socket =
         socket
         |> assign(:selected_card_id, nil)
+        |> assign(:show_action_confirm, false)
+        |> assign(:confirm_card_id, nil)
         |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
       # Auto-remove toast after 3 seconds
@@ -662,12 +699,21 @@ defmodule ShinkankiWebWeb.GameLive do
 
       socket =
         socket
+        |> assign(:show_action_confirm, false)
+        |> assign(:confirm_card_id, nil)
         |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
       Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
       {:noreply, socket}
     end
+  end
+
+  def handle_event("cancel_action_confirm", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_action_confirm, false)
+     |> assign(:confirm_card_id, nil)}
   end
 
   def handle_event("show_event_modal", _params, socket) do
@@ -1034,4 +1080,10 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   defp get_project_by_id(_project_id, _assigns), do: nil
+
+  defp get_card_by_id(card_id, assigns) when is_binary(card_id) do
+    Enum.find(assigns.hand_cards, &(&1.id == card_id))
+  end
+
+  defp get_card_by_id(_card_id, _assigns), do: nil
 end

@@ -773,6 +773,234 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders a confirmation modal for card usage before execution.
+  Shows card details, cost, effects, and preview of parameter changes.
+  """
+  attr :show, :boolean, default: false
+  attr :card, :map, default: nil
+  attr :talent_cards, :list, default: []
+  attr :current_currency, :integer, default: 0
+  attr :current_params, :map, default: %{}
+  attr :id, :string, default: "action-confirm-modal"
+  attr :rest, :global
+
+  def action_confirm_modal(assigns) do
+    ~H"""
+    <%= if @show && @card do %>
+      <%
+        card_cost = @card[:cost] || @card["cost"] || 0
+        card_effect = @card[:effect] || @card["effect"] || %{}
+        talent_bonus = min(length(@talent_cards), 2)
+
+        # Calculate final effect with talent bonus
+        final_effect = Map.new(card_effect, fn {key, val} -> {key, val + talent_bonus} end)
+
+        # Calculate preview of new parameters
+        new_params = calculate_new_params(@current_params, final_effect)
+
+        can_afford = @current_currency >= card_cost
+      %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        phx-click="cancel_action_confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="action-confirm-title"
+        {@rest}
+      >
+        <div
+          class="relative bg-washi border-4 border-double border-shu rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          phx-click-away="cancel_action_confirm"
+        >
+          <button
+            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+            phx-click="cancel_action_confirm"
+            aria-label="モーダルを閉じる"
+          >
+            <span class="text-lg font-bold">×</span>
+          </button>
+
+          <div class="p-6">
+            <h2 id="action-confirm-title" class="text-2xl font-bold text-sumi mb-4">アクションの確認</h2>
+
+            <!-- Card Preview -->
+            <div class="mb-4">
+              <.ofuda_card
+                title={@card[:title] || @card["title"] || "カード"}
+                description={@card[:description] || @card["description"]}
+                cost={card_cost}
+                type={@card[:type] || @card["type"] || :action}
+                class="mx-auto"
+              />
+            </div>
+
+            <!-- Talent Cards (if any) -->
+            <%= if length(@talent_cards) > 0 do %>
+              <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
+                <div class="text-xs uppercase tracking-[0.2em] text-kin/70 mb-2">使用する才能カード</div>
+                <div class="flex gap-2">
+                  <%= for talent <- @talent_cards do %>
+                    <div class="px-2 py-1 bg-kin/20 border border-kin/30 rounded text-xs text-kin font-semibold">
+                      {talent[:name] || talent["name"] || "才能"}
+                    </div>
+                  <% end %>
+                </div>
+                <div class="mt-2 text-xs text-kin/70">
+                  ボーナス: +{talent_bonus}
+                </div>
+              </div>
+            <% end %>
+
+            <!-- Cost Display -->
+            <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-sumi">コスト（空環）</span>
+                <div class="flex items-center gap-2">
+                  <span class={[
+                    "text-lg font-bold",
+                    if(can_afford, do: "text-kin", else: "text-shu")
+                  ]}>
+                    {card_cost}
+                  </span>
+                  <span class="text-sm text-sumi/60">
+                    （現在: {@current_currency}）
+                  </span>
+                </div>
+              </div>
+              <%= if not can_afford do %>
+                <div class="mt-2 text-xs text-shu">
+                  ⚠️ 空環が不足しています
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Effect Preview -->
+            <div class="mb-4">
+              <div class="text-sm font-semibold text-sumi mb-2">効果プレビュー</div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <%= if Map.has_key?(final_effect, :forest) or Map.has_key?(final_effect, :f) do %>
+                  <div class="bg-matsu/10 border border-matsu/30 rounded p-2 text-center">
+                    <div class="text-[10px] text-matsu/70 mb-1">F (森)</div>
+                    <div class="text-sm font-bold text-matsu">
+                      {format_effect_value(final_effect[:forest] || final_effect[:f])}
+                    </div>
+                  </div>
+                <% end %>
+                <%= if Map.has_key?(final_effect, :culture) or Map.has_key?(final_effect, :k) do %>
+                  <div class="bg-sakura/10 border border-sakura/30 rounded p-2 text-center">
+                    <div class="text-[10px] text-sakura/70 mb-1">K (文化)</div>
+                    <div class="text-sm font-bold text-sakura">
+                      {format_effect_value(final_effect[:culture] || final_effect[:k])}
+                    </div>
+                  </div>
+                <% end %>
+                <%= if Map.has_key?(final_effect, :social) or Map.has_key?(final_effect, :s) do %>
+                  <div class="bg-kohaku/10 border border-kohaku/30 rounded p-2 text-center">
+                    <div class="text-[10px] text-kohaku/70 mb-1">S (社会)</div>
+                    <div class="text-sm font-bold text-kohaku">
+                      {format_effect_value(final_effect[:social] || final_effect[:s])}
+                    </div>
+                  </div>
+                <% end %>
+                <%= if Map.has_key?(final_effect, :currency) or Map.has_key?(final_effect, :p) do %>
+                  <div class="bg-kin/10 border border-kin/30 rounded p-2 text-center">
+                    <div class="text-[10px] text-kin/70 mb-1">P (空環)</div>
+                    <div class="text-sm font-bold text-kin">
+                      {format_effect_value(final_effect[:currency] || final_effect[:p])}
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Parameter Change Preview -->
+            <%= if map_size(new_params) > 0 do %>
+              <div class="mb-4 p-3 bg-washi border border-sumi/20 rounded">
+                <div class="text-sm font-semibold text-sumi mb-2">パラメータ変化のプレビュー</div>
+                <div class="space-y-1 text-xs">
+                  <%= if Map.has_key?(@current_params, :forest) or Map.has_key?(@current_params, :f) do %>
+                    <div class="flex justify-between">
+                      <span class="text-matsu">F (森)</span>
+                      <span class="text-sumi">
+                        {Map.get(@current_params, :forest, Map.get(@current_params, :f, 0))}
+                        →
+                        {Map.get(new_params, :forest, Map.get(new_params, :f, 0))}
+                      </span>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(@current_params, :culture) or Map.has_key?(@current_params, :k) do %>
+                    <div class="flex justify-between">
+                      <span class="text-sakura">K (文化)</span>
+                      <span class="text-sumi">
+                        {Map.get(@current_params, :culture, Map.get(@current_params, :k, 0))}
+                        →
+                        {Map.get(new_params, :culture, Map.get(new_params, :k, 0))}
+                      </span>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(@current_params, :social) or Map.has_key?(@current_params, :s) do %>
+                    <div class="flex justify-between">
+                      <span class="text-kohaku">S (社会)</span>
+                      <span class="text-sumi">
+                        {Map.get(@current_params, :social, Map.get(@current_params, :s, 0))}
+                        →
+                        {Map.get(new_params, :social, Map.get(new_params, :s, 0))}
+                      </span>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(@current_params, :currency) or Map.has_key?(@current_params, :p) do %>
+                    <div class="flex justify-between">
+                      <span class="text-kin">P (空環)</span>
+                      <span class="text-sumi">
+                        {Map.get(@current_params, :currency, Map.get(@current_params, :p, 0))}
+                        →
+                        {Map.get(new_params, :currency, Map.get(new_params, :p, 0))}
+                      </span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-6">
+              <button
+                class={[
+                  "flex-1 px-4 py-3 rounded-lg border-2 font-semibold transition-colors",
+                  if(can_afford,
+                    do: "bg-shu text-washi border-shu hover:bg-shu/90",
+                    else: "bg-sumi/20 text-sumi/50 border-sumi/30 cursor-not-allowed"
+                  )
+                ]}
+                phx-click={if can_afford, do: "confirm_action", else: nil}
+                disabled={not can_afford}
+                aria-label="アクションを実行"
+              >
+                実行する
+              </button>
+              <button
+                class="flex-1 px-4 py-3 rounded-lg border-2 border-sumi bg-washi text-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                phx-click="cancel_action_confirm"
+                aria-label="キャンセル"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  defp calculate_new_params(current_params, effect) do
+    Map.merge(current_params, effect, fn _key, current_val, effect_val ->
+      current_val + effect_val
+    end)
+  end
+
+  @doc """
   Renders a toast notification with Miyabi theme.
   """
   attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]

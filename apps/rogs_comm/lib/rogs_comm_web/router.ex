@@ -27,6 +27,7 @@ defmodule RogsCommWeb.Router do
 
     get "/", PageController, :home
     live "/rooms", RoomIndexLive, :index
+    post "/rooms", RoomController, :create
     live "/rooms/:room_id/chat", ChatLive
   end
 

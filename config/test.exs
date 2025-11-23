@@ -1,5 +1,9 @@
 import Config
 
+# Only in tests, remove the complexity from the password hashing algorithm
+config :bcrypt_elixir, :log_rounds, 1
+
+# Database configuration variables
 db_user = System.get_env("ROGS_DB_USER", "takashiba")
 db_pass = System.get_env("ROGS_DB_PASS", "postgres")
 db_host = System.get_env("ROGS_DB_HOST", "localhost")
@@ -49,3 +53,9 @@ config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "fXs5MBA7YbZwilrl7rihhhMmEJ8GHMJ5f3uaoSMp8eVSv7LhhtAw+ykccnmnW0NG",
   server: false
+
+# In test we don't send emails
+config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Test
+
+# Disable swoosh api client as it is only required for production adapters
+config :swoosh, :api_client, false

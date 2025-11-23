@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<game_rules>
+    <title>神環記 : Record of the Gods</title>
+    <version>1.0.0</version>
+    <description>八百万の神々となって、森・文化・コミュニティを育て、空環マネーを使って20年間で世界を立て直す協力型シミュレーションボードゲーム。</description>
+
+    <parameters>
+        <param id="F">
+            <name>森 (Forest)</name>
+            <description>自然環境の豊かさ。0になるとゲームオーバー。</description>
+        </param>
+        <param id="K">
+            <name>文化 (Culture)</name>
+            <description>伝統、芸術、知恵の豊かさ。0になるとゲームオーバー。</description>
+        </param>
+        <param id="S">
+            <name>コミュニティ (Social)</name>
+            <description>人々のつながり、信頼関係。0になるとゲームオーバー。</description>
+        </param>
+        <param id="P">
+            <name>空環 (Akasha Point)</name>
+            <description>
+                循環する通貨。使うほど循環し、貯め込むと減衰する。
+                単位は 1 Akasha。
+            </description>
+            <rule type="demurrage">
+                ターン終了時（または特定フェーズ）に減衰処理が行われる。
+            </rule>
+        </param>
+        <param id="L">
+            <name>生命指数 (Life Index)</name>
+            <formula>L = F + K + S</formula>
+            <description>世界の生命力。エンディング分岐の基準となる。</description>
+        </param>
+    </parameters>
+
+    <game_settings>
+        <duration>20 years (20 turns)</duration>
+        <players>1-4 (Recommended: 4)</players>
+        <endings>
+            <ending condition="L >= 40">🌈 神々の祝福エンディング</ending>
+            <ending condition="30 <= L < 40">🌿 浄化の兆しエンディング</ending>
+            <ending condition="20 <= L < 30">🌙 揺らぎの未来エンディング</ending>
+            <ending condition="L <= 19">🔥 神々の嘆き（文明崩壊）</ending>
+            <ending condition="F=0 or K=0 or S=0">💀 即時ゲームオーバー</ending>
+        </endings>
+    </game_settings>
+
+    <roles>
+        <role id="forest_guardian">
+            <name>森の守り手</name>
+            <focus>F (Forest) の保護と育成</focus>
+        </role>
+        <role id="culture_keeper">
+            <name>文化の継承者</name>
+            <focus>K (Culture) の継承と発展</focus>
+        </role>
+        <role id="community_light">
+            <name>コミュニティの灯火</name>
+            <focus>S (Social) の結束と強化</focus>
+        </role>
+        <role id="akasha_engineer">
+            <name>空環エンジニア</name>
+            <focus>P (Akasha) の循環と技術</focus>
+        </role>
+    </roles>
+
+    <turn_flow>
+        <phase sequence="1">イベントフェーズ: イベントカードを1枚めくり、効果を適用する。</phase>
+        <phase sequence="2">相談フェーズ: プレイヤー全員で方針を相談する。</phase>
+        <phase sequence="3">アクションフェーズ: アクションカードを選択し、実行する（才能カードでのボーナスあり）。</phase>
+        <phase sequence="4">減衰フェーズ: 空環ポイント(P)の減衰（デミュレージ）処理。</phase>
+        <phase sequence="5">生命更新フェーズ: L = F + K + S を再計算。</phase>
+        <phase sequence="6">判定フェーズ: ゲームオーバー条件のチェック。</phase>
+    </turn_flow>
+
+    <card_types>
+        <type id="event">
+            <name>イベントカード</name>
+            <count>25</count>
+            <description>災害、祭り、神々の加護、旧経済の誘惑など、ターン開始時に発生する事象。</description>
+        </type>
+        <type id="action">
+            <name>アクションカード</name>
+            <count>20</count>
+            <description>プレイヤーが実行できる行動。コスト(P)と効果(F,K,Sへの増減)を持つ。</description>
+        </type>
+        <type id="talent">
+            <name>才能カード</name>
+            <count>20</count>
+            <description>
+                各プレイヤーが持つ特殊能力。
+                アクションカードに重ねることで、効果に+1ボーナスを与える。
+                最大2枚重ねて+2まで可能。
+            </description>
+        </type>
+        <type id="project">
+            <name>共創プロジェクトカード</name>
+            <description>
+                全員で協力して達成を目指す長期プロジェクト。
+                才能カードを捧げることで進行し、完成すると大きな恩恵がある。
+            </description>
+        </type>
+    </card_types>
+
+    <concepts>
+        <concept name="Demurrage (減衰)">
+            お金（空環）は貯め込むと価値が減るため、積極的に使って循環させることが推奨されるシステム。
+        </concept>
+        <concept name="Divinity (神性)">
+            「人間もまた八百万の神の一柱である」というテーマ。プレイヤーは神格を通じてそれを思い出す。
+        </concept>
+    </concepts>
+</game_rules>
+

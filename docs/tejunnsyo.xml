@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manual>
+    <title>Rogs Umbrella 開発環境セットアップ＆運用手順書</title>
+    <version>1.0.0</version>
+    <last_updated>2025-11-22</last_updated>
+
+    <overview>
+        <description>
+            本プロジェクト（Rogs Umbrella）では、Git Worktreeを使用したマルチディレクトリ開発運用を採用しています。
+            各機能（Identity, Chat, Main, UI）ごとに独立したディレクトリ（Worktree）を持つことで、
+            コンテキストの切り替えを容易にし、並行開発を効率化します。
+        </description>
+    </overview>
+
+    <directory_structure>
+        <description>プロジェクトルートと同じ階層に以下のWorktreeを展開して運用します。</description>
+        <worktrees>
+            <worktree>
+                <name>rogs_umbrella</name>
+                <role>Main / Merge / Deploy</role>
+                <description>
+                    Gitのメインリポジトリ（またはBareリポジトリからのメインWorktree）。
+                    開発は原則行わず、mainブランチを維持し、各機能ブランチのマージやデプロイ作業を行う場所。
+                </description>
+            </worktree>
+            <worktree>
+                <name>rogs-identity</name>
+                <role>Identity機能開発</role>
+                <target_app>apps/rogs_identity</target_app>
+                <description>認証、ユーザー管理、権限周りの実装を行う。</description>
+            </worktree>
+            <worktree>
+                <name>rogs-chat</name>
+                <role>Chat機能開発</role>
+                <target_app>apps/rogs_comm</target_app>
+                <description>チャット、WebSocket通信、メッセージ処理の実装を行う。</description>
+            </worktree>
+            <worktree>
+                <name>rogs-shinkanki</name>
+                <role>Main Logic開発</role>
+                <target_app>apps/shinkanki, apps/shinkanki_web</target_app>
+                <description>新歓管理アプリケーションのメインロジックおよびWeb側の実装を行う。</description>
+            </worktree>
+            <worktree>
+                <name>rogs-ui</name>
+                <role>UI / Component開発</role>
+                <target_app>All apps (CoreComponents)</target_app>
+                <description>
+                    共通コンポーネント（core_components.ex）、CSS、デザイン調整を行う。
+                    全アプリに影響する横断的な変更を担当。
+                </description>
+            </worktree>
+        </worktrees>
+    </directory_structure>
+
+    <setup_instructions>
+        <step id="1">
+            <title>Worktreeの作成</title>
+            <command>git worktree add ../[ディレクトリ名] -b [ブランチ名]</command>
+            <examples>
+                <example>git worktree add ../rogs-identity -b feature/auth-basic</example>
+                <example>git worktree add ../rogs-chat -b feature/chat-setup</example>
+                <example>git worktree add ../rogs-ui -b feature/ui-improvement</example>
+            </examples>
+        </step>
+        <step id="2">
+            <title>エディタ（Cursor/VS Code）への追加</title>
+            <instruction>
+                1. メニューバーの [ファイル] (File) > [ワークスペースにフォルダーを追加...] (Add Folder to Workspace...) を選択。
+                2. 作成したWorktreeのディレクトリを選択して追加。
+                3. サイドバーのエクスプローラーに複数のルートが表示されれば完了。
+            </instruction>
+        </step>
+    </setup_instructions>
+
+    <development_flow>
+        <phase id="1">
+            <name>開発 (Develop)</name>
+            <description>
+                各Worktree（rogs-identity, rogs-chat等）でそれぞれの機能開発を行う。
+                互いに干渉しないため、独立してコミット・プッシュが可能。
+            </description>
+        </phase>
+        <phase id="2">
+            <name>同期 (Sync)</name>
+            <description>
+                機能の実装が完了したら、GitHubへプッシュしてPull Requestを作成する。
+                または、rogs_umbrella (main) にマージする。
+            </description>
+        </phase>
+        <phase id="3">
+            <name>統合 (Integrate)</name>
+            <description>
+                rogs_umbrellaディレクトリで `git pull` を行い、最新のmainブランチを取得。
+                他のWorktreeで最新の変更が必要な場合は、そのWorktreeで `git merge main` を行う。
+            </description>
+        </phase>
+    </development_flow>
+
+    <notes>
+        <note>
+            全てのWorktreeはGitHub上の同一リポジトリを共有しています。
+            `.gitignore` やリモート設定は共通ですが、Stash（退避）の内容は各Worktree固有となります。
+        </note>
+        <note>
+            同じブランチを複数のWorktreeで同時にチェックアウトすることはできません。
+        </note>
+    </notes>
+</manual>
+

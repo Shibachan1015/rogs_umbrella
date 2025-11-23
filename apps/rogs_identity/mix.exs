@@ -44,6 +44,8 @@ defmodule RogsIdentity.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:bcrypt_elixir, "~> 3.0"},
+      {:swoosh, "~> 1.4"},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
@@ -84,6 +86,7 @@ defmodule RogsIdentity.MixProject do
         "ecto.migrate",
         fn _ ->
           seeds_file = Path.join(__DIR__, "priv/repo/seeds.exs")
+
           if File.exists?(seeds_file) do
             Mix.Task.run("run", [seeds_file])
           else

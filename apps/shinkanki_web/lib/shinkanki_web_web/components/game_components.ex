@@ -1015,9 +1015,9 @@ defmodule ShinkankiWebWeb.GameComponents do
 
   def ending_screen(assigns) do
     ending_type = determine_ending_type(assigns.game_status, assigns.life_index, assigns.final_stats)
-    
+
     ending_data = get_ending_data(ending_type)
-    
+
     assigns =
       assigns
       |> assign(:ending_type, ending_type)
@@ -1111,7 +1111,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     forest = final_stats[:forest] || final_stats["forest"] || 0
     culture = final_stats[:culture] || final_stats["culture"] || 0
     social = final_stats[:social] || final_stats["social"] || 0
-    
+
     if forest == 0 || culture == 0 || social == 0 do
       :instant_loss
     else
@@ -1186,7 +1186,7 @@ defmodule ShinkankiWebWeb.GameComponents do
   Renders a role selection screen for players to choose their role.
   """
   attr :show, :boolean, default: true
-  attr :selected_role, :atom, default: nil, values: [:forest_guardian, :culture_keeper, :community_light, :akasha_engineer]
+  attr :selected_role, :any, default: nil
   attr :available_roles, :list, default: []
   attr :id, :string, default: "role-selection-screen"
   attr :rest, :global
@@ -1257,7 +1257,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <%= for role <- @roles do %>
                 <%
-                  is_selected = @selected_role == role.id
+                  is_selected = @selected_role != nil && @selected_role == role.id
                   is_available = Enum.empty?(@available_roles) || Enum.member?(@available_roles, role.id)
                   color_class = case role.color do
                     "matsu" -> "border-matsu bg-matsu/5"
@@ -1278,7 +1278,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                     if(not is_available, do: "opacity-50 cursor-not-allowed", else: "")
                   ]}
                   phx-click={if is_available, do: "select_role", else: nil}
-                  phx-value-role-id={role.id}
+                  phx-value-role-id={Atom.to_string(role.id)}
                   role="button"
                   aria-label={"役割: #{role.name}"}
                   aria-pressed={is_selected}

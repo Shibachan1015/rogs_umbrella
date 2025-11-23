@@ -266,8 +266,16 @@ defmodule RogsIdentity.Accounts do
      `mix help phx.gen.auth`.
   """
   def login_user_by_magic_link(token) do
-    {:ok, query} = UserToken.verify_magic_link_token_query(token)
+    case UserToken.verify_magic_link_token_query(token) do
+      {:ok, query} ->
+        do_login_user_by_magic_link(query)
 
+      :error ->
+        {:error, :invalid_token}
+    end
+  end
+
+  defp do_login_user_by_magic_link(query) do
     case Repo.one(query) do
       # Prevent session fixation attacks by disallowing magic links for unconfirmed users with password
       {%User{confirmed_at: nil, hashed_password: hash}, _token} when not is_nil(hash) ->
@@ -331,6 +339,38 @@ defmodule RogsIdentity.Accounts do
   end
 
   @doc """
+  Delivers confirmation instructions to the given user.
+  This is used to resend confirmation emails.
+  """
+  def deliver_confirmation_instructions(%User{} = user, confirmation_url_fun)
+      when is_function(confirmation_url_fun, 1) do
+    {encoded_token, user_token} = UserToken.build_email_token(user, "login")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
+  end
+
+  @doc """
+  Checks if the user's email is confirmed.
+  """
+  def email_confirmed?(%User{confirmed_at: nil}), do: false
+  def email_confirmed?(%User{confirmed_at: _}), do: true
+  def email_confirmed?(_), do: false
+
+  @doc """
+  Requires email confirmation for the given user.
+  Returns {:ok, user} if confirmed, {:error, :email_not_confirmed} otherwise.
+  """
+  def require_email_confirmed(%User{} = user) do
+    if email_confirmed?(user) do
+      {:ok, user}
+    else
+      {:error, :email_not_confirmed}
+    end
+  end
+
+  def require_email_confirmed(_), do: {:error, :email_not_confirmed}
+
+  @doc """
   Gets the user by password reset token.
   """
   def get_user_by_password_reset_token(token) do
@@ -363,8 +403,78 @@ defmodule RogsIdentity.Accounts do
   Deletes the signed token with the given context.
   """
   def delete_user_session_token(token) do
+    # Log session invalidation
+    log_session_invalidation(token)
     Repo.delete_all(from(UserToken, where: [token: ^token, context: "session"]))
     :ok
+  end
+
+  @doc """
+  Gets all active session tokens for a user.
+  """
+  def list_user_session_tokens(user) do
+    from(t in UserToken,
+      where: t.user_id == ^user.id and t.context == "session",
+      where: t.inserted_at > ago(14, "day"),
+      order_by: [desc: t.inserted_at],
+      select: %{
+        id: t.id,
+        inserted_at: t.inserted_at,
+        authenticated_at: t.authenticated_at
+      }
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Deletes a specific session token by ID.
+  Returns :ok if deleted, :error if not found.
+  """
+  def delete_user_session_token_by_id(user, token_id) do
+    case Repo.get_by(UserToken, id: token_id, user_id: user.id, context: "session") do
+      nil ->
+        :error
+
+      token ->
+        log_session_invalidation_by_id(user.id, token_id)
+        Repo.delete(token)
+        :ok
+    end
+  end
+
+  @doc """
+  Deletes all session tokens for a user except the current one.
+  """
+  def delete_all_other_sessions(user, current_token) do
+    from(t in UserToken,
+      where: t.user_id == ^user.id and t.context == "session" and t.token != ^current_token
+    )
+    |> Repo.delete_all()
+    |> elem(0)
+  end
+
+  @doc """
+  Gets the count of active sessions for a user.
+  """
+  def count_user_sessions(user) do
+    from(t in UserToken,
+      where: t.user_id == ^user.id and t.context == "session",
+      where: t.inserted_at > ago(14, "day")
+    )
+    |> Repo.aggregate(:count, :id)
+  end
+
+  # Private helper for logging
+  defp log_session_invalidation(token) do
+    # In production, you might want to use a proper logging service
+    # For now, we'll just use Logger
+    require Logger
+    Logger.info("Session invalidated: token=#{Base.encode64(token, padding: false)}")
+  end
+
+  defp log_session_invalidation_by_id(user_id, token_id) do
+    require Logger
+    Logger.info("Session invalidated: user_id=#{user_id}, token_id=#{token_id}")
   end
 
   ## Token helper

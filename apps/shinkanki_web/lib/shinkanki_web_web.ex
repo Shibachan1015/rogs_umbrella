@@ -81,6 +81,7 @@ defmodule ShinkankiWebWeb do
       import Phoenix.HTML
       # Core UI components
       import ShinkankiWebWeb.CoreComponents
+      import ShinkankiWebWeb.GameComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

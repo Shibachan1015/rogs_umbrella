@@ -79,5 +79,20 @@ config :shinkanki, Shinkanki.Repo,
 config :esbuild, :version, "0.17.11"
 config :tailwind, :version, "3.4.3"
 
+# --- 3.1. アセット設定 (shinkanki_web) ---
+config :esbuild,
+  shinkanki_web: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../apps/shinkanki_web/assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :tailwind,
+  shinkanki_web: [
+    args: ~w(--input=css/app.css --output=../priv/static/assets/app.css),
+    cd: Path.expand("../apps/shinkanki_web/assets", __DIR__)
+  ]
+
 # --- 3. 環境設定の読み込み ---
 import_config "#{config_env()}.exs"

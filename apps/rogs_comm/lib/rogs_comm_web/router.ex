@@ -18,6 +18,7 @@ defmodule RogsCommWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/rooms/:room_id/chat", ChatLive
   end
 
   # Other scopes may use custom stacks.

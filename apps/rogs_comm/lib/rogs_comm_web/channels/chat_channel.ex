@@ -85,20 +85,36 @@ defmodule RogsCommWeb.ChatChannel do
       user_email: user_email
     }
 
-    with {:ok, message} <- Messages.create_message(params) do
-      payload = %{
-        id: message.id,
-        content: message.content,
-        user_id: message.user_id,
-        user_email: message.user_email,
-        inserted_at: message.inserted_at
-      }
+    trimmed_content = String.trim(content)
 
-      broadcast(socket, "new_message", payload)
-      {:noreply, socket}
+    if trimmed_content == "" do
+      {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
     else
-      {:error, _changeset} ->
-        {:reply, {:error, %{reason: "failed to create message"}}, socket}
+      params = Map.put(params, :content, trimmed_content)
+
+      case Messages.create_message(params) do
+        {:ok, message} ->
+          payload = %{
+            id: message.id,
+            content: message.content,
+            user_id: message.user_id,
+            user_email: message.user_email,
+            inserted_at: message.inserted_at
+          }
+
+          broadcast(socket, "new_message", payload)
+          {:noreply, socket}
+
+        {:error, changeset} ->
+          reason =
+            case changeset.errors do
+              [{:content, {msg, _}}] -> "message #{msg}"
+              [{:content, msg}] when is_binary(msg) -> "message #{msg}"
+              _ -> "failed to create message"
+            end
+
+          {:reply, {:error, %{reason: reason}}, socket}
+      end
     end
   end
 
@@ -111,26 +127,48 @@ defmodule RogsCommWeb.ChatChannel do
     room_id = socket.assigns.room_id
     user_id = socket.assigns.user_id
 
-    case Messages.get_message!(message_id) do
-      message when message.room_id == room_id and message.user_id == user_id ->
-        case Messages.edit_message(message, %{content: content}) do
-          {:ok, updated_message} ->
-            payload = %{
-              id: updated_message.id,
-              content: updated_message.content,
-              edited_at: updated_message.edited_at
-            }
+    trimmed_content = String.trim(content)
 
-            broadcast(socket, "message_edited", payload)
-            {:noreply, socket}
+    if trimmed_content == "" do
+      {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
+    else
+      case Messages.get_message!(message_id) do
+        message when message.room_id == room_id and message.user_id == user_id ->
+          case Messages.edit_message(message, %{content: trimmed_content}) do
+            {:ok, updated_message} ->
+              payload = %{
+                id: updated_message.id,
+                content: updated_message.content,
+                edited_at: updated_message.edited_at
+              }
 
-          {:error, _changeset} ->
-            {:reply, {:error, %{reason: "failed to edit message"}}, socket}
-        end
+              broadcast(socket, "message_edited", payload)
+              {:noreply, socket}
 
-      _ ->
-        {:reply, {:error, %{reason: "message not found or unauthorized"}}, socket}
+            {:error, changeset} ->
+              reason =
+                case changeset.errors do
+                  [{:content, {msg, _}}] -> "message #{msg}"
+                  [{:content, msg}] when is_binary(msg) -> "message #{msg}"
+                  _ -> "failed to edit message"
+                end
+
+              {:reply, {:error, %{reason: reason}}, socket}
+          end
+
+        message when message.room_id != room_id ->
+          {:reply, {:error, %{reason: "message not found in this room"}}, socket}
+
+        message when message.user_id != user_id ->
+          {:reply, {:error, %{reason: "you can only edit your own messages"}}, socket}
+
+        _ ->
+          {:reply, {:error, %{reason: "message not found"}}, socket}
+      end
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 
   @impl true
@@ -149,9 +187,18 @@ defmodule RogsCommWeb.ChatChannel do
             {:reply, {:error, %{reason: "failed to delete message"}}, socket}
         end
 
+      message when message.room_id != room_id ->
+        {:reply, {:error, %{reason: "message not found in this room"}}, socket}
+
+      message when message.user_id != user_id ->
+        {:reply, {:error, %{reason: "you can only delete your own messages"}}, socket}
+
       _ ->
-        {:reply, {:error, %{reason: "message not found or unauthorized"}}, socket}
+        {:reply, {:error, %{reason: "message not found"}}, socket}
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 
   @impl true

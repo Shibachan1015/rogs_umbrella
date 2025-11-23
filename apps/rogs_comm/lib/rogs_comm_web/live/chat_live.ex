@@ -102,8 +102,15 @@ defmodule RogsCommWeb.ChatLive do
 
           {:noreply, assign(socket, :form, to_form(%{"content" => ""}))}
 
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "メッセージの送信に失敗しました")}
+        {:error, changeset} ->
+          error_message =
+            case changeset.errors do
+              [{:content, {msg, _}}] -> "メッセージ: #{msg}"
+              [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
+              _ -> "メッセージの送信に失敗しました"
+            end
+
+          {:noreply, put_flash(socket, :error, error_message)}
       end
     end
   end
@@ -126,26 +133,48 @@ defmodule RogsCommWeb.ChatLive do
     room_id = socket.assigns.room_id
     user_id = socket.assigns[:current_user_id]
 
-    case Messages.get_message!(message_id) do
-      message when message.room_id == room_id and message.user_id == user_id ->
-        case Messages.edit_message(message, %{content: content}) do
-          {:ok, updated_message} ->
-            payload = %{
-              id: updated_message.id,
-              content: updated_message.content,
-              edited_at: updated_message.edited_at
-            }
+    trimmed_content = String.trim(content)
 
-            RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
-            {:noreply, socket}
+    if trimmed_content == "" do
+      {:noreply, put_flash(socket, :error, "メッセージ内容を入力してください")}
+    else
+      case Messages.get_message!(message_id) do
+        message when message.room_id == room_id and message.user_id == user_id ->
+          case Messages.edit_message(message, %{content: trimmed_content}) do
+            {:ok, updated_message} ->
+              payload = %{
+                id: updated_message.id,
+                content: updated_message.content,
+                edited_at: updated_message.edited_at
+              }
 
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "メッセージの編集に失敗しました")}
-        end
+              RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
+              {:noreply, socket}
 
-      _ ->
-        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+            {:error, changeset} ->
+              error_message =
+                case changeset.errors do
+                  [{:content, {msg, _}}] -> "メッセージ: #{msg}"
+                  [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
+                  _ -> "メッセージの編集に失敗しました"
+                end
+
+              {:noreply, put_flash(socket, :error, error_message)}
+          end
+
+        message when message.room_id != room_id ->
+          {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
+
+        message when message.user_id != user_id ->
+          {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
+
+        _ ->
+          {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+      end
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
   def handle_event("delete_message", %{"message_id" => message_id}, socket) do
@@ -163,9 +192,18 @@ defmodule RogsCommWeb.ChatLive do
             {:noreply, put_flash(socket, :error, "メッセージの削除に失敗しました")}
         end
 
+      message when message.room_id != room_id ->
+        {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
+
+      message when message.user_id != user_id ->
+        {:noreply, put_flash(socket, :error, "自分のメッセージのみ削除できます")}
+
       _ ->
-        {:noreply, put_flash(socket, :error, "メッセージが見つからないか、権限がありません")}
+        {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
   @impl true

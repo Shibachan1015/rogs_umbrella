@@ -8,6 +8,8 @@ defmodule Shinkanki.Game do
   @initial_hand_size 3
   @max_talents_per_action 2
   @deck_cycles 3
+  @min_players 1
+  @max_players 4
 
   defstruct [
     :room_id,
@@ -22,14 +24,18 @@ defmodule Shinkanki.Game do
     currency: 100,
     # Life Index (L) = F + K + S
     life_index: 150,
-    # :playing, :won, :lost
-    status: :playing,
+    # :waiting, :playing, :won, :lost
+    status: :waiting,
     # Ending type when game ends: :blessing, :purification, :uncertainty, :lament, :instant_loss
     ending_type: nil,
     # Current game phase: :event, :discussion, :action, :demurrage, :life_update, :judgment
     phase: :event,
     logs: [],
     players: %{},
+    # Player order for turn-based actions
+    player_order: [],
+    # Current player index in action phase
+    current_player_index: 0,
     deck: [],
     discard_pile: [],
     hands: %{},
@@ -52,11 +58,13 @@ defmodule Shinkanki.Game do
           social: integer(),
           currency: integer(),
           life_index: integer(),
-          status: :playing | :won | :lost,
+          status: :waiting | :playing | :won | :lost,
           ending_type: atom() | nil,
           phase: atom(),
           logs: list(),
           players: %{optional(String.t()) => Player.t()},
+          player_order: list(String.t()),
+          current_player_index: integer(),
           deck: list(atom()),
           discard_pile: list(atom()),
           hands: %{optional(String.t()) => list(atom())},
@@ -106,8 +114,14 @@ defmodule Shinkanki.Game do
   """
   def join(%__MODULE__{} = game, player_id, name, talent_ids \\ nil) do
     cond do
-      game.status != :playing ->
+      game.status in [:won, :lost] ->
         {:error, :game_over}
+
+      game.status == :playing ->
+        {:error, :game_already_started}
+
+      length(game.player_order) >= @max_players ->
+        {:error, :max_players_reached}
 
       Map.has_key?(game.players, player_id) ->
         {:error, :already_joined}
@@ -119,7 +133,11 @@ defmodule Shinkanki.Game do
           Player.new(player_id, name)
           |> Map.put(:talents, talents)
 
-        game_with_player = %{game | players: Map.put(game.players, player_id, player)}
+        game_with_player = %{
+          game
+          | players: Map.put(game.players, player_id, player),
+            player_order: game.player_order ++ [player_id]
+        }
 
         {:ok,
          game_with_player
@@ -271,6 +289,82 @@ defmodule Shinkanki.Game do
     do: {:error, :game_over}
 
   @doc """
+  Marks a player as ready in the discussion phase.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def mark_discussion_ready(%__MODULE__{status: :playing, phase: :discussion} = game, player_id) do
+    case Map.get(game.players, player_id) do
+      nil ->
+        {:error, :player_not_found}
+
+      player ->
+        if player.is_ready do
+          {:error, :already_ready}
+        else
+          new_game =
+            game
+            |> mark_player_ready(player_id)
+            |> add_log("#{player.name} is ready for action phase")
+
+          # Check if all players are ready and advance phase
+          final_game =
+            if all_players_discussion_ready?(new_game) do
+              new_game
+              |> add_log("All players ready - advancing to action phase")
+              |> set_phase(:action)
+            else
+              new_game
+            end
+
+          {:ok, final_game}
+        end
+    end
+  end
+
+  def mark_discussion_ready(%__MODULE__{phase: phase}, _player_id) when phase != :discussion do
+    {:error, :not_discussion_phase}
+  end
+
+  def mark_discussion_ready(_game, _player_id), do: {:error, :game_over}
+
+  @doc """
+  Starts the game if minimum player requirements are met.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def start_game(%__MODULE__{status: :waiting} = game) do
+    player_count = length(game.player_order)
+
+    cond do
+      player_count < @min_players ->
+        {:error, :not_enough_players}
+
+      player_count > @max_players ->
+        {:error, :too_many_players}
+
+      true ->
+        new_game =
+          game
+          |> Map.put(:status, :playing)
+          |> add_log("Game started with #{player_count} player(s)")
+
+        {:ok, new_game}
+    end
+  end
+
+  def start_game(%__MODULE__{status: :playing}), do: {:error, :game_already_started}
+  def start_game(_game), do: {:error, :game_over}
+
+  @doc """
+  Checks if the game can be started (meets minimum player requirements).
+  """
+  def can_start?(%__MODULE__{status: :waiting} = game) do
+    player_count = length(game.player_order)
+    player_count >= @min_players and player_count <= @max_players
+  end
+
+  def can_start?(_game), do: false
+
+  @doc """
   Plays an action or project card with optional talent boosters.
   Note: For projects, this executes them immediately (legacy behavior).
   For new projects, use contribute_talent_to_project instead.
@@ -278,6 +372,7 @@ defmodule Shinkanki.Game do
   def play_action(%__MODULE__{} = game, player_id, action_id, talent_ids \\ []) do
     with {:status, :playing} <- {:status, game.status},
          {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
+         {:turn, true} <- {:turn, can_player_act?(game, player_id)},
          {:action, %Card{} = card} <- get_action_or_project(game, action_id),
          {:hand, {:ok, game_without_card}} <- handle_card_consumption(game, player_id, card),
          :ok <- validate_talents(player, talent_ids),
@@ -302,12 +397,14 @@ defmodule Shinkanki.Game do
         # Only replenish if it was a regular action card
         |> maybe_replenish_hand(player_id, card.type)
         |> check_projects_unlock()
+        |> advance_to_next_player()
         |> maybe_advance_turn()
 
       {:ok, new_game}
     else
       {:status, _} -> {:error, :game_over}
       {:player, nil} -> {:error, :player_not_found}
+      {:turn, false} -> {:error, :not_your_turn}
       {:action, {:error, reason}} -> {:error, reason}
       {:hand, {:error, reason}} -> {:error, reason}
       {:currency, false} -> {:error, :not_enough_currency}
@@ -315,6 +412,19 @@ defmodule Shinkanki.Game do
       _ -> {:error, :invalid_request}
     end
   end
+
+  defp can_player_act?(%__MODULE__{phase: :action} = game, player_id) do
+    # In action phase, check if it's the player's turn
+    current_player = get_current_player(game)
+    current_player == player_id
+  end
+
+  defp can_player_act?(%__MODULE__{phase: phase}, _player_id) when phase != :action do
+    # Outside action phase, all players can act (for backward compatibility)
+    true
+  end
+
+  defp can_player_act?(_game, _player_id), do: false
 
   defp get_action_or_project(game, card_id) do
     case Card.get_action(card_id) do
@@ -476,13 +586,72 @@ defmodule Shinkanki.Game do
 
   defp maybe_advance_turn(game), do: game
 
+  defp advance_to_next_player(%__MODULE__{phase: :action, player_order: []} = game), do: game
+
+  defp advance_to_next_player(
+         %__MODULE__{phase: :action, player_order: order, current_player_index: index} = game
+       ) do
+    next_index = rem(index + 1, length(order))
+    %{game | current_player_index: next_index}
+  end
+
+  defp advance_to_next_player(game), do: game
+
+  @doc """
+  Gets the current player ID in action phase.
+  """
+  def get_current_player(%__MODULE__{
+        phase: :action,
+        player_order: order,
+        current_player_index: index
+      }) do
+    if order != [] and index < length(order) do
+      Enum.at(order, index)
+    else
+      nil
+    end
+  end
+
+  def get_current_player(_game), do: nil
+
+  defp get_current_player_name(game) do
+    case get_current_player(game) do
+      nil ->
+        "Unknown"
+
+      player_id ->
+        case Map.get(game.players, player_id) do
+          nil -> "Unknown"
+          player -> player.name
+        end
+    end
+  end
+
+  defp all_players_discussion_ready?(game) do
+    players = Map.values(game.players)
+
+    cond do
+      players == [] ->
+        false
+
+      Enum.all?(players, fn
+        %Player{is_ready: ready} -> ready
+        _ -> false
+      end) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
   defp reset_player_state(game) do
     players =
       Enum.into(game.players, %{}, fn {id, player} ->
         {id, %{player | is_ready: false, used_talents: []}}
       end)
 
-    %{game | players: players}
+    %{game | players: players, current_player_index: 0}
   end
 
   defp prepare_talents(nil) do
@@ -556,11 +725,17 @@ defmodule Shinkanki.Game do
   defp take_from_deck(%{deck: []} = game, count, acc) do
     case game.discard_pile do
       [] ->
+        # No cards available - return what we have
         {Enum.reverse(acc), game}
 
       discard ->
+        # Deck is empty - reshuffle discard pile to create new deck
         reshuffled = Enum.shuffle(discard)
-        take_from_deck(%{game | deck: reshuffled, discard_pile: []}, count, acc)
+
+        game_with_log =
+          add_log(game, "Deck reshuffled from discard pile (#{length(discard)} cards)")
+
+        take_from_deck(%{game_with_log | deck: reshuffled, discard_pile: []}, count, acc)
     end
   end
 
@@ -672,15 +847,26 @@ defmodule Shinkanki.Game do
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :discussion} = game) do
-    # Discussion phase - players can discuss, but no automatic action
-    # Phase will advance when players are ready (handled by next_phase)
-    game
+    # Discussion phase - players can discuss
+    # Check if all players are ready to advance to action phase
+    if all_players_discussion_ready?(game) do
+      game
+      |> add_log("All players ready - advancing to action phase")
+      |> set_phase(:action)
+    else
+      game
+    end
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game) do
     # Action phase - players can play cards
-    # Phase will advance when all players are ready (handled by maybe_advance_turn or next_phase)
-    game
+    # Initialize current player index to first player
+    if game.current_player_index == 0 and game.player_order != [] do
+      %{game | current_player_index: 0}
+      |> add_log("Action phase started - #{get_current_player_name(game)}'s turn")
+    else
+      game
+    end
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :demurrage} = game) do

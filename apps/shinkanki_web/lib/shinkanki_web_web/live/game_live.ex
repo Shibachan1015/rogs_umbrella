@@ -26,6 +26,17 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
+      |> assign(:active_projects, mock_active_projects())
+      |> assign(:show_project_contribute, false)
+      |> assign(:project_contribute_id, nil)
+      |> assign(:selected_talent_for_contribution, nil)
+      |> assign(:show_action_confirm, false)
+      |> assign(:confirm_card_id, nil)
+      |> assign(:show_ending, false)
+      |> assign(:game_status, :playing)
+      |> assign(:show_role_selection, false)
+      |> assign(:selected_role, nil)
+      |> assign(:player_role, nil)
 
     socket =
       if connected?(socket) do
@@ -547,6 +558,29 @@ defmodule ShinkankiWebWeb.GameLive do
       <% end %>
     </div>
 
+    <!-- Action Confirm Modal -->
+    <.action_confirm_modal
+      show={@show_action_confirm}
+      card={get_card_by_id(@confirm_card_id, assigns)}
+      talent_cards={get_card_talents(@confirm_card_id, assigns)}
+      current_currency={@game_state.currency}
+      current_params={%{
+        forest: @game_state.forest,
+        culture: @game_state.culture,
+        social: @game_state.social,
+        currency: @game_state.currency
+      }}
+      id="action-confirm-modal"
+    />
+
+    <!-- Project Contribute Modal -->
+    <.project_contribute_modal
+      show={@show_project_contribute}
+      project={get_project_by_id(@project_contribute_id, assigns)}
+      available_talents={@player_talents}
+      id="project-contribute-modal"
+    />
+
     <!-- Event Modal -->
     <.event_modal
       show={@show_event_modal}
@@ -618,9 +652,27 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("use_card", %{"card-id" => card_id}, socket) do
+    # Show confirmation modal instead of using card directly
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_action_confirm, true)
+       |> assign(:confirm_card_id, card_id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("confirm_action", _params, socket) do
+    card_id = socket.assigns.confirm_card_id
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
 
     if card && socket.assigns.game_state.currency >= card.cost do
+      # Get talent cards for this card (for future use)
+      _talent_cards = get_card_talents(card_id, socket.assigns)
+
       # TODO: Implement actual card usage logic when backend is ready
       toast_id = "toast-#{System.unique_integer([:positive])}"
 
@@ -633,6 +685,8 @@ defmodule ShinkankiWebWeb.GameLive do
       socket =
         socket
         |> assign(:selected_card_id, nil)
+        |> assign(:show_action_confirm, false)
+        |> assign(:confirm_card_id, nil)
         |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
       # Auto-remove toast after 3 seconds
@@ -650,12 +704,21 @@ defmodule ShinkankiWebWeb.GameLive do
 
       socket =
         socket
+        |> assign(:show_action_confirm, false)
+        |> assign(:confirm_card_id, nil)
         |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
       Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
       {:noreply, socket}
     end
+  end
+
+  def handle_event("cancel_action_confirm", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_action_confirm, false)
+     |> assign(:confirm_card_id, nil)}
   end
 
   def handle_event("show_event_modal", _params, socket) do
@@ -666,7 +729,7 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, assign(socket, :show_event_modal, false)}
   end
 
-  def handle_event("add_talent_to_card", %{"talent-id" => talent_id, "card-id" => card_id}, socket) do
+  def handle_event("add_talent_to_card", %{"talent-id" => _talent_id, "card-id" => card_id}, socket) do
     # Open talent selector for this card
     {:noreply,
      socket
@@ -726,6 +789,97 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:show_talent_selector, false)
      |> assign(:talent_selector_card_id, nil)
      |> assign(:selected_talents_for_card, [])}
+  end
+
+  def handle_event("open_project_contribute", %{"project-id" => project_id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_project_contribute, true)
+     |> assign(:project_contribute_id, project_id)
+     |> assign(:selected_talent_for_contribution, nil)}
+  end
+
+  def handle_event("contribute_talent", %{"talent-id" => talent_id, "project-id" => _project_id}, socket) do
+    {:noreply, assign(socket, :selected_talent_for_contribution, talent_id)}
+  end
+
+  def handle_event("confirm_talent_contribution", _params, socket) do
+    project_id = socket.assigns.project_contribute_id
+    talent_id = socket.assigns.selected_talent_for_contribution
+
+    if project_id && talent_id do
+      # In real implementation, this would update the project progress
+      toast = %{
+        id: Ecto.UUID.generate(),
+        kind: :success,
+        message: "才能カードをプロジェクトに捧げました"
+      }
+
+      {:noreply,
+       socket
+       |> assign(:show_project_contribute, false)
+       |> assign(:project_contribute_id, nil)
+       |> assign(:selected_talent_for_contribution, nil)
+       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_project_contribute", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_project_contribute, false)
+     |> assign(:project_contribute_id, nil)
+     |> assign(:selected_talent_for_contribution, nil)}
+  end
+
+  def handle_event("restart_game", _params, socket) do
+    # Reset game state (in real implementation, this would create a new game)
+    {:noreply,
+     socket
+     |> assign(:game_state, mock_game_state())
+     |> assign(:game_status, :playing)
+     |> assign(:show_ending, false)
+     |> assign(:hand_cards, mock_hand_cards())
+     |> assign(:current_phase, :event)
+     |> assign(:current_event, mock_current_event())
+     |> assign(:selected_card_id, nil)}
+  end
+
+  def handle_event("close_ending", _params, socket) do
+    {:noreply, assign(socket, :show_ending, false)}
+  end
+
+  def handle_event("select_role", %{"role-id" => role_id}, socket) do
+    role_atom = String.to_existing_atom(role_id)
+    {:noreply, assign(socket, :selected_role, role_atom)}
+  end
+
+  def handle_event("confirm_role_selection", _params, socket) do
+    if socket.assigns.selected_role do
+      toast = %{
+        id: Ecto.UUID.generate(),
+        kind: :success,
+        message: "役割「#{get_role_name(socket.assigns.selected_role)}」を選択しました"
+      }
+
+      {:noreply,
+       socket
+       |> assign(:player_role, socket.assigns.selected_role)
+       |> assign(:show_role_selection, false)
+       |> assign(:selected_role, nil)
+       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("cancel_role_selection", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_role_selection, false)
+     |> assign(:selected_role, nil)}
   end
 
   def handle_event("execute_action", %{"action" => action}, socket) do
@@ -939,4 +1093,56 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   defp get_selected_card_tags(_card_id, _assigns), do: []
+
+  defp mock_active_projects do
+    [
+      %{
+        id: :p_forest_fest,
+        name: "森の祝祭",
+        description: "森と文化が共に栄える大規模な祝祭を開催する。",
+        cost: 50,
+        progress: 25,
+        effect: %{forest: 10, culture: 10, social: 10},
+        unlock_condition: %{forest: 80, culture: 60},
+        is_unlocked: true,
+        is_completed: false,
+        contributed_talents: [
+          %{name: "育てる才能"},
+          %{name: "企画の才能"}
+        ]
+      },
+      %{
+        id: :p_market,
+        name: "定期市",
+        description: "定期的な市場システムを確立する。",
+        cost: 30,
+        progress: 0,
+        effect: %{currency: 30, social: 5},
+        unlock_condition: %{social: 70},
+        is_unlocked: false,
+        is_completed: false,
+        contributed_talents: []
+      }
+    ]
+  end
+
+  defp get_project_by_id(project_id, assigns) when is_binary(project_id) or is_atom(project_id) do
+    Enum.find(assigns.active_projects, fn p ->
+      (p[:id] || p["id"]) == project_id
+    end)
+  end
+
+  defp get_project_by_id(_project_id, _assigns), do: nil
+
+  defp get_card_by_id(card_id, assigns) when is_binary(card_id) do
+    Enum.find(assigns.hand_cards, &(&1.id == card_id))
+  end
+
+  defp get_card_by_id(_card_id, _assigns), do: nil
+
+  defp get_role_name(:forest_guardian), do: "森の守り手"
+  defp get_role_name(:culture_keeper), do: "文化の継承者"
+  defp get_role_name(:community_light), do: "コミュニティの灯火"
+  defp get_role_name(:akasha_engineer), do: "空環エンジニア"
+  defp get_role_name(_), do: "不明"
 end

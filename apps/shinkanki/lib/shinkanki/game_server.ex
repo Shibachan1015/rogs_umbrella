@@ -20,6 +20,18 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), {:update_stats, changes})
   end
 
+  def play_card(room_id, card_id) do
+    GenServer.call(via_tuple(room_id), {:play_card, card_id})
+  end
+
+  def play_action(room_id, player_id, action_id, talent_ids \\ []) do
+    GenServer.call(via_tuple(room_id), {:play_action, player_id, action_id, talent_ids})
+  end
+
+  def join_player(room_id, player_id, name, talent_ids \\ nil) do
+    GenServer.call(via_tuple(room_id), {:join_player, player_id, name, talent_ids})
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end
@@ -48,6 +60,42 @@ defmodule Shinkanki.GameServer do
     new_game = Game.update_stats(game, changes)
     broadcast_state(new_game)
     {:reply, new_game, new_game}
+  end
+
+  @impl true
+  def handle_call({:play_card, card_id}, _from, game) do
+    case Game.play_card(game, card_id) do
+      {:ok, new_game} ->
+        broadcast_state(new_game)
+        {:reply, {:ok, new_game}, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:play_action, player_id, action_id, talent_ids}, _from, game) do
+    case Game.play_action(game, player_id, action_id, talent_ids) do
+      {:ok, new_game} = ok ->
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:join_player, player_id, name, talent_ids}, _from, game) do
+    case Game.join(game, player_id, name, talent_ids) do
+      {:ok, new_game} = ok ->
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
   end
 
   defp broadcast_state(game) do

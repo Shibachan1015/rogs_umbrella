@@ -42,6 +42,29 @@ defmodule Shinkanki do
   end
 
   @doc """
+  Lets a player join the room with optional talents.
+  """
+  def join_player(room_id, player_id, name, talent_ids \\ nil) do
+    call_server(room_id, fn -> GameServer.join_player(room_id, player_id, name, talent_ids) end)
+  end
+
+  @doc """
+  Plays a card in the given room.
+  """
+  def play_card(room_id, card_id) do
+    call_server(room_id, fn -> GameServer.play_card(room_id, card_id) end)
+  end
+
+  @doc """
+  Plays an action card with optional talents for the given player.
+  """
+  def play_action(room_id, player_id, action_id, talent_ids \\ []) do
+    call_server(room_id, fn ->
+      GameServer.play_action(room_id, player_id, action_id, talent_ids)
+    end)
+  end
+
+  @doc """
   Subscribes the current process to game updates for the given room_id.
   """
   def subscribe_game(room_id) do

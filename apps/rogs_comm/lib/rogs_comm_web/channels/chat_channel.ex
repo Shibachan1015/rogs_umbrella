@@ -7,6 +7,7 @@ defmodule RogsCommWeb.ChatChannel do
 
   alias RogsComm.Messages
   alias RogsComm.Rooms
+  alias RogsCommWeb.Presence
 
   @impl true
   def join("room:" <> room_id, _payload, socket) do
@@ -15,9 +16,46 @@ defmodule RogsCommWeb.ChatChannel do
         {:error, %{reason: "room not found"}}
 
       _room ->
+        user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
+        user_email = socket.assigns[:user_email] || "anonymous"
+
+        socket =
+          socket
+          |> assign(:room_id, room_id)
+          |> assign(:user_id, user_id)
+          |> assign(:user_email, user_email)
+
+        send(self(), :after_join)
         messages = Messages.list_messages(room_id, limit: 50)
-        {:ok, %{messages: messages}, assign(socket, :room_id, room_id)}
+        {:ok, %{messages: messages}, socket}
     end
+  end
+
+  @impl true
+  def handle_info(:after_join, socket) do
+    topic = "room:#{socket.assigns.room_id}"
+    user_id = socket.assigns.user_id
+    user_email = socket.assigns.user_email
+
+    {:ok, _} =
+      Presence.track(
+        self(),
+        topic,
+        user_id,
+        %{
+          user_id: user_id,
+          user_email: user_email,
+          online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+        }
+      )
+
+    push(socket, "presence_state", Presence.list(topic))
+    {:noreply, socket}
+  end
+
+  def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
+    push(socket, "presence_diff", Presence.list("room:#{socket.assigns.room_id}"))
+    {:noreply, socket}
   end
 
   @impl true

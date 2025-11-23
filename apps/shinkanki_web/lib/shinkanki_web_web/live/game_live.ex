@@ -32,6 +32,8 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:selected_talent_for_contribution, nil)
       |> assign(:show_action_confirm, false)
       |> assign(:confirm_card_id, nil)
+      |> assign(:show_ending, false)
+      |> assign(:game_status, :playing)
 
     socket =
       if connected?(socket) do
@@ -827,6 +829,23 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:show_project_contribute, false)
      |> assign(:project_contribute_id, nil)
      |> assign(:selected_talent_for_contribution, nil)}
+  end
+
+  def handle_event("restart_game", _params, socket) do
+    # Reset game state (in real implementation, this would create a new game)
+    {:noreply,
+     socket
+     |> assign(:game_state, mock_game_state())
+     |> assign(:game_status, :playing)
+     |> assign(:show_ending, false)
+     |> assign(:hand_cards, mock_hand_cards())
+     |> assign(:current_phase, :event)
+     |> assign(:current_event, mock_current_event())
+     |> assign(:selected_card_id, nil)}
+  end
+
+  def handle_event("close_ending", _params, socket) do
+    {:noreply, assign(socket, :show_ending, false)}
   end
 
   def handle_event("execute_action", %{"action" => action}, socket) do

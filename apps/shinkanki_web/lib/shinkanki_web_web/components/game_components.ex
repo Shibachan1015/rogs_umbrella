@@ -1001,6 +1001,188 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders an ending screen based on game result.
+  Shows different endings based on Life Index and game status.
+  """
+  attr :game_status, :atom, required: true, values: [:won, :lost, :playing]
+  attr :life_index, :integer, required: true
+  attr :final_stats, :map, default: %{}
+  attr :turn, :integer, default: 0
+  attr :max_turns, :integer, default: 20
+  attr :show, :boolean, default: true
+  attr :id, :string, default: "ending-screen"
+  attr :rest, :global
+
+  def ending_screen(assigns) do
+    ending_type = determine_ending_type(assigns.game_status, assigns.life_index, assigns.final_stats)
+    
+    ending_data = get_ending_data(ending_type)
+    
+    assigns =
+      assigns
+      |> assign(:ending_type, ending_type)
+      |> assign(:ending_data, ending_data)
+
+    ~H"""
+    <%= if @show && @game_status != :playing do %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ending-title"
+        {@rest}
+      >
+        <div class="relative bg-washi border-4 border-double rounded-lg shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+          <!-- Ending Header -->
+          <div class={[
+            "p-8 text-center border-b-4 border-double",
+            @ending_type == :blessing && "bg-kin/10 border-kin",
+            @ending_type == :purification && "bg-matsu/10 border-matsu",
+            @ending_type == :uncertain && "bg-kohaku/10 border-kohaku",
+            @ending_type == :lament && "bg-shu/10 border-shu",
+            @ending_type == :instant_loss && "bg-sumi/20 border-sumi"
+          ]}>
+            <div class="text-6xl mb-4">{@ending_data.icon}</div>
+            <h1 id="ending-title" class="text-3xl md:text-4xl font-bold mb-2 writing-mode-vertical">
+              {@ending_data.title}
+            </h1>
+            <p class="text-lg text-sumi/80 mt-4">{@ending_data.subtitle}</p>
+          </div>
+
+          <!-- Ending Description -->
+          <div class="p-6 md:p-8">
+            <div class="prose prose-sumi max-w-none mb-6">
+              <p class="text-base leading-relaxed text-sumi">{@ending_data.description}</p>
+            </div>
+
+            <!-- Final Statistics -->
+            <div class="mb-6 p-4 bg-washi border-2 border-sumi/20 rounded-lg">
+              <h2 class="text-lg font-bold text-sumi mb-4">最終結果</h2>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">Life Index</div>
+                  <div class="text-2xl font-bold text-shu">{@life_index}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">F (森)</div>
+                  <div class="text-xl font-bold text-matsu">{@final_stats[:forest] || @final_stats["forest"] || 0}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">K (文化)</div>
+                  <div class="text-xl font-bold text-sakura">{@final_stats[:culture] || @final_stats["culture"] || 0}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">S (社会)</div>
+                  <div class="text-xl font-bold text-kohaku">{@final_stats[:social] || @final_stats["social"] || 0}</div>
+                </div>
+              </div>
+              <div class="mt-4 text-center text-sm text-sumi/70">
+                ターン数: {@turn} / {@max_turns}
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 mt-6">
+              <button
+                class="flex-1 px-6 py-3 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors"
+                phx-click="restart_game"
+                aria-label="新しいゲームを開始"
+              >
+                新しいゲームを開始
+              </button>
+              <button
+                class="flex-1 px-6 py-3 bg-washi text-sumi rounded-lg border-2 border-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                phx-click="close_ending"
+                aria-label="閉じる"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  defp determine_ending_type(:lost, _life_index, final_stats) do
+    # Check for instant loss (F=0, K=0, or S=0)
+    forest = final_stats[:forest] || final_stats["forest"] || 0
+    culture = final_stats[:culture] || final_stats["culture"] || 0
+    social = final_stats[:social] || final_stats["social"] || 0
+    
+    if forest == 0 || culture == 0 || social == 0 do
+      :instant_loss
+    else
+      :lament
+    end
+  end
+
+  defp determine_ending_type(:won, life_index, _final_stats) do
+    cond do
+      life_index >= 40 -> :blessing
+      life_index >= 30 -> :purification
+      life_index >= 20 -> :uncertain
+      true -> :lament
+    end
+  end
+
+  defp determine_ending_type(_status, life_index, _final_stats) do
+    cond do
+      life_index >= 40 -> :blessing
+      life_index >= 30 -> :purification
+      life_index >= 20 -> :uncertain
+      true -> :lament
+    end
+  end
+
+  defp get_ending_data(:blessing) do
+    %{
+      icon: "🌈",
+      title: "神々の祝福",
+      subtitle: "The Blessing of the Gods",
+      description: "20年の歳月を経て、世界は見事に再生しました。森は豊かに茂り、文化は花開き、コミュニティは強く結ばれています。八百万の神々は、あなたたちの努力を祝福し、この世界に永遠の調和をもたらしました。"
+    }
+  end
+
+  defp get_ending_data(:purification) do
+    %{
+      icon: "🌿",
+      title: "浄化の兆し",
+      subtitle: "Signs of Purification",
+      description: "世界は回復の道を歩み始めています。まだ完全ではありませんが、希望の光が見えています。森、文化、コミュニティは徐々に力を取り戻しつつあります。神々は、この世界の未来に期待を寄せています。"
+    }
+  end
+
+  defp get_ending_data(:uncertain) do
+    %{
+      icon: "🌙",
+      title: "揺らぎの未来",
+      subtitle: "Uncertain Future",
+      description: "20年が過ぎましたが、世界の未来はまだ定まっていません。いくつかの改善は見られますが、まだ多くの課題が残されています。神々は、この世界がどちらの方向へ向かうのか、見守り続けています。"
+    }
+  end
+
+  defp get_ending_data(:lament) do
+    %{
+      icon: "🔥",
+      title: "神々の嘆き",
+      subtitle: "Lament of the Gods",
+      description: "20年の歳月を経ても、世界は十分に回復できませんでした。森、文化、コミュニティのいずれかが危機に瀕しています。神々は、この世界の現状を嘆き、さらなる努力を求めています。"
+    }
+  end
+
+  defp get_ending_data(:instant_loss) do
+    %{
+      icon: "💀",
+      title: "即時ゲームオーバー",
+      subtitle: "Instant Game Over",
+      description: "森、文化、またはコミュニティのいずれかが完全に失われました。世界は崩壊し、回復の見込みはありません。神々は、この世界を見捨てざるを得ませんでした。"
+    }
+  end
+
+  @doc """
   Renders a toast notification with Miyabi theme.
   """
   attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]

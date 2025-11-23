@@ -6,6 +6,7 @@ defmodule RogsIdentity.Accounts.User do
   @foreign_key_type :binary_id
   schema "users" do
     field :email, :string
+    field :name, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -27,8 +28,14 @@ defmodule RogsIdentity.Accounts.User do
   """
   def email_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email])
+    |> cast(attrs, [:email, :name])
     |> validate_email(opts)
+    |> validate_name()
+  end
+
+  defp validate_name(changeset) do
+    changeset
+    |> validate_length(:name, max: 100)
   end
 
   defp validate_email(changeset, opts) do
@@ -109,12 +116,29 @@ defmodule RogsIdentity.Accounts.User do
   end
 
   @doc """
+  A changeset for updating user name.
+  """
+  def name_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name])
+    |> validate_length(:name, max: 100)
+  end
+
+  @doc """
   Confirms the account by setting `confirmed_at`.
   """
   def confirm_changeset(user) do
     now = NaiveDateTime.utc_now(:second)
     change(user, confirmed_at: now)
   end
+
+  @doc """
+  Returns the display name for the user.
+  Falls back to email if name is not set.
+  """
+  def display_name(%__MODULE__{name: name}) when is_binary(name) and name != "", do: name
+  def display_name(%__MODULE__{email: email}), do: email
+  def display_name(_), do: "Anonymous"
 
   @doc """
   Verifies the password.

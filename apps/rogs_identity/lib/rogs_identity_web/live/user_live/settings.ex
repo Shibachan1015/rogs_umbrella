@@ -16,6 +16,19 @@ defmodule RogsIdentityWeb.UserLive.Settings do
         </.header>
       </div>
 
+      <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
+        <.input
+          field={@name_form[:name]}
+          type="text"
+          label="Display Name"
+          placeholder="Optional"
+          autocomplete="name"
+        />
+        <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
+      </.form>
+
+      <div class="divider" />
+
       <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
         <.input
           field={@email_form[:email]}
@@ -82,17 +95,49 @@ defmodule RogsIdentityWeb.UserLive.Settings do
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
+    name_changeset = Accounts.change_user_name(user, %{})
     email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
     password_changeset = Accounts.change_user_password(user, %{}, hash_password: false)
 
     socket =
       socket
       |> assign(:current_email, user.email)
-      |> assign(:email_form, to_form(email_changeset))
-      |> assign(:password_form, to_form(password_changeset))
+      |> assign(:name_form, to_form(name_changeset, as: "user"))
+      |> assign(:email_form, to_form(email_changeset, as: "user"))
+      |> assign(:password_form, to_form(password_changeset, as: "user"))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("validate_name", params, socket) do
+    %{"user" => user_params} = params
+
+    name_form =
+      socket.assigns.current_scope.user
+      |> Accounts.change_user_name(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, name_form: name_form)}
+  end
+
+  def handle_event("update_name", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_scope.user
+    true = Accounts.sudo_mode?(user)
+
+    case Accounts.update_user_name(user, user_params) do
+      {:ok, _user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Display name updated successfully.")
+         |> assign(:name_form, to_form(Accounts.change_user_name(user, %{})))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, name_form: to_form(changeset))}
+    end
   end
 
   @impl true

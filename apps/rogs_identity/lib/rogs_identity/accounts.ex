@@ -128,6 +128,37 @@ defmodule RogsIdentity.Accounts do
   end
 
   @doc """
+  Returns an `%Ecto.Changeset{}` for changing the user name.
+
+  ## Examples
+
+      iex> change_user_name(user)
+      %Ecto.Changeset{data: %User{}}
+
+  """
+  def change_user_name(user, attrs \\ %{}) do
+    User.name_changeset(user, attrs)
+  end
+
+  @doc """
+  Updates the user name.
+
+  ## Examples
+
+      iex> update_user_name(user, %{name: "John Doe"})
+      {:ok, %User{}}
+
+      iex> update_user_name(user, %{name: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_user_name(user, attrs) do
+    user
+    |> User.name_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates the user email using the given token.
 
   If the token matches, the user email is updated and the token is deleted.

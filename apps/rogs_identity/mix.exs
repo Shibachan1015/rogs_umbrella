@@ -46,6 +46,7 @@ defmodule RogsIdentity.MixProject do
     [
       {:bcrypt_elixir, "~> 3.0"},
       {:swoosh, "~> 1.4"},
+      {:hackney, "~> 1.9"},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},

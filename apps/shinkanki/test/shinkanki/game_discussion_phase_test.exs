@@ -14,7 +14,10 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
 
       updated_player = Map.get(new_game.players, "p1")
       assert updated_player.is_ready == true
-      assert Enum.any?(new_game.logs, fn log -> String.contains?(log, "ready for action phase") end)
+
+      assert Enum.any?(new_game.logs, fn log ->
+               String.contains?(log, "ready for action phase")
+             end)
     end
 
     test "returns error if not in discussion phase" do
@@ -49,7 +52,10 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
       # Second player ready - should advance to action phase
       {:ok, final_game} = Game.mark_discussion_ready(game, "p2")
       assert final_game.phase == :action
-      assert Enum.any?(final_game.logs, fn log -> String.contains?(log, "advancing to action phase") end)
+
+      assert Enum.any?(final_game.logs, fn log ->
+               String.contains?(log, "advancing to action phase")
+             end)
     end
 
     test "single player game advances immediately when ready" do
@@ -93,4 +99,3 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
   end
 end
-

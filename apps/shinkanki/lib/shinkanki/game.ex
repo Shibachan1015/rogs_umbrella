@@ -30,6 +30,10 @@ defmodule Shinkanki.Game do
     phase: :event,
     logs: [],
     players: %{},
+    # Player order for turn-based actions
+    player_order: [],
+    # Current player index in action phase
+    current_player_index: 0,
     deck: [],
     discard_pile: [],
     hands: %{},
@@ -57,6 +61,8 @@ defmodule Shinkanki.Game do
           phase: atom(),
           logs: list(),
           players: %{optional(String.t()) => Player.t()},
+          player_order: list(String.t()),
+          current_player_index: integer(),
           deck: list(atom()),
           discard_pile: list(atom()),
           hands: %{optional(String.t()) => list(atom())},
@@ -119,7 +125,11 @@ defmodule Shinkanki.Game do
           Player.new(player_id, name)
           |> Map.put(:talents, talents)
 
-        game_with_player = %{game | players: Map.put(game.players, player_id, player)}
+        game_with_player = %{
+          game
+          | players: Map.put(game.players, player_id, player),
+            player_order: game.player_order ++ [player_id]
+        }
 
         {:ok,
          game_with_player
@@ -317,6 +327,7 @@ defmodule Shinkanki.Game do
   def play_action(%__MODULE__{} = game, player_id, action_id, talent_ids \\ []) do
     with {:status, :playing} <- {:status, game.status},
          {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
+         {:turn, true} <- {:turn, can_player_act?(game, player_id)},
          {:action, %Card{} = card} <- get_action_or_project(game, action_id),
          {:hand, {:ok, game_without_card}} <- handle_card_consumption(game, player_id, card),
          :ok <- validate_talents(player, talent_ids),
@@ -341,12 +352,14 @@ defmodule Shinkanki.Game do
         # Only replenish if it was a regular action card
         |> maybe_replenish_hand(player_id, card.type)
         |> check_projects_unlock()
+        |> advance_to_next_player()
         |> maybe_advance_turn()
 
       {:ok, new_game}
     else
       {:status, _} -> {:error, :game_over}
       {:player, nil} -> {:error, :player_not_found}
+      {:turn, false} -> {:error, :not_your_turn}
       {:action, {:error, reason}} -> {:error, reason}
       {:hand, {:error, reason}} -> {:error, reason}
       {:currency, false} -> {:error, :not_enough_currency}
@@ -354,6 +367,19 @@ defmodule Shinkanki.Game do
       _ -> {:error, :invalid_request}
     end
   end
+
+  defp can_player_act?(%__MODULE__{phase: :action} = game, player_id) do
+    # In action phase, check if it's the player's turn
+    current_player = get_current_player(game)
+    current_player == player_id
+  end
+
+  defp can_player_act?(%__MODULE__{phase: phase}, _player_id) when phase != :action do
+    # Outside action phase, all players can act (for backward compatibility)
+    true
+  end
+
+  defp can_player_act?(_game, _player_id), do: false
 
   defp get_action_or_project(game, card_id) do
     case Card.get_action(card_id) do
@@ -515,6 +541,39 @@ defmodule Shinkanki.Game do
 
   defp maybe_advance_turn(game), do: game
 
+  defp advance_to_next_player(%__MODULE__{phase: :action, player_order: []} = game), do: game
+
+  defp advance_to_next_player(%__MODULE__{phase: :action, player_order: order, current_player_index: index} = game) do
+    next_index = rem(index + 1, length(order))
+    %{game | current_player_index: next_index}
+  end
+
+  defp advance_to_next_player(game), do: game
+
+  @doc """
+  Gets the current player ID in action phase.
+  """
+  def get_current_player(%__MODULE__{phase: :action, player_order: order, current_player_index: index}) do
+    if order != [] and index < length(order) do
+      Enum.at(order, index)
+    else
+      nil
+    end
+  end
+
+  def get_current_player(_game), do: nil
+
+  defp get_current_player_name(game) do
+    case get_current_player(game) do
+      nil -> "Unknown"
+      player_id ->
+        case Map.get(game.players, player_id) do
+          nil -> "Unknown"
+          player -> player.name
+        end
+    end
+  end
+
   defp all_players_discussion_ready?(game) do
     players = Map.values(game.players)
 
@@ -539,7 +598,7 @@ defmodule Shinkanki.Game do
         {id, %{player | is_ready: false, used_talents: []}}
       end)
 
-    %{game | players: players}
+    %{game | players: players, current_player_index: 0}
   end
 
   defp prepare_talents(nil) do
@@ -619,7 +678,10 @@ defmodule Shinkanki.Game do
       discard ->
         # Deck is empty - reshuffle discard pile to create new deck
         reshuffled = Enum.shuffle(discard)
-        game_with_log = add_log(game, "Deck reshuffled from discard pile (#{length(discard)} cards)")
+
+        game_with_log =
+          add_log(game, "Deck reshuffled from discard pile (#{length(discard)} cards)")
+
         take_from_deck(%{game_with_log | deck: reshuffled, discard_pile: []}, count, acc)
     end
   end
@@ -745,8 +807,13 @@ defmodule Shinkanki.Game do
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game) do
     # Action phase - players can play cards
-    # Phase will advance when all players are ready (handled by maybe_advance_turn or next_phase)
-    game
+    # Initialize current player index to first player
+    if game.current_player_index == 0 and game.player_order != [] do
+      %{game | current_player_index: 0}
+      |> add_log("Action phase started - #{get_current_player_name(game)}'s turn")
+    else
+      game
+    end
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :demurrage} = game) do

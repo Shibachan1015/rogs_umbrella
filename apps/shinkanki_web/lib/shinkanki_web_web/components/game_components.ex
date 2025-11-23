@@ -1183,6 +1183,160 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders a role selection screen for players to choose their role.
+  """
+  attr :show, :boolean, default: true
+  attr :selected_role, :atom, default: nil, values: [:forest_guardian, :culture_keeper, :community_light, :akasha_engineer]
+  attr :available_roles, :list, default: []
+  attr :id, :string, default: "role-selection-screen"
+  attr :rest, :global
+
+  def role_selection_screen(assigns) do
+    roles = [
+      %{
+        id: :forest_guardian,
+        name: "森の守り手",
+        name_en: "Forest Guardian",
+        focus: "F (Forest) の保護と育成",
+        description: "自然環境の豊かさを守り、育む役割。森を大切にし、生態系のバランスを保つ責任があります。",
+        color: "matsu",
+        icon: "🌲"
+      },
+      %{
+        id: :culture_keeper,
+        name: "文化の継承者",
+        name_en: "Culture Keeper",
+        focus: "K (Culture) の継承と発展",
+        description: "伝統、芸術、知恵を継承し、発展させる役割。文化の価値を守りながら、新しい表現を生み出します。",
+        color: "sakura",
+        icon: "🌸"
+      },
+      %{
+        id: :community_light,
+        name: "コミュニティの灯火",
+        name_en: "Community Light",
+        focus: "S (Social) の結束と強化",
+        description: "人々のつながりを深め、コミュニティを強くする役割。信頼関係を築き、協力の輪を広げます。",
+        color: "kohaku",
+        icon: "🕯️"
+      },
+      %{
+        id: :akasha_engineer,
+        name: "空環エンジニア",
+        name_en: "Akasha Engineer",
+        focus: "P (Akasha) の循環と技術",
+        description: "空環マネーの循環を管理し、技術を発展させる役割。経済システムを最適化し、持続可能な循環を実現します。",
+        color: "kin",
+        icon: "⚡"
+      }
+    ]
+
+    assigns = assign(assigns, :roles, roles)
+
+    ~H"""
+    <%= if @show do %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="role-selection-title"
+        {@rest}
+      >
+        <div class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
+          <!-- Header -->
+          <div class="p-6 md:p-8 text-center border-b-4 border-double border-sumi">
+            <h1 id="role-selection-title" class="text-2xl md:text-3xl font-bold text-sumi mb-2 writing-mode-vertical">
+              役割を選択
+            </h1>
+            <p class="text-sm md:text-base text-sumi/70">あなたの役割を選んでください</p>
+          </div>
+
+          <!-- Role Cards -->
+          <div class="p-6 md:p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <%= for role <- @roles do %>
+                <%
+                  is_selected = @selected_role == role.id
+                  is_available = Enum.empty?(@available_roles) || Enum.member?(@available_roles, role.id)
+                  color_class = case role.color do
+                    "matsu" -> "border-matsu bg-matsu/5"
+                    "sakura" -> "border-sakura bg-sakura/5"
+                    "kohaku" -> "border-kohaku bg-kohaku/5"
+                    "kin" -> "border-kin bg-kin/5"
+                    _ -> "border-sumi bg-sumi/5"
+                  end
+                %>
+                <div
+                  class={[
+                    "relative p-6 rounded-lg border-4 border-double transition-all duration-300 cursor-pointer",
+                    color_class,
+                    if(is_selected,
+                      do: "ring-4 ring-shu/50 scale-105 shadow-xl",
+                      else: "hover:scale-105 hover:shadow-lg"
+                    ),
+                    if(not is_available, do: "opacity-50 cursor-not-allowed", else: "")
+                  ]}
+                  phx-click={if is_available, do: "select_role", else: nil}
+                  phx-value-role-id={role.id}
+                  role="button"
+                  aria-label={"役割: #{role.name}"}
+                  aria-pressed={is_selected}
+                >
+                  <%= if is_selected do %>
+                    <div class="absolute top-2 right-2 w-8 h-8 bg-shu text-washi rounded-full flex items-center justify-center text-lg">
+                      ✓
+                    </div>
+                  <% end %>
+
+                  <div class="text-center mb-4">
+                    <div class="text-4xl mb-2">{role.icon}</div>
+                    <h2 class="text-xl md:text-2xl font-bold text-sumi mb-1 writing-mode-vertical">
+                      {role.name}
+                    </h2>
+                    <p class="text-xs text-sumi/60 mb-2">{role.name_en}</p>
+                  </div>
+
+                  <div class="mb-3">
+                    <div class="text-sm font-semibold text-sumi/80 mb-1">焦点</div>
+                    <p class="text-sm text-sumi">{role.focus}</p>
+                  </div>
+
+                  <div>
+                    <div class="text-sm font-semibold text-sumi/80 mb-1">説明</div>
+                    <p class="text-xs leading-relaxed text-sumi/70">{role.description}</p>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Action Buttons -->
+            <%= if @selected_role do %>
+              <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                <button
+                  class="flex-1 px-6 py-3 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors"
+                  phx-click="confirm_role_selection"
+                  aria-label="役割を確定"
+                >
+                  役割を確定
+                </button>
+                <button
+                  class="flex-1 px-6 py-3 bg-washi text-sumi rounded-lg border-2 border-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                  phx-click="cancel_role_selection"
+                  aria-label="キャンセル"
+                >
+                  キャンセル
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  @doc """
   Renders a toast notification with Miyabi theme.
   """
   attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]

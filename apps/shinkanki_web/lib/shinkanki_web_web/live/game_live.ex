@@ -34,6 +34,9 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:confirm_card_id, nil)
       |> assign(:show_ending, false)
       |> assign(:game_status, :playing)
+      |> assign(:show_role_selection, false)
+      |> assign(:selected_role, nil)
+      |> assign(:player_role, nil)
 
     socket =
       if connected?(socket) do
@@ -848,6 +851,37 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, assign(socket, :show_ending, false)}
   end
 
+  def handle_event("select_role", %{"role-id" => role_id}, socket) do
+    role_atom = String.to_existing_atom(role_id)
+    {:noreply, assign(socket, :selected_role, role_atom)}
+  end
+
+  def handle_event("confirm_role_selection", _params, socket) do
+    if socket.assigns.selected_role do
+      toast = %{
+        id: Ecto.UUID.generate(),
+        kind: :success,
+        message: "役割「#{get_role_name(socket.assigns.selected_role)}」を選択しました"
+      }
+
+      {:noreply,
+       socket
+       |> assign(:player_role, socket.assigns.selected_role)
+       |> assign(:show_role_selection, false)
+       |> assign(:selected_role, nil)
+       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("cancel_role_selection", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_role_selection, false)
+     |> assign(:selected_role, nil)}
+  end
+
   def handle_event("execute_action", %{"action" => action}, socket) do
     # TODO: Implement actual action logic when backend is ready
     toast_id = "toast-#{System.unique_integer([:positive])}"
@@ -1105,4 +1139,10 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   defp get_card_by_id(_card_id, _assigns), do: nil
+
+  defp get_role_name(:forest_guardian), do: "森の守り手"
+  defp get_role_name(:culture_keeper), do: "文化の継承者"
+  defp get_role_name(:community_light), do: "コミュニティの灯火"
+  defp get_role_name(:akasha_engineer), do: "空環エンジニア"
+  defp get_role_name(_), do: "不明"
 end

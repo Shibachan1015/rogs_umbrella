@@ -37,6 +37,7 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:show_role_selection, false)
       |> assign(:selected_role, nil)
       |> assign(:player_role, nil)
+      |> assign(:players, mock_players())
 
     socket =
       if connected?(socket) do
@@ -108,6 +109,22 @@ defmodule ShinkankiWebWeb.GameLive do
             <!-- Phase Indicator -->
             <div class="pt-2 border-t border-sumi/30">
               <.phase_indicator current_phase={@current_phase} />
+            </div>
+          </div>
+
+          <!-- Players Info -->
+          <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
+            <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
+            <div class="space-y-2">
+              <.player_info_card
+                :for={player <- @players}
+                player_id={player[:id] || player["id"]}
+                player_name={player[:name] || player["name"] || "プレイヤー"}
+                role={player[:role] || player["role"]}
+                is_current_player={(player[:id] || player["id"]) == @user_id}
+                is_ready={player[:is_ready] || player["is_ready"] || false}
+                class="w-full"
+              />
             </div>
           </div>
 
@@ -1145,4 +1162,27 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_role_name(:community_light), do: "コミュニティの灯火"
   defp get_role_name(:akasha_engineer), do: "空環エンジニア"
   defp get_role_name(_), do: "不明"
+
+  defp mock_players do
+    [
+      %{
+        id: "player-1",
+        name: "プレイヤー1",
+        role: :forest_guardian,
+        is_ready: true
+      },
+      %{
+        id: "player-2",
+        name: "プレイヤー2",
+        role: :culture_keeper,
+        is_ready: false
+      },
+      %{
+        id: "player-3",
+        name: "プレイヤー3",
+        role: :community_light,
+        is_ready: true
+      }
+    ]
+  end
 end

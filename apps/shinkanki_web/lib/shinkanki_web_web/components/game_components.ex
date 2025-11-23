@@ -1337,6 +1337,82 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders a player info card showing role and status.
+  """
+  attr :player_id, :string, required: true
+  attr :player_name, :string, default: "プレイヤー"
+  attr :role, :atom, default: nil
+  attr :is_current_player, :boolean, default: false
+  attr :is_ready, :boolean, default: false
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  def player_info_card(assigns) do
+    role_data = get_role_data(assigns.role)
+    
+    assigns =
+      assigns
+      |> assign(:role_data, role_data)
+
+    ~H"""
+    <div
+      class={[
+        "p-3 rounded-lg border-2 border-double transition-all duration-300",
+        if(@is_current_player, do: "ring-2 ring-shu/50", else: ""),
+        if(@role_data, do: "border-#{@role_data.color} bg-#{@role_data.color}/5", else: "border-sumi/30 bg-sumi/5"),
+        @class
+      ]}
+      role="article"
+      aria-label={"プレイヤー: #{@player_name}"}
+      {@rest}
+    >
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <%= if @role_data do %>
+            <div class="text-2xl">{@role_data.icon}</div>
+          <% end %>
+          <div>
+            <div class="font-bold text-sumi text-sm">{@player_name}</div>
+            <%= if @is_current_player do %>
+              <div class="text-xs text-shu">（あなた）</div>
+            <% end %>
+          </div>
+        </div>
+        <%= if @is_ready do %>
+          <div class="w-3 h-3 bg-matsu rounded-full" aria-label="準備完了"></div>
+        <% else %>
+          <div class="w-3 h-3 bg-sumi/30 rounded-full" aria-label="準備中"></div>
+        <% end %>
+      </div>
+      <%= if @role_data do %>
+        <div class="text-xs text-sumi/70">
+          <div class="font-semibold mb-1">{@role_data.name}</div>
+          <div>{@role_data.focus}</div>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp get_role_data(:forest_guardian) do
+    %{name: "森の守り手", focus: "F (Forest) の保護と育成", color: "matsu", icon: "🌲"}
+  end
+
+  defp get_role_data(:culture_keeper) do
+    %{name: "文化の継承者", focus: "K (Culture) の継承と発展", color: "sakura", icon: "🌸"}
+  end
+
+  defp get_role_data(:community_light) do
+    %{name: "コミュニティの灯火", focus: "S (Social) の結束と強化", color: "kohaku", icon: "🕯️"}
+  end
+
+  defp get_role_data(:akasha_engineer) do
+    %{name: "空環エンジニア", focus: "P (Akasha) の循環と技術", color: "kin", icon: "⚡"}
+  end
+
+  defp get_role_data(_), do: nil
+
+  @doc """
   Renders a toast notification with Miyabi theme.
   """
   attr :kind, :atom, default: :info, values: [:success, :error, :info, :warning]

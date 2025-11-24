@@ -74,6 +74,7 @@ defmodule RogsCommWeb.SignalingChannel do
                   room_id: socket.assigns.room_id,
                   target_user_id: to_user_id
                 )
+
                 {:reply, {:error, %{reason: "invalid target user"}}, socket}
             end
 
@@ -84,6 +85,7 @@ defmodule RogsCommWeb.SignalingChannel do
               event: event,
               reason: reason
             )
+
             {:reply, {:error, %{reason: reason}}, socket}
         end
 
@@ -93,6 +95,7 @@ defmodule RogsCommWeb.SignalingChannel do
           room_id: socket.assigns.room_id,
           event: event
         )
+
         {:reply, {:error, %{reason: "rate limit exceeded"}}, socket}
     end
   end
@@ -108,6 +111,7 @@ defmodule RogsCommWeb.SignalingChannel do
       room_id: socket.assigns.room_id,
       event: event
     )
+
     {:reply, {:error, %{reason: "unsupported signaling event"}}, socket}
   end
 

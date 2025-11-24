@@ -5,7 +5,11 @@
   <div class="relative overflow-hidden">
     <!-- Background Pattern -->
     <div class="absolute inset-0 opacity-5">
-      <div class="absolute inset-0" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(28, 28, 28, 0.03) 10px, rgba(28, 28, 28, 0.03) 20px);"></div>
+      <div
+        class="absolute inset-0"
+        style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(28, 28, 28, 0.03) 10px, rgba(28, 28, 28, 0.03) 20px);"
+      >
+      </div>
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
@@ -18,8 +22,8 @@
           <p class="text-lg sm:text-xl text-sumi/80 mb-2">Communication Hub</p>
           <p class="text-sm sm:text-base text-sumi/60">神環記のためのリアルタイムチャットシステム</p>
         </div>
-
-        <!-- CTA Buttons -->
+        
+<!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
           <.link
             navigate={~p"/rooms"}
@@ -34,8 +38,8 @@
             機能について
           </.link>
         </div>
-
-        <!-- Features Preview -->
+        
+<!-- Features Preview -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mt-12">
           <div class="bg-kohaku/10 border-2 border-kohaku/30 rounded-lg p-6">
             <div class="text-4xl mb-3">💬</div>
@@ -56,8 +60,8 @@
       </div>
     </div>
   </div>
-
-  <!-- Features Section -->
+  
+<!-- Features Section -->
   <div id="features" class="bg-washi-dark py-16 sm:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
@@ -84,8 +88,8 @@
             </div>
           </div>
         </div>
-
-        <!-- Room Management -->
+        
+<!-- Room Management -->
         <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
           <div class="flex items-start gap-4">
             <div class="text-3xl">🏠</div>
@@ -103,8 +107,8 @@
             </div>
           </div>
         </div>
-
-        <!-- WebSocket -->
+        
+<!-- WebSocket -->
         <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
           <div class="flex items-start gap-4">
             <div class="text-3xl">⚡</div>
@@ -125,8 +129,8 @@
       </div>
     </div>
   </div>
-
-  <!-- Integration Section -->
+  
+<!-- Integration Section -->
   <div class="bg-washi py-16 sm:py-24">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
@@ -141,16 +145,24 @@
           相談フェーズでのプレイヤー間コミュニケーションをサポートします。
         </p>
         <div class="flex flex-wrap gap-2 mt-4">
-          <span class="px-3 py-1 bg-matsu/10 text-matsu rounded-full text-sm font-semibold">RogsIdentity</span>
-          <span class="px-3 py-1 bg-sakura/10 text-sakura rounded-full text-sm font-semibold">Shinkanki</span>
-          <span class="px-3 py-1 bg-kohaku/10 text-kohaku rounded-full text-sm font-semibold">Phoenix PubSub</span>
-          <span class="px-3 py-1 bg-kin/10 text-kin rounded-full text-sm font-semibold">LiveView</span>
+          <span class="px-3 py-1 bg-matsu/10 text-matsu rounded-full text-sm font-semibold">
+            RogsIdentity
+          </span>
+          <span class="px-3 py-1 bg-sakura/10 text-sakura rounded-full text-sm font-semibold">
+            Shinkanki
+          </span>
+          <span class="px-3 py-1 bg-kohaku/10 text-kohaku rounded-full text-sm font-semibold">
+            Phoenix PubSub
+          </span>
+          <span class="px-3 py-1 bg-kin/10 text-kin rounded-full text-sm font-semibold">
+            LiveView
+          </span>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Footer -->
+  
+<!-- Footer -->
   <footer class="bg-sumi text-washi py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <p class="text-sm text-washi/80">RogsComm - Communication Hub for 神環記</p>

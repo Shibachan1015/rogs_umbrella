@@ -23,15 +23,11 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "relative w-24 h-36 bg-washi border-2 border-sumi flex flex-col items-center p-2 transition-all select-none state-layer",
-        "elevation-2",
+        "ofuda-card relative w-24 h-36 flex flex-col items-center p-2 transition-all select-none state-layer focus-ring",
         if(@disabled,
-          do: "cursor-not-allowed opacity-50",
-          else:
-            "cursor-pointer hover:-translate-y-2 hover:elevation-4 hover:border-shu/50 active:scale-95 active:elevation-1"
+          do: "ofuda-card--disabled cursor-not-allowed",
+          else: "cursor-pointer hover:-translate-y-2 active:scale-95"
         ),
-        "before:content-[''] before:absolute before:top-1 before:w-2 before:h-2 before:bg-sumi/10 before:rounded-full",
-        "focus-ring",
         @class
       ]}
       style={
@@ -81,13 +77,10 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <button
       class={[
-        "rounded-full border-4 border-double flex items-center justify-center state-layer ripple",
-        "elevation-1 hover:elevation-2 active:elevation-0",
-        "hover:scale-110 active:scale-95",
-        "focus-ring",
-        @color == "shu" && "border-shu text-shu bg-washi",
-        @color == "sumi" && "border-sumi text-sumi bg-washi",
-        @color == "matsu" && "border-matsu text-matsu bg-washi",
+        "hanko-btn flex items-center justify-center state-layer ripple focus-ring",
+        @color == "shu" && "text-shu border-shu/60",
+        @color == "sumi" && "text-sumi border-sumi/50",
+        @color == "matsu" && "text-matsu border-matsu/60",
         @class
       ]}
       style="transition: all var(--motion-duration-short4) var(--motion-easing-standard);"
@@ -238,7 +231,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "relative w-full max-w-md mx-auto bg-washi border-4 border-double shadow-xl rounded-lg p-6 transition-all duration-300",
+        "resonance-card relative w-full max-w-md mx-auto p-6 transition-all duration-300",
         @border_color,
         @class
       ]}
@@ -258,12 +251,12 @@ defmodule ShinkankiWebWeb.GameComponents do
           イベント
         </div>
       </div>
-
+      
     <!-- Description -->
       <div class="mb-4">
         <p class="text-sm leading-relaxed text-sumi">{@description}</p>
       </div>
-
+      
     <!-- Effect Display -->
       <%= if map_size(@effect) > 0 do %>
         <div class="mt-4 pt-4 border-t border-sumi/20">
@@ -335,14 +328,14 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          class="resonance-modal-frame relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
           phx-click-away="close_event_modal"
           phx-window-keydown={
             JS.push("close_event_modal") |> JS.dispatch("keydown", detail: %{key: "Escape"})
           }
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
             phx-click="close_event_modal"
             aria-label="モーダルを閉じる"
           >
@@ -377,17 +370,16 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "relative w-16 h-20 bg-kin/10 border-2 border-kin shadow-sm flex flex-col items-center p-1.5 transition-all duration-300 select-none",
+        "talent-card-shell relative w-16 h-20 flex flex-col items-center p-1.5 transition-all duration-300 select-none",
         if(@is_used,
           do: "cursor-not-allowed opacity-40",
           else:
             if(@is_selected,
-              do: "cursor-pointer ring-2 ring-kin border-kin scale-110 z-20",
+              do: "cursor-pointer ring-2 ring-kin border border-kin scale-110 z-20",
               else:
                 "cursor-pointer hover:-translate-y-1 hover:shadow-md hover:border-kin/70 active:scale-95"
             )
         ),
-        "before:content-[''] before:absolute before:top-0.5 before:w-1.5 before:h-1.5 before:bg-kin/20 before:rounded-full",
         "focus:outline-none focus:ring-2 focus:ring-kin/50 focus:ring-offset-1",
         @class
       ]}
@@ -448,7 +440,7 @@ defmodule ShinkankiWebWeb.GameComponents do
         type={@type}
         class="relative z-0"
       />
-
+      
     <!-- Talent Cards Stacked -->
       <%= if @talent_count > 0 do %>
         <div class="absolute -top-2 -right-2 z-10 flex flex-col gap-0.5">
@@ -474,13 +466,13 @@ defmodule ShinkankiWebWeb.GameComponents do
             </div>
           <% end %>
         </div>
-
+        
     <!-- Bonus Indicator with Animation -->
         <div class="absolute -bottom-1 -left-1 w-7 h-7 bg-kin rounded-full border-2 border-sumi flex items-center justify-center text-xs font-bold text-sumi shadow-lg animate-pulse">
           <span class="relative z-10">+{@bonus}</span>
           <div class="absolute inset-0 bg-kin/30 rounded-full animate-ping"></div>
         </div>
-
+        
     <!-- Talent Stack Indicator -->
         <div class="absolute top-1 left-1 bg-kin/90 text-washi text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
           {if @talent_count >= 2, do: "最大", else: ""}才能{@talent_count}枚
@@ -541,10 +533,12 @@ defmodule ShinkankiWebWeb.GameComponents do
               description={talent[:description] || talent["description"]}
               compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
               is_selected={is_selected}
-              class={join_class([
-                "w-full",
-                if(not can_select, do: "opacity-50 cursor-not-allowed", else: "")
-              ])}
+              class={
+                join_class([
+                  "w-full",
+                  if(not can_select, do: "opacity-50 cursor-not-allowed", else: "")
+                ])
+              }
               phx-click={if can_select, do: "toggle_talent", else: nil}
               phx-value-talent-id={talent_id}
             />
@@ -603,18 +597,13 @@ defmodule ShinkankiWebWeb.GameComponents do
       |> assign(:progress_percentage, progress_percentage)
       |> assign(:is_unlockable, is_unlockable)
 
+    assigns = assign(assigns, :project_state_class, project_state_classes(assigns))
+
     ~H"""
     <div
       class={[
-        "relative w-full max-w-sm bg-washi border-4 border-double shadow-lg rounded-lg p-4 transition-all duration-300",
-        if(@is_completed,
-          do: "border-kin bg-kin/5",
-          else:
-            if(@is_unlocked,
-              do: "border-matsu bg-matsu/5",
-              else: "border-sumi/30 bg-sumi/5 opacity-60"
-            )
-        ),
+        "project-card-shell relative w-full max-w-sm p-5 transition-all duration-300 overflow-hidden text-[var(--color-landing-text-primary)]",
+        @project_state_class,
         @class
       ]}
       role="article"
@@ -622,12 +611,12 @@ defmodule ShinkankiWebWeb.GameComponents do
       {@rest}
     >
       <!-- Header -->
-      <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-sumi/30">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
         <div class="flex items-center gap-2 flex-1">
-          <div class="text-2xl">
+          <div class="text-2xl drop-shadow">
             {if @is_completed, do: "✨", else: if(@is_unlocked, do: "🏗️", else: "🔒")}
           </div>
-          <h3 class="text-base sm:text-lg font-bold text-sumi writing-mode-vertical flex-1">
+          <h3 class="text-base sm:text-lg font-bold writing-mode-vertical flex-1 tracking-[0.3em]">
             {@title}
           </h3>
         </div>
@@ -635,97 +624,107 @@ defmodule ShinkankiWebWeb.GameComponents do
           プロジェクト
         </div>
       </div>
-
+      
     <!-- Status Badge -->
       <%= if @is_completed do %>
-        <div class="absolute top-2 right-2 bg-kin text-washi text-[10px] px-2 py-1 rounded-full font-bold shadow-md">
+        <div class="absolute top-2 right-2 bg-kin text-washi text-[10px] px-2 py-1 rounded-full font-bold shadow-md tracking-[0.2em]">
           完成
         </div>
       <% else %>
         <%= if @is_unlocked do %>
-          <div class="absolute top-2 right-2 bg-matsu/20 text-matsu text-[10px] px-2 py-1 rounded-full font-bold border border-matsu/30">
+          <div class="absolute top-2 right-2 bg-matsu/20 text-matsu text-[10px] px-2 py-1 rounded-full font-bold border border-matsu/30 tracking-[0.2em]">
             進行中
           </div>
         <% end %>
       <% end %>
-
+      
     <!-- Description -->
       <div class="mb-3">
-        <p class="text-sm leading-relaxed text-sumi">{@description}</p>
+        <p class="text-sm leading-relaxed text-[var(--color-landing-text-secondary)]">
+          {@description}
+        </p>
       </div>
-
+      
     <!-- Unlock Condition -->
       <%= if not @is_unlocked && map_size(@unlock_condition) > 0 do %>
-        <div class="mb-3 p-2 bg-sumi/10 border border-sumi/20 rounded">
-          <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">アンロック条件</div>
+        <div class="mb-3 p-2 bg-white/5 border border-white/10 rounded">
+          <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
+            アンロック条件
+          </div>
           <div class="flex gap-2 text-xs">
             <%= if Map.has_key?(@unlock_condition, :forest) or Map.has_key?(@unlock_condition, :f) do %>
-              <span class="text-matsu">
+              <span class="text-matsu font-semibold">
                 F: {Map.get(@unlock_condition, :forest, Map.get(@unlock_condition, :f, 0))}
               </span>
             <% end %>
             <%= if Map.has_key?(@unlock_condition, :culture) or Map.has_key?(@unlock_condition, :k) do %>
-              <span class="text-sakura">
+              <span class="text-sakura font-semibold">
                 K: {Map.get(@unlock_condition, :culture, Map.get(@unlock_condition, :k, 0))}
               </span>
             <% end %>
             <%= if Map.has_key?(@unlock_condition, :social) or Map.has_key?(@unlock_condition, :s) do %>
-              <span class="text-kohaku">
+              <span class="text-kohaku font-semibold">
                 S: {Map.get(@unlock_condition, :social, Map.get(@unlock_condition, :s, 0))}
               </span>
             <% end %>
           </div>
         </div>
       <% end %>
-
+      
     <!-- Progress Bar -->
       <%= if @is_unlocked && not @is_completed do %>
         <div class="mb-3">
           <div class="flex justify-between items-center mb-1">
-            <span class="text-xs text-sumi/70 font-semibold">進捗状況</span>
-            <span class="text-xs font-bold text-matsu">
+            <span class="text-xs text-[var(--color-landing-text-secondary)] font-semibold tracking-[0.2em]">
+              進捗状況
+            </span>
+            <span class="text-xs font-bold text-[var(--color-landing-pale)]">
               {@progress} / {@cost}
             </span>
           </div>
-          <div class="w-full h-4 bg-sumi/10 rounded-full overflow-hidden border-2 border-sumi/20 relative">
+          <div class="w-full h-4 bg-white/5 rounded-full overflow-hidden border border-white/10 relative">
             <div
-              class="h-full bg-gradient-to-r from-matsu/80 to-matsu transition-all duration-700 ease-out relative"
+              class="h-full bg-gradient-to-r from-kin via-kin/80 to-kin/60 transition-all duration-700 ease-out relative"
               style={"width: #{@progress_percentage}%"}
               role="progressbar"
               aria-valuenow={@progress}
               aria-valuemin="0"
               aria-valuemax={@cost}
             >
-              <div class="absolute inset-0 bg-matsu/20 animate-pulse"></div>
+              <div class="absolute inset-0 bg-white/10 animate-pulse"></div>
             </div>
             <div class="absolute inset-0 flex items-center justify-center">
-              <span class="text-[10px] font-bold text-sumi/90 z-10">
+              <span class="text-[10px] font-bold text-[var(--color-landing-text-primary)] z-10">
                 {@progress_percentage}%
               </span>
             </div>
           </div>
           <%= if @progress_percentage >= 100 do %>
             <div class="mt-2 text-center">
-              <span class="text-xs font-bold text-kin animate-pulse">✨ 完成間近！ ✨</span>
+              <span class="text-xs font-bold text-kin animate-pulse tracking-[0.2em]">
+                ✨ 完成間近！ ✨
+              </span>
             </div>
           <% end %>
         </div>
       <% end %>
-
+      
     <!-- Contributed Talents -->
       <%= if length(@contributed_talents) > 0 do %>
-        <div class="mb-3 pt-2 border-t border-sumi/20">
-          <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">捧げられた才能</div>
+        <div class="mb-3 pt-2 border-t border-white/10">
+          <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
+            捧げられた才能
+          </div>
           <div class="flex flex-wrap gap-1">
             <%= for talent <- @contributed_talents do %>
-              <div class="px-2 py-1 bg-kin/20 border border-kin/30 rounded text-[10px] text-kin font-semibold">
+              <div class="px-2 py-1 bg-kin/10 border border-kin/30 rounded text-[10px] text-kin font-semibold">
                 {talent[:name] || talent["name"] || "才能"}
               </div>
             <% end %>
           </div>
         </div>
       <% end %>
-
+      
     <!-- Effect (Completed) -->
       <%= if @is_completed && map_size(@effect) > 0 do %>
         <div class="mt-3 pt-3 border-t border-kin/30">
@@ -797,18 +796,20 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="relative bg-washi border-4 border-double border-matsu rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          class="resonance-modal-frame relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
           phx-click-away="close_project_contribute"
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
             phx-click="close_project_contribute"
             aria-label="モーダルを閉じる"
           >
             <span class="text-lg font-bold">×</span>
           </button>
           <div class="p-6">
-            <h2 class="text-xl font-bold text-sumi mb-4">才能カードを捧げる</h2>
+            <h2 class="text-xl font-bold text-[var(--color-landing-pale)] mb-4 tracking-[0.2em]">
+              才能カードを捧げる
+            </h2>
 
             <.project_card
               title={@project[:title] || @project["title"] || "プロジェクト"}
@@ -826,13 +827,15 @@ defmodule ShinkankiWebWeb.GameComponents do
             />
 
             <div class="mt-4">
-              <h3 class="text-sm font-bold text-sumi mb-2">捧げる才能カードを選択</h3>
+              <h3 class="text-sm font-bold text-[var(--color-landing-text-primary)] mb-2">
+                捧げる才能カードを選択
+              </h3>
               <%= if length(@available_talents) == 0 do %>
-                <div class="text-center py-6 text-sumi/50 text-sm bg-sumi/5 rounded border border-sumi/20">
+                <div class="text-center py-6 text-[var(--color-landing-text-secondary)] text-sm bg-white/5 rounded border border-white/10">
                   <p>利用可能な才能カードがありません</p>
                 </div>
               <% else %>
-                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto scrollbar-thin p-2 bg-washi-dark rounded border border-sumi/20">
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto scrollbar-thin p-2 bg-white/5 rounded border border-white/10">
                   <%= for talent <- @available_talents do %>
                     <% is_used = talent[:is_used] || talent["is_used"] || false %>
                     <div
@@ -867,13 +870,13 @@ defmodule ShinkankiWebWeb.GameComponents do
 
             <div class="mt-4 flex gap-2">
               <button
-                class="flex-1 bg-matsu text-washi px-4 py-2 rounded border border-sumi hover:bg-matsu/80 transition-colors text-sm font-semibold"
+                class="flex-1 cta-button cta-solid justify-center tracking-[0.3em]"
                 phx-click="confirm_talent_contribution"
               >
                 確定
               </button>
               <button
-                class="flex-1 bg-washi text-sumi px-4 py-2 rounded border border-sumi hover:bg-sumi/5 transition-colors text-sm"
+                class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
                 phx-click="close_project_contribute"
               >
                 キャンセル
@@ -922,11 +925,11 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="relative bg-washi border-4 border-double border-shu rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          class="resonance-modal-frame relative border border-shu/40 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
           phx-click-away="cancel_action_confirm"
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors"
+            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
             phx-click="cancel_action_confirm"
             aria-label="モーダルを閉じる"
           >
@@ -934,8 +937,13 @@ defmodule ShinkankiWebWeb.GameComponents do
           </button>
 
           <div class="p-6">
-            <h2 id="action-confirm-title" class="text-2xl font-bold text-sumi mb-4">アクションの確認</h2>
-
+            <h2
+              id="action-confirm-title"
+              class="text-2xl font-bold text-[var(--color-landing-pale)] mb-4 tracking-[0.2em]"
+            >
+              アクションの確認
+            </h2>
+            
     <!-- Card Preview -->
             <div class="mb-4">
               <.ofuda_card
@@ -946,7 +954,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 class="mx-auto"
               />
             </div>
-
+            
     <!-- Talent Cards (if any) -->
             <%= if length(@talent_cards) > 0 do %>
               <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
@@ -963,11 +971,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Cost Display -->
-            <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
+            <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
               <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-sumi">コスト（空環）</span>
+                <span class="text-sm font-semibold text-[var(--color-landing-text-secondary)]">
+                  コスト（空環）
+                </span>
                 <div class="flex items-center gap-2">
                   <span class={[
                     "text-lg font-bold",
@@ -975,7 +985,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   ]}>
                     {card_cost}
                   </span>
-                  <span class="text-sm text-sumi/60">
+                  <span class="text-sm text-[var(--color-landing-text-secondary)]">
                     （現在: {@current_currency}）
                   </span>
                 </div>
@@ -986,10 +996,12 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               <% end %>
             </div>
-
+            
     <!-- Effect Preview -->
             <div class="mb-4">
-              <div class="text-sm font-semibold text-sumi mb-2">効果プレビュー</div>
+              <div class="text-sm font-semibold text-[var(--color-landing-text-secondary)] mb-2">
+                効果プレビュー
+              </div>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <%= if Map.has_key?(final_effect, :forest) or Map.has_key?(final_effect, :f) do %>
                   <div class="bg-matsu/10 border border-matsu/30 rounded p-2 text-center">
@@ -1025,11 +1037,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <% end %>
               </div>
             </div>
-
+            
     <!-- Parameter Change Preview -->
             <%= if map_size(new_params) > 0 do %>
-              <div class="mb-4 p-3 bg-washi border border-sumi/20 rounded">
-                <div class="text-sm font-semibold text-sumi mb-2">パラメータ変化のプレビュー</div>
+              <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+                <div class="text-sm font-semibold text-[var(--color-landing-text-secondary)] mb-2">
+                  パラメータ変化のプレビュー
+                </div>
                 <div class="space-y-1 text-xs">
                   <%= if Map.has_key?(@current_params, :forest) or Map.has_key?(@current_params, :f) do %>
                     <div class="flex justify-between">
@@ -1082,16 +1096,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Action Buttons -->
             <div class="flex gap-3 mt-6">
               <button
                 class={[
-                  "flex-1 px-4 py-3 rounded-lg border-2 font-semibold transition-colors",
-                  if(can_afford,
-                    do: "bg-shu text-washi border-shu hover:bg-shu/90",
-                    else: "bg-sumi/20 text-sumi/50 border-sumi/30 cursor-not-allowed"
-                  )
+                  "flex-1 cta-button justify-center tracking-[0.3em]",
+                  if(can_afford, do: "cta-solid", else: "cta-outline opacity-60 cursor-not-allowed")
                 ]}
                 phx-click={if can_afford, do: "confirm_action", else: nil}
                 disabled={not can_afford}
@@ -1100,7 +1111,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 実行する
               </button>
               <button
-                class="flex-1 px-4 py-3 rounded-lg border-2 border-sumi bg-washi text-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
                 phx-click="cancel_action_confirm"
                 aria-label="キャンセル"
               >
@@ -1150,14 +1161,14 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-slide-in-up"
+          class="resonance-modal-frame relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-slide-in-up"
           phx-click-away="close_card_detail"
           phx-window-keydown={
             JS.push("close_card_detail") |> JS.dispatch("keydown", detail: %{key: "Escape"})
           }
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors z-10"
+            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
             phx-click="close_card_detail"
             aria-label="モーダルを閉じる"
           >
@@ -1165,8 +1176,13 @@ defmodule ShinkankiWebWeb.GameComponents do
           </button>
 
           <div class="p-6">
-            <h2 id="card-detail-title" class="text-2xl font-bold text-sumi mb-4">カード詳細</h2>
-
+            <h2
+              id="card-detail-title"
+              class="text-2xl font-bold text-[var(--color-landing-pale)] mb-4 tracking-[0.2em]"
+            >
+              カード詳細
+            </h2>
+            
     <!-- Card Preview -->
             <div class="mb-6 flex justify-center">
               <.ofuda_card
@@ -1177,16 +1193,16 @@ defmodule ShinkankiWebWeb.GameComponents do
                 class="scale-125"
               />
             </div>
-
+            
     <!-- Card Type Badge -->
             <div class="mb-4 flex items-center gap-2">
               <span class={[
-                "px-3 py-1 rounded-full text-xs font-semibold",
+                "px-3 py-1 rounded-full text-xs font-semibold border",
                 case card_type do
-                  :action -> "bg-shu/10 text-shu border border-shu/30"
-                  :reaction -> "bg-matsu/10 text-matsu border border-matsu/30"
-                  :event -> "bg-sumi/10 text-sumi border border-sumi/30"
-                  _ -> "bg-sumi/10 text-sumi border border-sumi/30"
+                  :action -> "bg-shu/20 text-shu border-shu/40"
+                  :reaction -> "bg-matsu/20 text-matsu border-matsu/40"
+                  :event -> "bg-white/10 text-white border-white/20"
+                  _ -> "bg-white/10 text-white border-white/20"
                 end
               ]}>
                 {case card_type do
@@ -1206,19 +1222,25 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               <% end %>
             </div>
-
+            
     <!-- Description -->
             <%= if card_description != "" do %>
-              <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
-                <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">説明</div>
-                <p class="text-sm text-sumi leading-relaxed">{card_description}</p>
+              <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+                <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
+                  説明
+                </div>
+                <p class="text-sm text-[var(--color-landing-text-primary)] leading-relaxed">
+                  {card_description}
+                </p>
               </div>
             <% end %>
-
+            
     <!-- Cost Display -->
-            <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
+            <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
               <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-sumi">コスト（空環）</span>
+                <span class="text-sm font-semibold text-[var(--color-landing-text-secondary)]">
+                  コスト（空環）
+                </span>
                 <div class="flex items-center gap-2">
                   <span class={[
                     "text-lg font-bold",
@@ -1226,7 +1248,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   ]}>
                     {card_cost}
                   </span>
-                  <span class="text-sm text-sumi/60">
+                  <span class="text-sm text-[var(--color-landing-text-secondary)]">
                     （現在: {@current_currency}）
                   </span>
                   <%= if not can_afford do %>
@@ -1235,11 +1257,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             </div>
-
+            
     <!-- Effects Display -->
             <%= if map_size(card_effect) > 0 do %>
-              <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
-                <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-3">効果</div>
+              <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+                <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-3">
+                  効果
+                </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <%= if Map.has_key?(card_effect, :forest) or Map.has_key?(card_effect, :f) do %>
                     <div class="bg-matsu/10 border border-matsu/30 rounded p-2 text-center">
@@ -1276,11 +1300,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Usage Conditions -->
-            <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
-              <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">使用条件</div>
-              <ul class="space-y-1 text-sm text-sumi/80">
+            <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+              <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
+                使用条件
+              </div>
+              <ul class="space-y-1 text-sm text-[var(--color-landing-text-primary)]">
                 <li class="flex items-center gap-2">
                   <%= if can_afford do %>
                     <.icon name="hero-check-circle" class="w-4 h-4 text-matsu" />
@@ -1303,11 +1329,11 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <% end %>
               </ul>
             </div>
-
+            
     <!-- Close Button -->
             <div class="flex justify-end mt-6">
               <button
-                class="px-6 py-2 rounded-lg border-2 border-sumi bg-washi text-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                class="cta-button cta-outline tracking-[0.3em]"
                 phx-click="close_card_detail"
                 aria-label="閉じる"
               >
@@ -1355,72 +1381,89 @@ defmodule ShinkankiWebWeb.GameComponents do
         aria-labelledby="ending-title"
         {@rest}
       >
-        <div class="relative bg-washi border-4 border-double rounded-lg shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div class="resonance-modal-frame relative max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
           <!-- Ending Header -->
           <div class={[
-            "p-8 text-center border-b-4 border-double",
-            @ending_type == :blessing && "bg-kin/10 border-kin",
-            @ending_type == :purification && "bg-matsu/10 border-matsu",
-            @ending_type == :uncertain && "bg-kohaku/10 border-kohaku",
-            @ending_type == :lament && "bg-shu/10 border-shu",
-            @ending_type == :instant_loss && "bg-sumi/20 border-sumi"
+            "p-8 text-center border-b border-white/10",
+            @ending_type == :blessing && "bg-kin/20 border-kin/30",
+            @ending_type == :purification && "bg-matsu/20 border-matsu/30",
+            @ending_type == :uncertain && "bg-kohaku/20 border-kohaku/30",
+            @ending_type == :lament && "bg-shu/20 border-shu/30",
+            @ending_type == :instant_loss && "bg-white/10 border-white/20"
           ]}>
-            <div class="text-6xl mb-4">{@ending_data.icon}</div>
-            <h1 id="ending-title" class="text-3xl md:text-4xl font-bold mb-2 writing-mode-vertical">
+            <div class="text-6xl mb-4 drop-shadow-lg">{@ending_data.icon}</div>
+            <h1
+              id="ending-title"
+              class="text-3xl md:text-4xl font-bold mb-2 writing-mode-vertical tracking-[0.3em]"
+            >
               {@ending_data.title}
             </h1>
-            <p class="text-lg text-sumi/80 mt-4">{@ending_data.subtitle}</p>
+            <p class="text-lg text-[var(--color-landing-text-secondary)] mt-4">
+              {@ending_data.subtitle}
+            </p>
           </div>
-
+          
     <!-- Ending Description -->
           <div class="p-6 md:p-8">
-            <div class="prose prose-sumi max-w-none mb-6">
-              <p class="text-base leading-relaxed text-sumi">{@ending_data.description}</p>
+            <div class="prose prose-invert max-w-none mb-6">
+              <p class="text-base leading-relaxed text-[var(--color-landing-text-primary)]">
+                {@ending_data.description}
+              </p>
             </div>
-
+            
     <!-- Final Statistics -->
-            <div class="mb-6 p-4 bg-washi border-2 border-sumi/20 rounded-lg">
-              <h2 class="text-lg font-bold text-sumi mb-4">最終結果</h2>
+            <div class="mb-6 p-4 bg-white/5 border border-white/10 rounded-lg">
+              <h2 class="text-lg font-bold text-[var(--color-landing-pale)] mb-4">
+                最終結果
+              </h2>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">Life Index</div>
+                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
+                    Life Index
+                  </div>
                   <div class="text-2xl font-bold text-shu">{@life_index}</div>
                 </div>
                 <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">F (森)</div>
+                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
+                    F (森)
+                  </div>
                   <div class="text-xl font-bold text-matsu">
                     {@final_stats[:forest] || @final_stats["forest"] || 0}
                   </div>
                 </div>
                 <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">K (文化)</div>
+                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
+                    K (文化)
+                  </div>
                   <div class="text-xl font-bold text-sakura">
                     {@final_stats[:culture] || @final_stats["culture"] || 0}
                   </div>
                 </div>
                 <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-1">S (社会)</div>
+                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
+                    S (社会)
+                  </div>
                   <div class="text-xl font-bold text-kohaku">
                     {@final_stats[:social] || @final_stats["social"] || 0}
                   </div>
                 </div>
               </div>
-              <div class="mt-4 text-center text-sm text-sumi/70">
+              <div class="mt-4 text-center text-sm text-[var(--color-landing-text-secondary)]">
                 ターン数: {@turn} / {@max_turns}
               </div>
             </div>
-
+            
     <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 mt-6">
               <button
-                class="flex-1 px-6 py-3 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors"
+                class="flex-1 cta-button cta-solid justify-center tracking-[0.3em]"
                 phx-click="restart_game"
                 aria-label="新しいゲームを開始"
               >
                 新しいゲームを開始
               </button>
               <button
-                class="flex-1 px-6 py-3 bg-washi text-sumi rounded-lg border-2 border-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
                 phx-click="close_ending"
                 aria-label="閉じる"
               >
@@ -1603,7 +1646,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             <p class="text-sm md:text-base text-sumi/70 mb-2">あなたの専門性を選んで、チームに貢献しましょう</p>
             <p class="text-xs text-sumi/50">4つの役割から1つを選択してください</p>
           </div>
-
+          
     <!-- Role Cards -->
           <div class="p-6 md:p-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
@@ -1660,7 +1703,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <!-- Background Gradient -->
                   <div class={["absolute inset-0 bg-gradient-to-br", role.bg_gradient, "opacity-50"]}>
                   </div>
-
+                  
     <!-- Content -->
                   <div class="relative z-10">
                     <%= if is_selected do %>
@@ -1668,7 +1711,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         ✓
                       </div>
                     <% end %>
-
+                    
     <!-- Icon and Title -->
                     <div class="text-center mb-6">
                       <div class={[
@@ -1687,7 +1730,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.name_en}
                       </p>
                     </div>
-
+                    
     <!-- Focus -->
                     <div class="mb-4 p-3 rounded-lg bg-washi/80 border border-sumi/20">
                       <div class="text-xs font-semibold text-sumi/80 mb-1 uppercase tracking-wider">
@@ -1697,7 +1740,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.focus}
                       </p>
                     </div>
-
+                    
     <!-- Description -->
                     <div class="mb-4">
                       <div class="text-xs font-semibold text-sumi/80 mb-2 uppercase tracking-wider">
@@ -1707,7 +1750,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.description}
                       </p>
                     </div>
-
+                    
     <!-- Detailed Description (shown when selected) -->
                     <%= if is_selected do %>
                       <div class="mt-4 p-4 rounded-lg bg-washi/90 border-2 border-sumi/30 animate-fade-in">
@@ -1736,7 +1779,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               <% end %>
             </div>
-
+            
     <!-- Action Buttons -->
             <%= if @selected_role do %>
               <div class="mt-8 pt-6 border-t-4 border-double border-sumi">
@@ -1812,7 +1855,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           <span class="text-xs font-bold text-sumi">⚡</span>
         </div>
       <% end %>
-
+      
     <!-- Header -->
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2 flex-1">
@@ -1845,7 +1888,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Role Information -->
       <%= if @role_data do %>
         <div class="mt-2 pt-2 border-t border-sumi/20">
@@ -1910,6 +1953,10 @@ defmodule ShinkankiWebWeb.GameComponents do
     end
   end
 
+  defp project_state_classes(%{is_completed: true}), do: "project-card--completed"
+  defp project_state_classes(%{is_unlocked: true}), do: "project-card--active"
+  defp project_state_classes(_), do: "project-card--locked"
+
   @doc """
   Renders a modal displaying demurrage (減衰) information.
   Shows the currency before and after demurrage with animation.
@@ -1941,11 +1988,11 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="relative bg-washi border-4 border-double border-kin rounded-lg shadow-2xl max-w-md w-full mx-4 animate-slide-in-up"
+          class="resonance-modal-frame relative border border-kin/40 max-w-md w-full mx-4 animate-slide-in-up"
           phx-click-away="close_demurrage"
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors z-10"
+            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
             phx-click="close_demurrage"
             aria-label="モーダルを閉じる"
           >
@@ -1956,23 +2003,28 @@ defmodule ShinkankiWebWeb.GameComponents do
             <!-- Header -->
             <div class="text-center mb-6">
               <div class="text-4xl mb-3 animate-bounce">💸</div>
-              <h2 id="demurrage-modal-title" class="text-2xl md:text-3xl font-bold text-sumi mb-2">
+              <h2
+                id="demurrage-modal-title"
+                class="text-2xl md:text-3xl font-bold text-[var(--color-landing-pale)] mb-2 tracking-[0.3em]"
+              >
                 減衰フェーズ
               </h2>
-              <p class="text-sm text-sumi/70">空環ポイントが減衰しました</p>
+              <p class="text-sm text-[var(--color-landing-text-secondary)]">
+                空環ポイントが減衰しました
+              </p>
             </div>
-
+            
     <!-- Currency Display with Animation -->
             <div class="space-y-4 mb-6">
               <!-- Before -->
-              <div class="bg-kin/10 border-2 border-kin/30 rounded-lg p-4 text-center">
+              <div class="bg-kin/10 border border-kin/30 rounded-lg p-4 text-center">
                 <div class="text-xs uppercase tracking-[0.3em] text-kin/70 mb-2">減衰前</div>
                 <div class="text-3xl md:text-4xl font-bold text-kin" id="demurrage-before">
                   {@previous_currency}
                 </div>
                 <div class="text-xs text-kin/60 mt-1">空環ポイント</div>
               </div>
-
+              
     <!-- Arrow -->
               <div class="flex items-center justify-center">
                 <div class="w-12 h-0.5 bg-kin/50 relative">
@@ -1985,9 +2037,9 @@ defmodule ShinkankiWebWeb.GameComponents do
                   </div>
                 </div>
               </div>
-
+              
     <!-- After -->
-              <div class="bg-shu/10 border-2 border-shu/30 rounded-lg p-4 text-center animate-pulse">
+              <div class="bg-shu/10 border border-shu/30 rounded-lg p-4 text-center animate-pulse">
                 <div class="text-xs uppercase tracking-[0.3em] text-shu/70 mb-2">減衰後</div>
                 <div class="text-3xl md:text-4xl font-bold text-shu" id="demurrage-after">
                   {@current_currency}
@@ -1995,11 +2047,13 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <div class="text-xs text-shu/60 mt-1">空環ポイント</div>
               </div>
             </div>
-
+            
     <!-- Demurrage Amount -->
-            <div class="bg-sumi/10 border border-sumi/20 rounded-lg p-4 mb-6">
+            <div class="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
               <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-sumi">減衰量</span>
+                <span class="text-sm font-semibold text-[var(--color-landing-text-secondary)]">
+                  減衰量
+                </span>
                 <div class="flex items-center gap-2">
                   <span class="text-xl font-bold text-shu">
                     {if @demurrage_amount < 0,
@@ -2012,18 +2066,20 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             </div>
-
+            
     <!-- Explanation -->
-            <div class="bg-washi-dark border border-sumi/20 rounded-lg p-4 mb-6">
-              <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">減衰について</div>
-              <p class="text-sm text-sumi/80 leading-relaxed">
+            <div class="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
+              <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
+                減衰について
+              </div>
+              <p class="text-sm text-[var(--color-landing-text-primary)] leading-relaxed">
                 空環マネーは貯め込むと価値が減ります。積極的に使って循環させることが重要です。
               </p>
             </div>
-
+            
     <!-- Close Button -->
             <button
-              class="w-full px-6 py-3 bg-kin text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-kin/80 transition-colors shadow-md"
+              class="w-full cta-button cta-solid justify-center tracking-[0.3em]"
               phx-click="close_demurrage"
               aria-label="閉じる"
             >
@@ -2050,11 +2106,11 @@ defmodule ShinkankiWebWeb.GameComponents do
     <div
       id={@id}
       class={[
-        "fixed top-4 right-4 z-50 min-w-[300px] max-w-md p-4 rounded-lg border-2 shadow-lg animate-slide-in-right",
-        @kind == :success && "bg-washi border-matsu text-sumi",
-        @kind == :error && "bg-washi border-shu text-sumi",
-        @kind == :info && "bg-washi border-sumi text-sumi",
-        @kind == :warning && "bg-washi border-kohaku text-sumi",
+        "fixed top-4 right-4 z-50 min-w-[300px] max-w-md p-4 rounded-lg border animate-slide-in-right shadow-[0_15px_40px_rgba(0,0,0,0.35)] bg-[rgba(15,20,25,0.9)] text-[var(--color-landing-text-primary)] backdrop-blur-lg",
+        @kind == :success && "border-matsu/50",
+        @kind == :error && "border-shu/50",
+        @kind == :info && "border-[var(--color-landing-gold)]/40",
+        @kind == :warning && "border-kohaku/50",
         @class
       ]}
       role="alert"
@@ -2064,10 +2120,10 @@ defmodule ShinkankiWebWeb.GameComponents do
       <div class="flex items-start gap-3">
         <div class={[
           "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-          @kind == :success && "bg-matsu/20 text-matsu",
-          @kind == :error && "bg-shu/20 text-shu",
-          @kind == :info && "bg-sumi/20 text-sumi",
-          @kind == :warning && "bg-kohaku/20 text-kohaku"
+          @kind == :success && "bg-matsu/30 text-matsu",
+          @kind == :error && "bg-shu/30 text-shu",
+          @kind == :info && "bg-white/10 text-[var(--color-landing-pale)]",
+          @kind == :warning && "bg-kohaku/30 text-kohaku"
         ]}>
           {if @kind == :success, do: "✓", else: if(@kind == :error, do: "✕", else: "ℹ")}
         </div>

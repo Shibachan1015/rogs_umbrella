@@ -5,6 +5,8 @@ defmodule RogsCommWeb.ChatChannel do
 
   use RogsCommWeb, :channel
 
+  require Logger
+
   alias RogsComm.Messages
   alias RogsComm.Rooms
   alias RogsCommWeb.Presence
@@ -14,6 +16,7 @@ defmodule RogsCommWeb.ChatChannel do
   def join("room:" <> room_id, _payload, socket) do
     case Rooms.fetch_room(room_id) do
       nil ->
+        Logger.warning("ChatChannel: Attempted to join non-existent room", room_id: room_id)
         {:error, %{reason: "room not found"}}
 
       room ->
@@ -24,10 +27,20 @@ defmodule RogsCommWeb.ChatChannel do
           try do
             Presence.list(topic) |> map_size()
           rescue
-            _ -> 0
+            error ->
+              Logger.error("ChatChannel: Failed to list presences",
+                room_id: room_id,
+                error: inspect(error)
+              )
+              0
           end
 
         if current_participants >= room.max_participants do
+          Logger.info("ChatChannel: Room is full",
+            room_id: room_id,
+            current_participants: current_participants,
+            max_participants: room.max_participants
+          )
           {:error, %{reason: "room is full"}}
         else
           user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
@@ -118,11 +131,21 @@ defmodule RogsCommWeb.ChatChannel do
                   _ -> "failed to create message"
                 end
 
+              Logger.error("ChatChannel: Failed to create message",
+                user_id: user_id,
+                room_id: room_id,
+                errors: inspect(changeset.errors)
+              )
+
               {:reply, {:error, %{reason: reason}}, socket}
           end
         end
 
       {:error, :rate_limited} ->
+        Logger.warning("ChatChannel: Rate limit exceeded",
+          user_id: user_id,
+          room_id: socket.assigns.room_id
+        )
         {:reply, {:error, %{reason: "rate limit exceeded. please wait a moment"}}, socket}
     end
   end
@@ -162,21 +185,47 @@ defmodule RogsCommWeb.ChatChannel do
                   _ -> "failed to edit message"
                 end
 
+              Logger.error("ChatChannel: Failed to edit message",
+                user_id: user_id,
+                message_id: message_id,
+                room_id: room_id,
+                errors: inspect(changeset.errors)
+              )
+
               {:reply, {:error, %{reason: reason}}, socket}
           end
 
         message when message.room_id != room_id ->
+          Logger.warning("ChatChannel: Attempted to edit message from different room",
+            user_id: user_id,
+            message_id: message_id,
+            message_room_id: message.room_id,
+            current_room_id: room_id
+          )
           {:reply, {:error, %{reason: "message not found in this room"}}, socket}
 
         message when message.user_id != user_id ->
+          Logger.warning("ChatChannel: Attempted to edit another user's message",
+            user_id: user_id,
+            message_id: message_id,
+            message_owner_id: message.user_id
+          )
           {:reply, {:error, %{reason: "you can only edit your own messages"}}, socket}
 
         _ ->
+          Logger.warning("ChatChannel: Attempted to edit unknown message",
+            user_id: user_id,
+            message_id: message_id
+          )
           {:reply, {:error, %{reason: "message not found"}}, socket}
       end
     end
   rescue
     Ecto.NoResultsError ->
+      Logger.warning("ChatChannel: Message not found for edit",
+        user_id: user_id,
+        message_id: message_id
+      )
       {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 
@@ -192,21 +241,46 @@ defmodule RogsCommWeb.ChatChannel do
             broadcast(socket, "message_deleted", %{id: message_id})
             {:noreply, socket}
 
-          {:error, _changeset} ->
+          {:error, changeset} ->
+            Logger.error("ChatChannel: Failed to delete message",
+              user_id: user_id,
+              message_id: message_id,
+              room_id: room_id,
+              errors: inspect(changeset.errors)
+            )
             {:reply, {:error, %{reason: "failed to delete message"}}, socket}
         end
 
       message when message.room_id != room_id ->
+        Logger.warning("ChatChannel: Attempted to delete message from different room",
+          user_id: user_id,
+          message_id: message_id,
+          message_room_id: message.room_id,
+          current_room_id: room_id
+        )
         {:reply, {:error, %{reason: "message not found in this room"}}, socket}
 
       message when message.user_id != user_id ->
+        Logger.warning("ChatChannel: Attempted to delete another user's message",
+          user_id: user_id,
+          message_id: message_id,
+          message_owner_id: message.user_id
+        )
         {:reply, {:error, %{reason: "you can only delete your own messages"}}, socket}
 
       _ ->
+        Logger.warning("ChatChannel: Attempted to delete unknown message",
+          user_id: user_id,
+          message_id: message_id
+        )
         {:reply, {:error, %{reason: "message not found"}}, socket}
     end
   rescue
     Ecto.NoResultsError ->
+      Logger.warning("ChatChannel: Message not found for delete",
+        user_id: user_id,
+        message_id: message_id
+      )
       {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 

@@ -24,8 +24,8 @@ defmodule RogsIdentityWeb.UserLive.SettingsSessionTest do
     test "displays active sessions", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/settings")
 
-      assert html =~ "Active Sessions"
-      assert html =~ "Manage your active sessions"
+      assert html =~ "Active sessions"
+      assert html =~ "Sign out remote devices"
       assert html =~ "Current Session"
       assert html =~ "Active"
     end

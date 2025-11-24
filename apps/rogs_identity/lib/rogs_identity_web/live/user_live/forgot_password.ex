@@ -73,7 +73,10 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
     if attempt_count >= 3 do
       {:noreply,
        socket
-       |> put_flash(:error, "Password reset is cooling down. Give it a little time and try again.")}
+       |> put_flash(
+         :error,
+         "Password reset is cooling down. Give it a little time and try again."
+       )}
     else
       if user = Accounts.get_user_by_email(email) do
         Accounts.deliver_password_reset_instructions(

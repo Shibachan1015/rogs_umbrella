@@ -1,3 +1,299 @@
+.project-stage {
+  width: min(100%, 960px);
+  margin: 0 auto 1.5rem;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background: linear-gradient(145deg, rgba(15, 20, 25, 0.92), rgba(26, 31, 46, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.75rem;
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-stage::before,
+.project-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.project-stage::before {
+  background: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(212, 175, 55, 0.18), transparent 45%);
+  opacity: 0.6;
+}
+
+.project-stage::after {
+  background-image: repeating-linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    repeating-linear-gradient(
+      -120deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 32px
+    );
+  opacity: 0.35;
+  mix-blend-mode: screen;
+}
+
+.project-stage-header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  z-index: 2;
+}
+
+.stage-label {
+  font-size: clamp(1.1rem, 2.4vw, 1.8rem);
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--color-landing-pale);
+}
+
+.stage-subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.project-metrics {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.25);
+}
+
+.project-metric {
+  text-align: center;
+}
+
+.project-metric .metric-label {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.project-metric .metric-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-landing-text-primary);
+}
+
+.project-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.project-card-shell {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(21, 24, 35, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  transform-origin: center;
+}
+
+.project-card-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.15), transparent 55%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.project-card-shell:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.35);
+}
+
+.project-card-shell:hover::before {
+  opacity: 0.8;
+}
+
+.project-progress-track {
+  width: 100%;
+  height: 1rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  position: relative;
+}
+
+.project-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c7b370, #d4af37, #f0e6d2);
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.45);
+  transition: width 0.7s var(--motion-easing-emphasized);
+  position: relative;
+}
+
+.project-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  animation: cardShine 1.8s linear infinite;
+}
+
+.project-progress-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(21, 24, 35, 0.8);
+}
+
+.action-ribbon {
+  position: absolute;
+  bottom: clamp(0.75rem, 2vw, 1.75rem);
+  right: clamp(0.75rem, 2vw, 1.75rem);
+  max-width: min(420px, 80vw);
+  background: rgba(15, 20, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  padding: 1rem 1.25rem;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 5;
+}
+
+.action-ribbon-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--color-landing-text-primary);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.action-ribbon-label span {
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.2em;
+}
+
+.action-ribbon-subtext {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.action-ribbon-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.action-hanko {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-width: 1.5px;
+  border-radius: 9999px;
+  background: rgba(252, 250, 242, 0.04);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+}
+
+.action-hanko:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35);
+}
+
+.hud-panel-light,
+.hud-stat-card,
+.hud-chat-card,
+.player-info-card,
+.chat-message {
+  transition: transform 0.35s var(--motion-easing-standard),
+    box-shadow 0.35s var(--motion-easing-standard),
+    border-color 0.35s var(--motion-easing-standard),
+    background-color 0.35s var(--motion-easing-standard);
+  will-change: transform, box-shadow;
+}
+
+.hud-panel-light:hover,
+.hud-stat-card:hover,
+.hud-chat-card:hover,
+.player-info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(212, 175, 55, 0.25);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.chat-message {
+  border-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.chat-message:hover {
+  transform: translateX(4px);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(212, 175, 55, 0.25);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  .project-stage {
+    border-radius: 1.25rem;
+  }
+
+  .project-metrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .action-ribbon {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100% - 2rem);
+  }
+
+  .action-ribbon-buttons {
+    justify-content: center;
+  }
+}
 /* Torii Resonance Design System (TRDS) base styles */
 
 @tailwind base;

@@ -217,6 +217,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns[:current_user_id]
+
       Logger.warning("ChatLive: Message not found for edit",
         user_id: user_id,
         message_id: message_id
@@ -277,6 +278,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns[:current_user_id]
+
       Logger.warning("ChatLive: Message not found for delete",
         user_id: user_id,
         message_id: message_id
@@ -588,6 +590,10 @@ defmodule RogsCommWeb.ChatLive do
   defp rtc_state_pill(%{connecting?: true}), do: "LINKING"
   defp rtc_state_pill(_state), do: "IDLE"
 
+  defp rtc_data_state(%{connected?: true}), do: "connected"
+  defp rtc_data_state(%{connecting?: true}), do: "connecting"
+  defp rtc_data_state(_state), do: "idle"
+
   defp mic_toggle_label(%{mic_muted?: true}), do: "マイク: ミュート"
   defp mic_toggle_label(_state), do: "マイク: ON"
 
@@ -597,6 +603,19 @@ defmodule RogsCommWeb.ChatLive do
   defp rtc_participant_hint(%{connected?: true}), do: "音声同期中"
   defp rtc_participant_hint(%{connecting?: true}), do: "接続準備中"
   defp rtc_participant_hint(_state), do: "待機中"
+
+  defp search_state_label(true), do: "ON"
+  defp search_state_label(_), do: "OFF"
+
+  defp search_state_accent(true), do: "text-shu"
+  defp search_state_accent(_), do: "text-sumi"
+
+  defp search_state_screen_text(true), do: "検索モードが有効になりました"
+  defp search_state_screen_text(_), do: "検索モードは無効です"
+
+  defp rtc_state_status_text(%{connected?: true}), do: "音声チャネルは接続済みです"
+  defp rtc_state_status_text(%{connecting?: true}), do: "音声チャネルを接続中です"
+  defp rtc_state_status_text(_), do: "音声チャネルは未接続です"
 
   defp mic_status_message(true), do: "マイクをミュートにしました"
   defp mic_status_message(false), do: "マイクを有効にしました"
@@ -648,17 +667,32 @@ defmodule RogsCommWeb.ChatLive do
                 現在のルームを見る
               </a>
             </div>
-            <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]">
+            <div
+              class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]"
+              id="chat-state-tracker"
+              phx-hook="ChatStateHook"
+              data-search-mode={if(@search_mode, do: "on", else: "off")}
+              data-rtc-state={rtc_data_state(@rtc_state)}
+            >
               <span class="state-pill bg-washi text-sumi border-sumi/30">Room: {@room.name}</span>
               <span class="state-pill bg-washi text-sumi border-sumi/30">
                 Online: {Enum.count(@presences)}
               </span>
-              <span class="state-pill bg-washi text-sumi border-sumi/30">
-                Search {if @search_mode, do: "ON", else: "OFF"}
+              <span
+                class={["state-pill bg-washi border-sumi/30", search_state_accent(@search_mode)]}
+                data-pill="search"
+              >
+                Search {search_state_label(@search_mode)}
               </span>
-              <span class={["state-pill bg-washi border-sumi/30", rtc_status_accent(@rtc_state)]}>
+              <span
+                class={["state-pill bg-washi border-sumi/30", rtc_status_accent(@rtc_state)]}
+                data-pill="audio"
+              >
                 Audio: {rtc_state_pill(@rtc_state)}
               </span>
+            </div>
+            <div aria-live="polite" class="sr-only">
+              {search_state_screen_text(@search_mode)}。{rtc_state_status_text(@rtc_state)}
             </div>
           </div>
         </section>

@@ -20,6 +20,8 @@ defmodule RogsCommWeb.ChatLive do
 
   on_mount {RogsCommWeb.UserAuthHooks, :assign_current_user}
 
+  @rtc_connect_delay 400
+
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
     case Rooms.fetch_room(room_id) do
@@ -47,6 +49,7 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:has_older_messages, true)
           |> assign(:search_mode, false)
           |> assign(:search_results, [])
+          |> assign(:rtc_state, default_rtc_state())
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -345,6 +348,89 @@ defmodule RogsCommWeb.ChatLive do
      |> stream(:messages, messages, reset: true)}
   end
 
+  def handle_event("start_audio", _params, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? or state.connected? do
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> assign(:rtc_state, %{
+          state
+          | connecting?: true,
+            status_message: "音声チャネルを初期化しています...",
+            error: nil
+        })
+        |> push_event("rtc:start", %{room_id: socket.assigns.room_id})
+
+      Process.send_after(self(), :rtc_connected, @rtc_connect_delay)
+
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("stop_audio", _params, socket) do
+    state = socket.assigns.rtc_state
+
+    if not state.connected? and not state.connecting? do
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> assign(:rtc_state, %{
+          state
+          | connected?: false,
+            connecting?: false,
+            status_message: "音声チャネルを切断しました",
+            error: nil
+        })
+        |> push_event("rtc:stop", %{room_id: socket.assigns.room_id})
+
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_mic", _params, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connected? do
+      new_state =
+        state
+        |> Map.update!(:mic_muted?, fn muted -> !muted end)
+        |> Map.put(:status_message, mic_status_message(!state.mic_muted?))
+
+      socket =
+        socket
+        |> assign(:rtc_state, new_state)
+        |> push_event("rtc:toggle-mic", %{muted: new_state.mic_muted?})
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_speakers", _params, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connected? do
+      new_state =
+        state
+        |> Map.update!(:speakers_muted?, fn muted -> !muted end)
+        |> Map.put(:status_message, speaker_status_message(!state.speakers_muted?))
+
+      socket =
+        socket
+        |> assign(:rtc_state, new_state)
+        |> push_event("rtc:toggle-speakers", %{muted: new_state.speakers_muted?})
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_info(
         %Phoenix.Socket.Broadcast{topic: topic, event: "new_message", payload: payload},
@@ -437,6 +523,23 @@ defmodule RogsCommWeb.ChatLive do
     end
   end
 
+  def handle_info(:rtc_connected, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? do
+      {:noreply,
+       assign(socket, :rtc_state, %{
+         state
+         | connecting?: false,
+           connected?: true,
+           status_message: "音声チャネルが接続されました",
+           error: nil
+       })}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
     topic = topic(socket.assigns.room_id)
@@ -463,6 +566,45 @@ defmodule RogsCommWeb.ChatLive do
       {user_id, meta}
     end)
   end
+
+  defp default_rtc_state do
+    %{
+      connected?: false,
+      connecting?: false,
+      mic_muted?: false,
+      speakers_muted?: false,
+      status_message: "未接続",
+      error: nil
+    }
+  end
+
+  defp rtc_status_label(%{connected?: true}), do: "接続中"
+  defp rtc_status_label(%{connecting?: true}), do: "接続準備中"
+  defp rtc_status_label(_state), do: "未接続"
+
+  defp rtc_status_accent(%{connected?: true}), do: "text-matsu"
+  defp rtc_status_accent(%{connecting?: true}), do: "text-kohaku"
+  defp rtc_status_accent(_state), do: "text-sumi"
+
+  defp rtc_state_pill(%{connected?: true}), do: "CONNECTED"
+  defp rtc_state_pill(%{connecting?: true}), do: "LINKING"
+  defp rtc_state_pill(_state), do: "IDLE"
+
+  defp mic_toggle_label(%{mic_muted?: true}), do: "マイク: ミュート"
+  defp mic_toggle_label(_state), do: "マイク: ON"
+
+  defp speaker_toggle_label(%{speakers_muted?: true}), do: "スピーカー: OFF"
+  defp speaker_toggle_label(_state), do: "スピーカー: ON"
+
+  defp rtc_participant_hint(%{connected?: true}), do: "音声同期中"
+  defp rtc_participant_hint(%{connecting?: true}), do: "接続準備中"
+  defp rtc_participant_hint(_state), do: "待機中"
+
+  defp mic_status_message(true), do: "マイクをミュートにしました"
+  defp mic_status_message(false), do: "マイクを有効にしました"
+
+  defp speaker_status_message(true), do: "スピーカーをミュートにしました"
+  defp speaker_status_message(false), do: "スピーカーを有効にしました"
 
   defp highlight_search_term(content, query) when is_binary(content) and is_binary(query) do
     if String.trim(query) == "" do
@@ -515,6 +657,9 @@ defmodule RogsCommWeb.ChatLive do
               </span>
               <span class="state-pill bg-washi text-sumi border-sumi/30">
                 Search {if @search_mode, do: "ON", else: "OFF"}
+              </span>
+              <span class={["state-pill bg-washi border-sumi/30", rtc_status_accent(@rtc_state)]}>
+                Audio: {rtc_state_pill(@rtc_state)}
               </span>
             </div>
           </div>
@@ -609,6 +754,95 @@ defmodule RogsCommWeb.ChatLive do
                     検索をクリア
                   </button>
                 </.form>
+              </div>
+
+              <div
+                id="audio-panel"
+                class="concept-card text-sumi bg-washi space-y-4"
+                phx-hook="WebRTCHook"
+                data-room-id={@room_id}
+                aria-live="polite"
+              >
+                <div>
+                  <p class="text-xs uppercase tracking-[0.4em] mb-1 text-sumi">音声チャネル</p>
+                  <p class={["text-lg font-semibold", rtc_status_accent(@rtc_state)]}>
+                    {rtc_status_label(@rtc_state)}
+                  </p>
+                  <p class="text-sm text-sumi-light mt-1">{@rtc_state.status_message}</p>
+                </div>
+
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    phx-click="start_audio"
+                    disabled={@rtc_state.connecting? or @rtc_state.connected?}
+                    class={[
+                      "flex-1 hanko-button text-xs uppercase tracking-[0.3em]",
+                      (@rtc_state.connecting? or @rtc_state.connected?) &&
+                        "opacity-60 cursor-not-allowed"
+                    ]}
+                  >
+                    接続
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="stop_audio"
+                    disabled={not @rtc_state.connected? and not @rtc_state.connecting?}
+                    class={[
+                      "flex-1 px-4 py-2 rounded-lg border-2 border-sumi text-sumi font-semibold transition-all focus-ring",
+                      (@rtc_state.connected? or @rtc_state.connecting?) &&
+                        "hover:bg-sumi hover:text-washi",
+                      (not @rtc_state.connected? and not @rtc_state.connecting?) &&
+                        "opacity-60 cursor-not-allowed"
+                    ]}
+                  >
+                    切断
+                  </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2 text-xs uppercase tracking-[0.2em]">
+                  <button
+                    type="button"
+                    phx-click="toggle_mic"
+                    disabled={!@rtc_state.connected?}
+                    class={[
+                      "flex-1 px-3 py-2 rounded border border-sumi focus-ring transition-all",
+                      @rtc_state.connected? && "hover:border-shu hover:text-shu",
+                      !@rtc_state.connected? && "opacity-50 cursor-not-allowed"
+                    ]}
+                  >
+                    {mic_toggle_label(@rtc_state)}
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="toggle_speakers"
+                    disabled={!@rtc_state.connected?}
+                    class={[
+                      "flex-1 px-3 py-2 rounded border border-sumi focus-ring transition-all",
+                      @rtc_state.connected? && "hover:border-matsu hover:text-matsu",
+                      !@rtc_state.connected? && "opacity-50 cursor-not-allowed"
+                    ]}
+                  >
+                    {speaker_toggle_label(@rtc_state)}
+                  </button>
+                </div>
+
+                <div>
+                  <p class="text-xs uppercase tracking-[0.4em] mb-2 text-sumi">参加者ステータス</p>
+                  <ul class="space-y-2" role="list">
+                    <li
+                      :for={{user_id, meta} <- list_presences(@presences)}
+                      role="listitem"
+                      class="flex items-center justify-between bg-washi-dark px-3 py-2 rounded border border-sumi/20 text-sm"
+                    >
+                      <span>{meta.user_email || "匿名"}</span>
+                      <span class="text-xs text-sumi-light">{rtc_participant_hint(@rtc_state)}</span>
+                    </li>
+                    <li :if={Enum.empty?(@presences)} class="text-xs text-sumi-light">
+                      オンラインのプレイヤーはいません
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               <div class="concept-card text-[var(--color-landing-pale)]">

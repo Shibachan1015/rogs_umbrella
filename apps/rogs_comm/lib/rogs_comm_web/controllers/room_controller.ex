@@ -17,4 +17,3 @@ defmodule RogsCommWeb.RoomController do
     end
   end
 end
-

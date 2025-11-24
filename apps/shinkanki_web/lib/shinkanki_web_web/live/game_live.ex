@@ -40,6 +40,8 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:players, mock_players())
       |> assign(:show_demurrage, false)
       |> assign(:previous_currency, 0)
+      |> assign(:show_card_detail, false)
+      |> assign(:detail_card, nil)
 
     socket =
       if connected?(socket) do
@@ -624,6 +626,20 @@ defmodule ShinkankiWebWeb.GameLive do
       id="event-modal"
     />
 
+    <!-- Card Detail Modal -->
+    <.card_detail_modal
+      show={@show_card_detail}
+      card={@detail_card}
+      current_currency={@game_state.currency}
+      current_params={%{
+        forest: @game_state.forest,
+        culture: @game_state.culture,
+        social: @game_state.social,
+        currency: @game_state.currency
+      }}
+      id="card-detail-modal"
+    />
+
     <!-- Toast notifications -->
     <div class="fixed top-4 right-4 z-50 space-y-2">
       <.toast
@@ -683,8 +699,38 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("select_card", %{"card-id" => card_id}, socket) do
-    selected = if socket.assigns.selected_card_id == card_id, do: nil, else: card_id
-    {:noreply, assign(socket, :selected_card_id, selected)}
+    # Show card detail modal
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+    
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_card_detail, true)
+       |> assign(:detail_card, card)
+       |> assign(:selected_card_id, card_id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("show_card_detail", %{"card-id" => card_id}, socket) do
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+    
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_card_detail, true)
+       |> assign(:detail_card, card)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_card_detail", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_card_detail, false)
+     |> assign(:detail_card, nil)}
   end
 
   def handle_event("use_card", %{"card-id" => card_id}, socket) do

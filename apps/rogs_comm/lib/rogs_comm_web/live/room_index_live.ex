@@ -69,7 +69,7 @@ defmodule RogsCommWeb.RoomIndexLive do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <h2 class="text-xl font-semibold text-gray-900 mb-4">ルームを作成</h2>
-            <.form for={@form} id="room-form" phx-change="validate" phx-submit="save" method="post">
+            <.form for={@form} id="room-form" phx-change="validate" phx-submit="save">
               <.input
                 field={@form[:name]}
                 type="text"

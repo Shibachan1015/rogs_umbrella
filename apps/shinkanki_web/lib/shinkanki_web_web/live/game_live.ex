@@ -187,12 +187,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
-
-    <!-- Phase Indicator -->
-            <div class="pt-2 border-t border-sumi/30">
-              <.phase_indicator current_phase={@current_phase} />
-            </div>
-            <!-- Discussion Phase Ready Button -->
+            
+    <!-- Discussion Phase Ready Button -->
             <%= if @current_phase == :discussion && @game_status == :playing do %>
               <div class="pt-4 border-t border-sumi/30">
                 <div class="text-center space-y-2">
@@ -217,7 +213,7 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
             
-            <!-- Current Player Indicator (Action Phase) -->
+    <!-- Current Player Indicator (Action Phase) -->
             <%= if @current_phase == :action && @game_status == :playing do %>
               <div class="pt-4 border-t border-sumi/30">
                 <div class="text-center space-y-2">
@@ -236,7 +232,7 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
             
-            <!-- Game Start Button (Waiting State) -->
+    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
               <div class="pt-4 border-t border-sumi/30 space-y-3">
                 <!-- Player List -->
@@ -258,8 +254,8 @@ defmodule ShinkankiWebWeb.GameLive do
                     {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
                   </div>
                 </div>
-
-                <!-- Start Button -->
+                
+    <!-- Start Button -->
                 <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
                     <button
@@ -422,14 +418,21 @@ defmodule ShinkankiWebWeb.GameLive do
             </.form>
           </div>
         </aside>
-
+        
     <!-- Main Board -->
         <main
-          class="flex-1 relative overflow-hidden flex items-center justify-center p-2 sm:p-4 md:p-8 lg:ml-0"
+          class="flex-1 relative overflow-hidden flex flex-col items-center p-2 sm:p-4 md:p-8 lg:ml-0"
           role="main"
           aria-label="ゲームボード"
         >
-          <!-- Event Card Display (Event Phase) -->
+          <!-- Phase Indicator (Top of Main Board) -->
+          <%= if @game_status == :playing do %>
+            <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">
+              <.phase_indicator current_phase={@current_phase} />
+            </div>
+          <% end %>
+          
+    <!-- Event Card Display (Event Phase) -->
           <%= if @current_phase == :event && @current_event do %>
             <div class="w-full max-w-md mx-auto animate-fade-in">
               <.event_card
@@ -501,7 +504,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
               </div>
-
+              
     <!-- Gauges -->
               <div
                 class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
@@ -584,7 +587,7 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Actions (Stamps) -->
             <div
               class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
@@ -604,7 +607,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </main>
       </div>
-
+      
     <!-- Bottom Hand -->
       <div
         class="h-32 md:h-48 bg-washi-dark border-t-4 border-sumi z-30 relative shadow-[0_-10px_20px_rgba(0,0,0,0.1)] overflow-hidden"
@@ -680,7 +683,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Talent Cards Area (Action Phase) -->
       <%= if @current_phase == :action && length(@player_talents) > 0 do %>
         <div
@@ -708,7 +711,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div

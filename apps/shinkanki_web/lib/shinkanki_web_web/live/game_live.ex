@@ -119,11 +119,14 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def render(assigns) do
     ~H"""
-    <div class="h-screen w-screen overflow-hidden flex flex-col">
-      <div class="flex-1 flex overflow-hidden relative">
+    <div class="game-shell">
+      <div class="game-stage">
         <!-- Sidebar -->
         <aside
-          class="fixed lg:static inset-y-0 left-0 w-72 sm:w-80 bg-washi-dark border-r-2 border-sumi flex flex-col z-20 shadow-lg lg:translate-x-0 -translate-x-full transition-transform duration-300"
+          class={[
+            "game-sidebar",
+            "fixed lg:static inset-y-0 left-0 lg:translate-x-0 -translate-x-full transition-transform duration-300"
+          ]}
           id="sidebar"
           role="complementary"
           aria-label="ゲーム情報とチャット"
@@ -151,7 +154,7 @@ defmodule ShinkankiWebWeb.GameLive do
           >
             <.icon name="hero-x-mark" class="w-4 h-4" />
           </button>
-          <div class="p-4 border-b-2 border-sumi text-center space-y-3">
+          <div class="game-sidebar-card text-center space-y-3">
             <div class="text-[10px] uppercase tracking-[0.6em] text-sumi/60" aria-label="ルーム名">
               Room
             </div>
@@ -204,10 +207,10 @@ defmodule ShinkankiWebWeb.GameLive do
                   </span>
                 </div>
               </div>
-              
+
     <!-- Progress Bar -->
               <div class={[
-                "w-full h-3 bg-sumi/10 rounded-full overflow-hidden border",
+                "w-full h-3 bg-sumi/10 rounded-full overflow-hidden border turn-progress-track",
                 if(is_critical,
                   do: "border-shu/30 turn-progress-glow",
                   else: if(is_warning, do: "border-kohaku/30", else: "border-sumi/20")
@@ -236,7 +239,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
               </div>
-              
+
     <!-- Warning Message -->
               <%= if is_critical do %>
                 <div class="text-center">
@@ -254,59 +257,52 @@ defmodule ShinkankiWebWeb.GameLive do
                 <% end %>
               <% end %>
             </div>
-            
-    <!-- Phase Indicator -->
-            <div class="pt-2 border-t border-sumi/30">
-              <.phase_indicator current_phase={@current_phase} />
-            </div>
-            
+            <div class="sidebar-card-divider"></div>
+            <.phase_indicator current_phase={@current_phase} />
+
     <!-- Discussion Phase Ready Button -->
             <%= if @current_phase == :discussion && @game_status == :playing do %>
-              <div class="pt-4 border-t border-sumi/30">
-                <div class="text-center space-y-2">
-                  <div class="text-xs text-sumi/60">
-                    相談フェーズ - 準備ができたらボタンを押してください
-                  </div>
-                  <%= if get_player_ready_status(@players, @user_id) do %>
-                    <div class="text-xs text-matsu font-semibold">
-                      ✓ 準備完了
-                    </div>
-                  <% else %>
-                    <button
-                      class="w-full px-4 py-2 bg-matsu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-matsu/90 transition-colors"
-                      phx-click="execute_action"
-                      phx-value-action="mark_discussion_ready"
-                      aria-label="準備完了"
-                    >
-                      準備完了
-                    </button>
-                  <% end %>
+              <div class="text-center space-y-2 pt-2">
+                <div class="text-xs text-landing-text-secondary">
+                  相談フェーズ - 準備ができたらボタンを押してください
                 </div>
+                <%= if get_player_ready_status(@players, @user_id) do %>
+                  <div class="text-xs text-matsu font-semibold">
+                    ✓ 準備完了
+                  </div>
+                <% else %>
+                  <button
+                    class="w-full px-4 py-2 bg-matsu text-washi rounded-full border border-matsu/50 font-semibold hover:bg-matsu/90 transition-colors"
+                    phx-click="execute_action"
+                    phx-value-action="mark_discussion_ready"
+                    aria-label="準備完了"
+                  >
+                    準備完了
+                  </button>
+                <% end %>
               </div>
             <% end %>
-            
+
     <!-- Current Player Indicator (Action Phase) -->
             <%= if @current_phase == :action && @game_status == :playing do %>
-              <div class="pt-4 border-t border-sumi/30">
-                <div class="text-center space-y-2">
-                  <div class="text-xs uppercase tracking-[0.3em] text-sumi/60">
-                    現在のターン
-                  </div>
-                  <div class="text-sm font-bold text-shu">
-                    {get_current_player_name(@game_state, @players) || "プレイヤー"}
-                  </div>
-                  <%= if is_current_player_turn(@game_state, @user_id) do %>
-                    <div class="text-xs text-matsu font-semibold">
-                      ← あなたのターンです
-                    </div>
-                  <% end %>
+              <div class="text-center space-y-2 pt-2">
+                <div class="text-xs uppercase tracking-[0.3em] text-sumi/60">
+                  現在のターン
                 </div>
+                <div class="text-sm font-bold text-shu">
+                  {get_current_player_name(@game_state, @players) || "プレイヤー"}
+                </div>
+                <%= if is_current_player_turn(@game_state, @user_id) do %>
+                  <div class="text-xs text-matsu font-semibold">
+                    ← あなたのターンです
+                  </div>
+                <% end %>
               </div>
             <% end %>
-            
+
     <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
-              <div class="pt-4 border-t border-sumi/30 space-y-3">
+              <div class="pt-4 space-y-3">
                 <!-- Player List -->
                 <div class="space-y-2">
                   <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 text-center">
@@ -326,7 +322,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
                   </div>
                 </div>
-                
+
     <!-- Start Button -->
                 <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
@@ -347,10 +343,10 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
           </div>
-          
+
     <!-- Players Info -->
-          <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
-            <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
+          <div class="game-sidebar-card">
+            <div class="sidebar-card-title">プレイヤー</div>
             <div class="space-y-2">
               <.player_info_card
                 :for={player <- @players}
@@ -365,32 +361,39 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b-2 border-sumi text-xs">
-            <div class="bg-washi p-2 sm:p-3 rounded shadow-inner border border-sumi/20">
-              <div class="uppercase tracking-[0.2em] sm:tracking-[0.3em] text-sumi/50 mb-1 text-[10px] sm:text-xs">
+          <div class="game-sidebar-card game-metric-grid text-xs">
+            <div class="metric-card">
+              <div class="metric-label">
                 Currency
               </div>
-              <div class="text-base sm:text-lg font-semibold text-kin">{@game_state.currency}</div>
+              <div class="metric-value text-kin">{@game_state.currency}</div>
             </div>
-            <div class="bg-washi p-2 sm:p-3 rounded shadow-inner border border-sumi/20">
-              <div class="uppercase tracking-[0.2em] sm:tracking-[0.3em] text-sumi/50 mb-1 text-[10px] sm:text-xs">
+            <div class="metric-card">
+              <div class="metric-label">
                 Demurrage
               </div>
-              <div class="text-base sm:text-lg font-semibold text-sumi">{@game_state.demurrage}</div>
+              <div class="metric-value text-sumi">{@game_state.demurrage}</div>
             </div>
           </div>
 
           <div
-            class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
+            class="game-sidebar-card sidebar-chat"
             id="chat-container"
             phx-hook="ChatScroll"
-            role="log"
-            aria-label="チャットログ"
-            aria-live="polite"
-            aria-atomic="false"
           >
-            <div class="text-[10px] uppercase tracking-[0.5em] text-sumi/50">Chat Log</div>
-            <div id="chat-messages" phx-update="stream" class="space-y-3">
+            <div class="sidebar-card-title flex items-center justify-between">
+              <span>Chat Log</span>
+              <span class="text-[10px] uppercase tracking-[0.4em] text-sumi/50">Live</span>
+            </div>
+            <div
+              class="sidebar-chat-log space-y-3 scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
+              role="log"
+              aria-label="チャットログ"
+              aria-live="polite"
+              aria-atomic="false"
+              phx-update="stream"
+              id="chat-messages"
+            >
               <div
                 :for={{id, msg} <- @streams.chat_messages}
                 id={id}
@@ -417,94 +420,91 @@ defmodule ShinkankiWebWeb.GameLive do
                 <p class="text-sm text-sumi mt-2 leading-relaxed">{msg.content || msg.body}</p>
               </div>
             </div>
-          </div>
-
-          <div
-            class="border-t-2 border-sumi bg-washi-dark/70 p-4 space-y-3"
-            role="region"
-            aria-label="メッセージ送信"
-          >
-            <div class="uppercase tracking-[0.4em] text-[10px] text-sumi/50">Send Message</div>
-            <.form
-              for={@chat_form}
-              id="chat-form"
-              phx-submit="send_chat"
-              phx-change="validate_chat"
-              class="space-y-3"
-              role="form"
-              aria-label="チャットメッセージ送信フォーム"
+            <div
+              class="sidebar-chat-form"
+              role="region"
+              aria-label="メッセージ送信"
             >
-              <.input
-                field={@chat_form[:body]}
-                type="textarea"
-                placeholder="想いを紡ぐ..."
-                class="bg-washi border border-sumi/20 focus:border-shu focus:ring-0 min-h-20 text-sm"
-                phx-hook="ChatInput"
-                autofocus
-                aria-label="メッセージ本文"
-                aria-describedby="chat-body-help"
-              />
-              <p id="chat-body-help" class="sr-only">メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。</p>
-
-              <div class="flex items-center gap-2">
+              <div class="uppercase tracking-[0.4em] text-[10px] text-sumi/50">Send Message</div>
+              <.form
+                for={@chat_form}
+                id="chat-form"
+                phx-submit="send_chat"
+                phx-change="validate_chat"
+                class="space-y-3"
+                role="form"
+                aria-label="チャットメッセージ送信フォーム"
+              >
                 <.input
-                  field={@chat_form[:author]}
-                  type="text"
-                  class="bg-washi border border-sumi/20 focus:border-sumi focus:ring-0 text-xs uppercase tracking-[0.4em]"
-                  placeholder="署名"
-                  aria-label="送信者名"
+                  field={@chat_form[:body]}
+                  type="textarea"
+                  placeholder="想いを紡ぐ..."
+                  class="bg-washi border border-sumi/20 focus:border-shu focus:ring-0 min-h-20 text-sm"
+                  phx-hook="ChatInput"
+                  autofocus
+                  aria-label="メッセージ本文"
+                  aria-describedby="chat-body-help"
                 />
-                <button
-                  type="submit"
-                  class="ml-auto px-4 py-2 bg-shu text-washi rounded-full text-xs tracking-[0.3em] hover:bg-shu/90 transition shadow flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  phx-disable-with="送信中..."
-                  aria-label="メッセージを送信"
-                >
-                  <span class="phx-submit-loading:hidden">送信</span>
-                  <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
-                    <svg
-                      class="animate-spin h-3 w-3"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
+                <p id="chat-body-help" class="sr-only">
+                  メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。
+                </p>
+
+                <div class="flex items-center gap-2">
+                  <.input
+                    field={@chat_form[:author]}
+                    type="text"
+                    class="bg-washi border border-sumi/20 focus:border-sumi focus:ring-0 text-xs uppercase tracking-[0.4em]"
+                    placeholder="署名"
+                    aria-label="送信者名"
+                  />
+                  <button
+                    type="submit"
+                    class="ml-auto px-4 py-2 bg-shu text-washi rounded-full text-xs tracking-[0.3em] hover:bg-shu/90 transition shadow flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    phx-disable-with="送信中..."
+                    aria-label="メッセージを送信"
+                  >
+                    <span class="phx-submit-loading:hidden">送信</span>
+                    <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
+                      <svg
+                        class="animate-spin h-3 w-3"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
                       >
-                      </circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      >
-                      </path>
-                    </svg>
-                    送信中...
-                  </span>
-                </button>
-              </div>
-            </.form>
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        >
+                        </circle>
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        >
+                        </path>
+                      </svg>
+                      送信中...
+                    </span>
+                  </button>
+                </div>
+              </.form>
+            </div>
           </div>
         </aside>
-        
+
     <!-- Main Board -->
-        <main
-          class="flex-1 relative overflow-hidden flex flex-col items-center p-2 sm:p-4 md:p-8 lg:ml-0"
-          role="main"
-          aria-label="ゲームボード"
-        >
+        <main class="game-main" role="main" aria-label="ゲームボード">
           <!-- Phase Indicator (Top of Main Board) -->
           <%= if @game_status == :playing do %>
             <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">
               <.phase_indicator current_phase={@current_phase} />
             </div>
           <% end %>
-          
+
     <!-- Event Card Display (Event Phase) -->
           <%= if @current_phase == :event && @current_event do %>
             <div class="w-full max-w-md mx-auto animate-fade-in">
@@ -615,7 +615,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
               </div>
-              
+
     <!-- Gauges -->
               <div
                 class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
@@ -698,7 +698,7 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
-            
+
     <!-- Actions (Stamps) -->
             <div
               class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
@@ -718,7 +718,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </main>
       </div>
-      
+
     <!-- Bottom Hand -->
       <div
         class="h-32 md:h-48 bg-washi-dark border-t-4 border-sumi z-30 relative shadow-[0_-10px_20px_rgba(0,0,0,0.1)] overflow-hidden"
@@ -794,7 +794,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </div>
       </div>
-      
+
     <!-- Talent Cards Area (Action Phase) -->
       <%= if @current_phase == :action && length(@player_talents) > 0 do %>
         <div
@@ -822,7 +822,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div

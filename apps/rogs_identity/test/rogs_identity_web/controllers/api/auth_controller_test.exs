@@ -39,7 +39,7 @@ defmodule RogsIdentityWeb.Api.AuthControllerTest do
           "password" => "HelloWorld123!"
         })
 
-      assert %{"error" => "Invalid email or password"} = json_response(conn, 401)
+      assert %{"error" => "We couldn't verify those credentials."} = json_response(conn, 401)
     end
 
     test "returns error with invalid password", %{conn: conn} do
@@ -51,7 +51,7 @@ defmodule RogsIdentityWeb.Api.AuthControllerTest do
           "password" => "wrongpassword"
         })
 
-      assert %{"error" => "Invalid email or password"} = json_response(conn, 401)
+      assert %{"error" => "We couldn't verify those credentials."} = json_response(conn, 401)
     end
 
     test "returns error with missing parameters", %{conn: conn} do

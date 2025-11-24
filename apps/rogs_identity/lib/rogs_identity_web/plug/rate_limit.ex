@@ -35,7 +35,11 @@ defmodule RogsIdentityWeb.Plug.RateLimit do
     key_type = Keyword.get(opts, :key_type, :ip)
 
     error_message =
-      Keyword.get(opts, :error_message, "Too many attempts. Please try again later.")
+      Keyword.get(
+        opts,
+        :error_message,
+        "Torii security cooldown active. Please wait a moment before trying again."
+      )
 
     %{
       max_attempts: max_attempts,

@@ -7,42 +7,32 @@ defmodule RogsIdentityWeb.UserLive.Login do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
-            Log in
-          </h1>
-          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+      <div class="auth-card stack">
+        <div>
+          <h1 class="auth-title text-center">Log in</h1>
+          <p class="auth-subtitle text-center">
             <%= if @current_scope do %>
-              You need to reauthenticate to perform sensitive actions on your account.
+              You need to reauthenticate to continue this secure action.
             <% else %>
-              Don't have an account? <.link
-                navigate={~p"/users/register"}
-                style="color: var(--md-primary); text-decoration: none; font-weight: 500;"
-                phx-no-format
-              >Sign up</.link> for an account now.
+              Don't have an account?
+              <.link navigate={~p"/users/register"} class="link-muted" phx-no-format>
+                Sign up
+              </.link>
+              to join the Torii network.
             <% end %>
           </p>
         </div>
 
-        <div
-          :if={local_mail_adapter?()}
-          class="mdc-card"
-          style="background-color: #e3f2fd; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
-        >
-          <div style="display: flex; align-items: start; gap: 12px;">
-            <span class="material-icons" style="color: #1976d2; font-size: 24px;">info</span>
-            <div style="flex: 1;">
-              <p style="margin: 0 0 4px 0; font-size: 14px; color: #1565c0;">
-                You are running the local mail adapter.
-              </p>
-              <p style="margin: 0; font-size: 14px; color: #1565c0;">
-                To see sent emails, visit <.link
-                  href="/dev/mailbox"
-                  style="color: #1976d2; text-decoration: underline;"
-                >the mailbox page</.link>.
-              </p>
-            </div>
+        <div :if={local_mail_adapter?()} class="info-callout">
+          <.icon name="hero-information-circle" class="size-5 shrink-0 text-[var(--color-landing-gold)]" />
+          <div>
+            <strong>Local mail adapter active.</strong>
+            <p class="text-sm text-[var(--color-landing-text-secondary)]">
+              Review outgoing messages via the
+              <.link href="/dev/mailbox" class="link-muted">
+                dev mailbox
+              </.link>.
+            </p>
           </div>
         </div>
 
@@ -52,7 +42,6 @@ defmodule RogsIdentityWeb.UserLive.Login do
           id="login_form_magic"
           action={~p"/users/log-in"}
           phx-submit="submit_magic"
-          style="margin-bottom: 24px;"
         >
           <.input
             readonly={!!@current_scope}
@@ -63,17 +52,13 @@ defmodule RogsIdentityWeb.UserLive.Login do
             required
             phx-mounted={JS.focus()}
           />
-          <.button variant="primary" style="width: 100%; margin-top: 8px;">
+          <.button variant="primary">
             Log in with email <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
-        <div class="mdc-divider" style="margin: 24px 0;">
-          <div style="text-align: center; margin: -10px 0;">
-            <span style="background-color: var(--md-surface); padding: 0 16px; color: var(--md-text-secondary); font-size: 14px;">
-              or
-            </span>
-          </div>
+        <div class="torii-divider">
+          <span>or</span>
         </div>
 
         <.form
@@ -98,24 +83,16 @@ defmodule RogsIdentityWeb.UserLive.Login do
             label="Password"
             autocomplete="current-password"
           />
-          <.button
-            variant="primary"
-            style="width: 100%; margin-top: 8px;"
-            name={@form[:remember_me].name}
-            value="true"
-          >
+          <.button variant="primary" name={@form[:remember_me].name} value="true">
             Log in and stay logged in <span aria-hidden="true">→</span>
           </.button>
-          <.button style="width: 100%; margin-top: 8px;">
+          <.button>
             Log in only this time
           </.button>
         </.form>
 
-        <div style="text-align: center; margin-top: 24px;">
-          <.link
-            navigate={~p"/users/forgot-password"}
-            style="color: var(--md-primary); text-decoration: none; font-size: 14px; font-weight: 500;"
-          >
+        <div class="auth-helper">
+          <.link navigate={~p"/users/forgot-password"} class="link-muted">
             Forgot your password?
           </.link>
         </div>

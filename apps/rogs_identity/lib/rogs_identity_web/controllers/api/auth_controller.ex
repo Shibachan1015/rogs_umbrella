@@ -3,6 +3,8 @@ defmodule RogsIdentityWeb.Api.AuthController do
 
   alias RogsIdentity.Accounts
 
+  @invalid_credentials_error "We couldn't verify those credentials."
+
   @doc """
   Login endpoint for API.
   Accepts email/password or magic link token.
@@ -12,7 +14,7 @@ defmodule RogsIdentityWeb.Api.AuthController do
       nil ->
         conn
         |> put_status(:unauthorized)
-        |> json(%{error: "Invalid email or password"})
+        |> json(%{error: @invalid_credentials_error})
 
       user ->
         token = Accounts.generate_user_session_token(user)

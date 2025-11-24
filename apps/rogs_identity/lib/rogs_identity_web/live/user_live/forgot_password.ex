@@ -7,25 +7,23 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
-            Forgot your password?
-          </h1>
-          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
-            We'll send password reset instructions to your email
+      <div class="auth-card stack" style="max-width: 420px;">
+        <div class="text-center">
+          <h1 class="auth-title">Forgot your password?</h1>
+          <p class="auth-subtitle">
+            We'll send reset instructions to your email.
           </p>
         </div>
 
-        <div :if={local_mail_adapter?()} class="mdc-card" style="background-color: #e3f2fd; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
-          <div style="display: flex; align-items: start; gap: 12px;">
-            <span class="material-icons" style="color: #1976d2; font-size: 24px;">info</span>
-            <div style="flex: 1;">
-              <p style="margin: 0 0 4px 0; font-size: 14px; color: #1565c0;">You are running the local mail adapter.</p>
-              <p style="margin: 0; font-size: 14px; color: #1565c0;">
-                To see sent emails, visit <.link href="/dev/mailbox" style="color: #1976d2; text-decoration: underline;">the mailbox page</.link>.
-              </p>
-            </div>
+        <div :if={local_mail_adapter?()} class="info-callout">
+          <.icon name="hero-information-circle" class="size-5 shrink-0 text-[var(--color-landing-gold)]" />
+          <div>
+            <strong>Local mail adapter active.</strong>
+            <p class="text-sm text-[var(--color-landing-text-secondary)]">
+              Visit the
+              <.link href="/dev/mailbox" class="link-muted">mailbox page</.link>
+              to preview outgoing messages.
+            </p>
           </div>
         </div>
 
@@ -43,13 +41,13 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
             required
             phx-mounted={JS.focus()}
           />
-          <.button variant="primary" style="width: 100%; margin-top: 8px;">
+          <.button variant="primary">
             Send reset instructions <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
-        <div style="text-align: center; margin-top: 24px;">
-          <.link navigate={~p"/users/log-in"} style="color: var(--md-primary); text-decoration: none; font-size: 14px; font-weight: 500;">
+        <div class="auth-helper">
+          <.link navigate={~p"/users/log-in"} class="link-muted">
             Back to log in
           </.link>
         </div>
@@ -73,7 +71,7 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
     if attempt_count >= 3 do
       {:noreply,
        socket
-       |> put_flash(:error, "Too many password reset requests. Please try again later.")}
+       |> put_flash(:error, "Password reset is cooling down. Give it a little time and try again.")}
     else
       if user = Accounts.get_user_by_email(email) do
         Accounts.deliver_password_reset_instructions(

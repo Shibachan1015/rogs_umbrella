@@ -31,7 +31,7 @@ defmodule RogsIdentityWeb.Router do
       max_attempts: 5,
       window_seconds: 300,
       key_type: :login,
-      error_message: "Too many login attempts. Please try again later."
+      error_message: "Login attempts are cooling down. Hold for a moment and retry."
   end
 
   pipeline :rate_limit_password_reset do
@@ -39,7 +39,7 @@ defmodule RogsIdentityWeb.Router do
       max_attempts: 3,
       window_seconds: 3600,
       key_type: :password_reset,
-      error_message: "Too many password reset requests. Please try again later."
+      error_message: "Password reset is cooling down. Try again after a short pause."
   end
 
   scope "/", RogsIdentityWeb do

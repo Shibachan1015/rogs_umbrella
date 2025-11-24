@@ -49,6 +49,15 @@ defmodule RogsIdentityWeb.CoreComponents do
   def flash(assigns) do
     assigns = assign_new(assigns, :id, fn -> "flash-#{assigns.kind}" end)
 
+    icon_name =
+      case assigns.kind do
+        :info -> "hero-information-circle"
+        :error -> "hero-exclamation-triangle-mini"
+        _ -> "hero-check-circle"
+      end
+
+    assigns = assign(assigns, :icon_name, icon_name)
+
     ~H"""
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
@@ -56,26 +65,19 @@ defmodule RogsIdentityWeb.CoreComponents do
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
       class={[
-        "mdc-snackbar",
-        @kind == :info && "mdc-snackbar--info",
-        @kind == :error && "mdc-snackbar--error",
-        @kind == :success && "mdc-snackbar--success"
+        "resonance-toast",
+        @kind == :info && "resonance-toast--info",
+        @kind == :error && "resonance-toast--error"
       ]}
       {@rest}
     >
-      <span class="material-icons" style="font-size: 20px;">
-        {if @kind == :info, do: "info", else: if(@kind == :error, do: "error", else: "check_circle")}
-      </span>
-      <div style="flex: 1;">
-        <p :if={@title} style="font-weight: 500; margin-bottom: 4px;">{@title}</p>
-        <p style="margin: 0;">{msg}</p>
+      <.icon name={@icon_name} class="size-5 text-[var(--color-landing-gold)]" />
+      <div style="flex: 1; min-width: 0;">
+        <p :if={@title} style="font-weight: 600; margin-bottom: 2px;">{@title}</p>
+        <p style="margin: 0; font-size: 0.9rem;">{msg}</p>
       </div>
-      <button
-        type="button"
-        style="background: none; border: none; color: white; cursor: pointer; padding: 4px; margin-left: 8px;"
-        aria-label="close"
-      >
-        <span class="material-icons" style="font-size: 20px;">close</span>
+      <button type="button" aria-label="close">
+        <.icon name="hero-x-mark-mini" class="size-4 opacity-70" />
       </button>
     </div>
     """
@@ -98,8 +100,8 @@ defmodule RogsIdentityWeb.CoreComponents do
   def button(%{rest: rest} = assigns) do
     variant_class =
       case assigns[:variant] do
-        "primary" -> "mdc-button mdc-button--raised mdc-ripple"
-        _ -> "mdc-button mdc-button--outlined mdc-ripple"
+        "primary" -> "cta-button cta-solid"
+        _ -> "cta-button cta-outline"
       end
 
     assigns =
@@ -214,41 +216,44 @@ defmodule RogsIdentityWeb.CoreComponents do
   end
 
   def input(%{type: "select"} = assigns) do
+    assigns = assign_new(assigns, :id, fn -> assigns[:name] end)
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <select
-          id={@id}
-          name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
-          multiple={@multiple}
-          {@rest}
-        >
-          <option :if={@prompt} value="">{@prompt}</option>
-          {Phoenix.HTML.Form.options_for_select(@options, @value)}
-        </select>
-      </label>
+    <div class="resonance-field">
+      <label :if={@label} for={@id} class="resonance-label">{@label}</label>
+      <select
+        id={@id}
+        name={@name}
+        class={[
+          @class || "resonance-input",
+          @errors != [] && (@error_class || "input-error")
+        ]}
+        multiple={@multiple}
+        {@rest}
+      >
+        <option :if={@prompt} value="">{@prompt}</option>
+        {Phoenix.HTML.Form.options_for_select(@options, @value)}
+      </select>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
+    assigns = assign_new(assigns, :id, fn -> assigns[:name] end)
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <textarea
-          id={@id}
-          name={@name}
-          class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
-          ]}
-          {@rest}
-        >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-      </label>
+    <div class="resonance-field">
+      <label :if={@label} for={@id} class="resonance-label">{@label}</label>
+      <textarea
+        id={@id}
+        name={@name}
+        class={[
+          @class || "resonance-input",
+          @errors != [] && (@error_class || "input-error")
+        ]}
+        {@rest}
+      >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -256,27 +261,27 @@ defmodule RogsIdentityWeb.CoreComponents do
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
-    has_value = assigns[:value] && assigns[:value] != ""
-    placeholder = if assigns[:label] && !has_value, do: " ", else: assigns[:rest][:placeholder]
+    assigns = assign_new(assigns, :id, fn -> assigns[:name] end)
+    placeholder = assigns[:rest][:placeholder]
+    assigns = assign(assigns, :computed_placeholder, placeholder)
 
     ~H"""
-    <div class="mdc-text-field">
+    <div class="resonance-field">
+      <label :if={@label} for={@id} class="resonance-label">
+        {@label}
+      </label>
       <input
         type={@type}
         name={@name}
         id={@id}
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-        placeholder={placeholder}
+        placeholder={@computed_placeholder}
         class={[
-          "mdc-text-field__input",
-          @class,
-          @errors != [] && (@error_class || "border-red-500")
+          @class || "resonance-input",
+          @errors != [] && (@error_class || "input-error")
         ]}
         {@rest}
       />
-      <label :if={@label} for={@id} class="mdc-text-field__label">
-        {@label}
-      </label>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -285,8 +290,8 @@ defmodule RogsIdentityWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p style="margin-top: 4px; display: flex; gap: 4px; align-items: center; font-size: 12px; color: var(--md-error);">
-      <span class="material-icons" style="font-size: 16px;">error</span>
+    <p class="resonance-error">
+      <.icon name="hero-exclamation-circle-mini" class="size-4" />
       {render_slot(@inner_block)}
     </p>
     """
@@ -301,16 +306,16 @@ defmodule RogsIdentityWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header class="stack">
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1 class="auth-title text-left">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="auth-subtitle">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none">{render_slot(@actions)}</div>
+      <div class="flex justify-end gap-3">{render_slot(@actions)}</div>
     </header>
     """
   end

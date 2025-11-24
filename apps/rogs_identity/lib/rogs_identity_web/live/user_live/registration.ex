@@ -8,20 +8,15 @@ defmodule RogsIdentityWeb.UserLive.Registration do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
-            Register for an account
-          </h1>
-          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+      <div class="auth-card stack">
+        <div>
+          <h1 class="auth-title text-center">Create your credential</h1>
+          <p class="auth-subtitle text-center">
             Already registered?
-            <.link
-              navigate={~p"/users/log-in"}
-              style="color: var(--md-primary); text-decoration: none; font-weight: 500;"
-            >
+            <.link navigate={~p"/users/log-in"} class="link-muted">
               Log in
             </.link>
-            to your account now.
+            to continue your session.
           </p>
         </div>
 
@@ -42,11 +37,7 @@ defmodule RogsIdentityWeb.UserLive.Registration do
             autocomplete="name"
           />
 
-          <.button
-            variant="primary"
-            phx-disable-with="Creating account..."
-            style="width: 100%; margin-top: 8px;"
-          >
+          <.button variant="primary" phx-disable-with="Creating account...">
             Create an account
           </.button>
         </.form>

@@ -312,4 +312,168 @@ textarea:focus {
   }
 }
 
+/* Torii Resonance Design System tokens */
+:root {
+  --color-landing-bg: #0f1117;
+  --color-landing-panel: rgba(18, 20, 28, 0.9);
+  --color-landing-lines: rgba(199, 179, 112, 0.2);
+  --color-landing-gold: #c7b370;
+  --color-landing-pale: #f4efe1;
+  --color-landing-text-secondary: rgba(244, 239, 225, 0.8);
+  --color-landing-slate: rgba(15, 17, 23, 0.85);
+}
+
+.landing-body {
+  background: radial-gradient(circle at top, rgba(199, 179, 112, 0.08), transparent 55%),
+    var(--color-landing-bg);
+  min-height: 100vh;
+  color: var(--color-landing-pale);
+  position: relative;
+}
+
+.torii-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  padding: 3rem 1.5rem;
+  background: linear-gradient(135deg, rgba(199, 179, 112, 0.2), rgba(15, 17, 23, 0.4));
+  border: 1px solid rgba(199, 179, 112, 0.15);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+}
+
+.torii-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.torii-lines::before,
+.torii-lines::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 160%;
+  top: -30%;
+  background: linear-gradient(180deg, rgba(199, 179, 112, 0), rgba(199, 179, 112, 0.5));
+  opacity: 0.4;
+}
+
+.torii-lines::before {
+  left: 35%;
+}
+
+.torii-lines::after {
+  right: 35%;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 2.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.cta-button.cta-solid {
+  background: var(--color-landing-gold);
+  color: #1b1b1f;
+  box-shadow: 0 12px 40px rgba(199, 179, 112, 0.35);
+}
+
+.cta-button.cta-solid:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 50px rgba(199, 179, 112, 0.45);
+}
+
+.cta-button.cta-outline {
+  border-color: rgba(244, 239, 225, 0.4);
+  color: var(--color-landing-pale);
+}
+
+.cta-button.cta-outline:hover {
+  border-color: var(--color-landing-gold);
+  color: var(--color-landing-gold);
+}
+
+.concept-card {
+  background: rgba(18, 20, 28, 0.85);
+  border: 1px solid rgba(199, 179, 112, 0.15);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.concept-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(199, 179, 112, 0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease-in-out;
+}
+
+.concept-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(199, 179, 112, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.concept-card:hover::before {
+  transform: translateX(100%);
+}
+
+.hud-panel {
+  background: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: var(--elevation-2);
+}
+
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.torii-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(199, 179, 112, 0.4), transparent);
+  margin: 1.5rem 0;
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+  transition: box-shadow 0.2s ease;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px rgba(211, 56, 28, 0.7);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* This file is for your main application CSS */

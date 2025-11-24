@@ -214,6 +214,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns[:current_user_id]
+
       Logger.warning("ChatLive: Message not found for edit",
         user_id: socket.assigns[:current_user_id],
         message_id: message_id
@@ -274,6 +275,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns[:current_user_id]
+
       Logger.warning("ChatLive: Message not found for delete",
         user_id: socket.assigns[:current_user_id],
         message_id: message_id
@@ -482,220 +484,273 @@ defmodule RogsCommWeb.ChatLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div
-        id="chat-root"
-        class="flex h-screen flex-col md:flex-row bg-washi"
-        data-room-id={@room_id}
-        data-display-name={@display_name}
-        phx-hook="TypingHook"
-      >
-        <aside class="w-full md:w-64 border-r-2 border-sumi bg-washi-dark px-4 py-6 space-y-6 overflow-y-auto sidebar-enter">
-          <div>
-            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
-              ルーム一覧
-            </h2>
-            <nav class="mt-3 space-y-2">
-              <.link
-                :for={room <- @rooms}
-                navigate={~p"/rooms/#{room.id}/chat"}
-                class={[
-                  "block rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ofuda-card",
-                  room.id == @room_id && "bg-shu text-washi border-2 border-sumi",
-                  room.id != @room_id && "hover:bg-washi hover:shadow-md"
-                ]}
-              >
-                <div class={["font-semibold", room.id == @room_id && "text-washi", room.id != @room_id && "text-sumi"]}>
-                  {room.name}
-                </div>
-                <p class={["text-xs truncate mt-1", room.id == @room_id && "text-washi/80", room.id != @room_id && "text-sumi-light"]}>
-                  {room.topic}
-                </p>
+      <div class="landing-body">
+        <section class="torii-hero my-6 md:my-10" aria-labelledby="chat-hero-title">
+          <div class="torii-lines" aria-hidden="true"></div>
+          <div class="relative z-10 text-center md:text-left max-w-4xl mx-auto space-y-4">
+            <p class="text-sm uppercase tracking-[0.5em] text-[var(--color-landing-text-secondary)]">Humans are one of the Myriad Gods</p>
+            <h1 id="chat-hero-title" class="text-3xl md:text-5xl font-bold text-[var(--color-landing-pale)]">コミュニケーションの杜</h1>
+            <p class="text-base md:text-lg text-[var(--color-landing-text-secondary)] leading-relaxed">
+              神環記の相談フェーズを支えるリアルタイムチャット。和紙のようなやわらかさと朱のアクセントで、プレイヤーの声を丁寧に繋ぎます。
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+              <.link navigate={~p"/rooms"} class="cta-button cta-solid focus-ring">
+                ルーム一覧へ
               </.link>
-            </nav>
-          </div>
-
-          <div>
-            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
-              表示名
-            </h2>
-            <.form
-              for={@name_form}
-              phx-submit="set_name"
-              id="display-name-form"
-              class="mt-2 space-y-2"
-            >
-              <.input
-                field={@name_form[:display_name]}
-                type="text"
-                placeholder="匿名"
-                class="bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20"
-              />
-              <button
-                type="submit"
-                class="w-full hanko-button text-sm"
-              >
-                更新
-              </button>
-            </.form>
-          </div>
-
-          <div>
-            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
-              メッセージ検索
-            </h2>
-            <.form
-              for={@search_form}
-              phx-submit="search"
-              phx-change="search"
-              id="search-form"
-              class="mt-2 space-y-2"
-            >
-              <.input
-                field={@search_form[:query]}
-                type="text"
-                placeholder="検索..."
-                autocomplete="off"
-                class="bg-washi border-2 border-sumi text-sumi focus:border-matsu focus:ring-2 focus:ring-matsu/20"
-              />
-              <button
-                :if={@search_mode}
-                type="button"
-                phx-click="clear_search"
-                class="w-full rounded-md bg-sumi-light text-washi px-3 py-2 text-sm hover:bg-sumi transition-colors duration-200"
-              >
-                検索をクリア
-              </button>
-            </.form>
-          </div>
-
-          <div>
-            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
-              オンライン ({Enum.count(@presences)})
-            </h2>
-            <div class="mt-3 space-y-2">
-              <div
-                :for={{user_id, meta} <- list_presences(@presences)}
-                class="flex items-center gap-2 text-sm bg-washi px-2 py-1 rounded border border-sumi/20"
-              >
-                <div class="h-2 w-2 rounded-full bg-matsu border border-sumi"></div>
-                <span class="text-sumi">{meta.user_email || "匿名"}</span>
-              </div>
+              <a href="#chat-panel" class="cta-button cta-outline focus-ring">
+                現在のルームを見る
+              </a>
+            </div>
+            <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]">
+              <span class="state-pill bg-washi text-sumi border-sumi/30">Room: {@room.name}</span>
+              <span class="state-pill bg-washi text-sumi border-sumi/30">Online: {Enum.count(@presences)}</span>
+              <span class="state-pill bg-washi text-sumi border-sumi/30">Search {if @search_mode, do: "ON", else: "OFF"}</span>
             </div>
           </div>
-        </aside>
+        </section>
 
-        <div class="flex flex-1 flex-col bg-washi">
-          <div class="bg-washi-dark border-b-2 border-sumi px-4 py-3 shadow-md">
-            <div class="flex items-center justify-between">
-              <div>
-                <h1 class="text-xl font-semibold text-sumi border-l-4 border-shu pl-3">{@room.name}</h1>
-                <p class="text-sm text-sumi-light mt-1">{@room.topic}</p>
-              </div>
-              <div :if={@search_mode} class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu">
-                検索モード: {length(@search_results)}件見つかりました
-              </div>
-            </div>
-          </div>
+        <section id="chat-panel" class="px-4 md:px-6 pb-10" aria-labelledby="chat-section-title">
+          <h2 id="chat-section-title" class="sr-only">チャットエリア</h2>
 
           <div
-            class="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4"
-            id="messages"
-            phx-update="stream"
-            phx-hook="ChatScrollHook"
+            id="chat-root"
+            class="hud-panel flex flex-col xl:flex-row gap-6"
+            data-room-id={@room_id}
+            data-display-name={@display_name}
+            phx-hook="TypingHook"
+            role="region"
+            aria-label={"チャットルーム #{@room.name}"}
           >
-            <div
-              :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
-              class="text-center py-2"
-            >
-              <button
-                phx-click="load_older_messages"
-                phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
-                class="text-sm text-matsu hover:text-shu px-4 py-2 rounded border-2 border-matsu hover:border-shu bg-washi hover:bg-washi-dark transition-all duration-200"
+            <aside class="w-full xl:w-72 space-y-5" aria-label="チャット補助パネル">
+              <div class="concept-card text-[var(--color-landing-pale)]">
+                <h3 class="text-sm uppercase tracking-[0.4em] mb-4">Rooms</h3>
+                <nav class="space-y-3" aria-label="ルーム一覧" role="list">
+                  <.link
+                    :for={room <- @rooms}
+                    role="listitem"
+                    aria-current={if room.id == @room_id, do: "true", else: "false"}
+                    navigate={~p"/rooms/#{room.id}/chat"}
+                    class={[
+                      "block rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                      "focus-ring border border-transparent",
+                      room.id == @room_id && "bg-shu/80 text-washi border border-shu shadow-lg",
+                      room.id != @room_id && "bg-[rgba(255,255,255,0.02)] hover:border-[var(--color-landing-gold)] hover:text-[var(--color-landing-gold)]"
+                    ]}
+                  >
+                    <span class="font-semibold">{room.name}</span>
+                    <p class="text-xs opacity-70 mt-1 truncate">{room.topic || "トピック未設定"}</p>
+                  </.link>
+                </nav>
+              </div>
+
+              <div class="concept-card text-sumi bg-washi">
+                <h3 class="text-sm uppercase tracking-[0.4em] mb-3 text-sumi">Display name</h3>
+                <.form
+                  for={@name_form}
+                  phx-submit="set_name"
+                  id="display-name-form"
+                  class="space-y-3"
+                  aria-labelledby="display-name-label"
+                >
+                  <label id="display-name-label" class="sr-only">表示名</label>
+                  <.input
+                    field={@name_form[:display_name]}
+                    type="text"
+                    placeholder="匿名"
+                    class="bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20"
+                  />
+                  <button
+                    type="submit"
+                    class="w-full hanko-button text-sm"
+                    aria-label="表示名を更新"
+                  >
+                    更新
+                  </button>
+                </.form>
+              </div>
+
+              <div class="concept-card text-sumi bg-washi">
+                <h3 class="text-sm uppercase tracking-[0.4em] mb-3 text-sumi">メッセージ検索</h3>
+                <.form
+                  for={@search_form}
+                  phx-submit="search"
+                  phx-change="search"
+                  id="search-form"
+                  class="space-y-3"
+                  aria-labelledby="search-label"
+                >
+                  <label id="search-label" class="sr-only">メッセージ検索</label>
+                  <.input
+                    field={@search_form[:query]}
+                    type="text"
+                    placeholder="検索..."
+                    autocomplete="off"
+                    class="bg-washi border-2 border-sumi text-sumi focus:border-matsu focus:ring-2 focus:ring-matsu/20"
+                  />
+                  <button
+                    :if={@search_mode}
+                    type="button"
+                    phx-click="clear_search"
+                    class="w-full rounded-md bg-sumi-light text-washi px-3 py-2 text-sm hover:bg-sumi transition-colors duration-200"
+                    aria-label="検索結果をクリア"
+                  >
+                    検索をクリア
+                  </button>
+                </.form>
+              </div>
+
+              <div class="concept-card text-[var(--color-landing-pale)]">
+                <h3 class="text-sm uppercase tracking-[0.4em] mb-3">Online ({Enum.count(@presences)})</h3>
+                <div class="space-y-2" role="list" aria-label="オンラインユーザー">
+                  <div
+                    :for={{user_id, meta} <- list_presences(@presences)}
+                    role="listitem"
+                    class="flex items-center justify-between bg-[rgba(255,255,255,0.05)] px-3 py-2 rounded-md text-sm"
+                  >
+                    <span>{meta.user_email || "匿名"}</span>
+                    <span class="flex items-center gap-1 text-xs uppercase tracking-[0.2em]">
+                      <span class="h-2 w-2 rounded-full bg-matsu inline-block" aria-hidden="true"></span>
+                      Online
+                    </span>
+                  </div>
+                  <p :if={Enum.empty?(@presences)} class="text-xs opacity-70">現在オンラインのユーザーはいません。</p>
+                </div>
+              </div>
+            </aside>
+
+            <div class="flex-1 flex flex-col bg-washi rounded-2xl border-2 border-sumi overflow-hidden">
+              <div class="bg-washi-dark border-b-2 border-sumi px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.4em] text-sumi-light">現在のルーム</p>
+                  <h3 class="text-2xl font-semibold text-sumi">{@room.name}</h3>
+                  <p class="text-sm text-sumi-light mt-1">{@room.topic}</p>
+                </div>
+                <div class="space-y-2 text-right">
+                  <div :if={@search_mode} class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu">
+                    検索モード: {length(@search_results)}件
+                  </div>
+                  <div class="text-xs text-sumi-light">メッセージ数: {Enum.count(@streams.messages)}</div>
+                </div>
+              </div>
+
+              <div
+                class="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4"
+                id="messages"
+                phx-update="stream"
+                phx-hook="ChatScrollHook"
+                role="list"
+                aria-live="polite"
+                aria-atomic="false"
               >
-                古いメッセージを読み込む
-              </button>
-            </div>
-            <div
-              :if={@search_mode && Enum.count(@streams.messages) == 0}
-              class="text-center py-8 text-sumi-light"
-            >
-              <div class="text-4xl mb-2">🔍</div>
-              <p>検索結果が見つかりませんでした</p>
-            </div>
-            <div
-              :for={{id, message} <- @streams.messages}
-              id={id}
-              class="flex flex-col group ofuda-card hover:shadow-md transition-all duration-200 message-enter"
-            >
-              <div class="flex items-center justify-between mb-2">
-                <div class="text-sm text-sumi-light">
-                  <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">{message.user_email}</span>
-                  <span class="ml-2">
-                    {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
-                  </span>
-                  <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-kohaku">
-                    (編集済み)
-                  </span>
+                <div
+                  :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
+                  class="text-center py-2"
+                >
+                  <button
+                    phx-click="load_older_messages"
+                    phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
+                    class="text-sm text-matsu hover:text-shu px-4 py-2 rounded border-2 border-matsu hover:border-shu bg-washi hover:bg-washi-dark transition-all duration-200 focus-ring"
+                    aria-label="古いメッセージを読み込む"
+                  >
+                    古いメッセージを読み込む
+                  </button>
                 </div>
                 <div
-                  :if={Map.get(message, :user_id) == @current_user_id}
-                  class="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity duration-200"
+                  :if={@search_mode && Enum.count(@streams.messages) == 0}
+                  class="text-center py-8 text-sumi-light"
+                  role="status"
+                  aria-live="polite"
                 >
-                  <button
-                    phx-click="edit_message"
-                    phx-value-message_id={message.id}
-                    class="text-xs text-matsu hover:text-shu px-2 py-1 rounded border border-matsu hover:border-shu transition-colors duration-200"
+                  <div class="text-4xl mb-2" aria-hidden="true">🔍</div>
+                  <p>検索結果が見つかりませんでした</p>
+                </div>
+                <article
+                  :for={{id, message} <- @streams.messages}
+                  id={id}
+                  class="flex flex-col group ofuda-card hover:shadow-md transition-all duration-200 message-enter"
+                  role="listitem"
+                  aria-label={"#{message.user_email} #{message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}"}
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="text-sm text-sumi-light">
+                      <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">{message.user_email}</span>
+                      <span class="ml-2">
+                        {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
+                      </span>
+                      <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-kohaku">
+                        (編集済み)
+                      </span>
+                    </div>
+                    <div
+                      :if={Map.get(message, :user_id) == @current_user_id}
+                      class="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity duration-200"
+                    >
+                      <button
+                        phx-click="edit_message"
+                        phx-value-message_id={message.id}
+                        class="text-xs text-matsu hover:text-shu px-2 py-1 rounded border border-matsu hover:border-shu transition-colors duration-200 focus-ring"
+                        aria-label="メッセージを編集"
+                      >
+                        編集
+                      </button>
+                      <button
+                        phx-click="delete_message"
+                        phx-value-message_id={message.id}
+                        class="text-xs text-shu hover:bg-shu hover:text-washi px-2 py-1 rounded border border-shu transition-colors duration-200 focus-ring"
+                        aria-label="メッセージを削除"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                  <p
+                    class="text-sumi text-base leading-relaxed"
+                    :if={!@search_mode}
                   >
-                    編集
-                  </button>
-                  <button
-                    phx-click="delete_message"
-                    phx-value-message_id={message.id}
-                    class="text-xs text-shu hover:bg-shu hover:text-washi px-2 py-1 rounded border border-shu transition-colors duration-200"
+                    {message.content}
+                  </p>
+                  <p
+                    class="text-sumi text-base leading-relaxed"
+                    :if={@search_mode}
+                    phx-no-format
                   >
-                    削除
-                  </button>
+                    {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
+                  </p>
+                </article>
+                <div
+                  :if={map_size(@typing_users) > 0}
+                  class="text-sm text-sumi-light italic mt-2 bg-sakura/20 px-3 py-2 rounded border border-sakura typing-indicator"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span class="text-sakura typing-indicator" aria-hidden="true">✍️</span>
+                  {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
                 </div>
               </div>
-              <p
-                class="text-sumi text-base leading-relaxed"
-                :if={!@search_mode}
-              >
-                {message.content}
-              </p>
-              <p
-                class="text-sumi text-base leading-relaxed"
-                :if={@search_mode}
-                phx-no-format
-              >
-                {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
-              </p>
-            </div>
-            <div :if={map_size(@typing_users) > 0} class="text-sm text-sumi-light italic mt-2 bg-sakura/20 px-3 py-2 rounded border border-sakura typing-indicator">
-              <span class="text-sakura typing-indicator">✍️</span> {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
-            </div>
-          </div>
 
-          <div class="bg-washi-dark border-t-2 border-sumi px-2 md:px-4 py-3 shadow-lg">
-            <.form for={@form} id="chat-form" phx-submit="submit">
-              <div class="flex space-x-2">
-                <.input
-                  field={@form[:content]}
-                  type="text"
-                  placeholder="メッセージを入力..."
-                  class="flex-1 text-sm md:text-base bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20 rounded-lg"
-                  autocomplete="off"
-                />
-                <button
-                  type="submit"
-                  class="px-4 md:px-6 py-2 hanko-button text-sm md:text-base whitespace-nowrap"
-                >
-                  送信
-                </button>
+              <div class="bg-washi-dark border-t-2 border-sumi px-2 md:px-4 py-3 shadow-lg">
+                <.form for={@form} id="chat-form" phx-submit="submit" aria-label="メッセージ送信フォーム">
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <.input
+                      field={@form[:content]}
+                      type="text"
+                      placeholder="メッセージを入力..."
+                      class="flex-1 text-sm md:text-base bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20 rounded-lg"
+                      autocomplete="off"
+                      aria-label="メッセージ入力"
+                    />
+                    <button
+                      type="submit"
+                      class="px-4 md:px-6 py-2 hanko-button text-sm md:text-base whitespace-nowrap focus-ring"
+                    >
+                      送信
+                    </button>
+                  </div>
+                </.form>
               </div>
-            </.form>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </Layouts.app>
     """

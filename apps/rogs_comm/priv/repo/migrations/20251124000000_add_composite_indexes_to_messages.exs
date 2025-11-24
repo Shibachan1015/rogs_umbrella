@@ -14,7 +14,7 @@ defmodule RogsComm.Repo.Migrations.AddCompositeIndexesToMessages do
     # This can significantly improve performance when most messages are not deleted
     # Note: This uses a WHERE clause, which is PostgreSQL-specific
     # For other databases, we'll skip this index
-    if System.get_env("DATABASE_URL") =~ "postgres" do
+    if postgres?() do
       execute("""
       CREATE INDEX IF NOT EXISTS messages_room_id_inserted_at_not_deleted_idx
       ON messages(room_id, inserted_at DESC)
@@ -27,9 +27,15 @@ defmodule RogsComm.Repo.Migrations.AddCompositeIndexesToMessages do
     drop index(:messages, [:room_id, :inserted_at])
     drop index(:messages, [:room_id, :is_deleted])
 
-    if System.get_env("DATABASE_URL") =~ "postgres" do
+    if postgres?() do
       execute("DROP INDEX IF EXISTS messages_room_id_inserted_at_not_deleted_idx")
     end
   end
-end
 
+  defp postgres? do
+    case System.get_env("DATABASE_URL") do
+      nil -> false
+      url -> String.contains?(String.downcase(url), "postgres")
+    end
+  end
+end

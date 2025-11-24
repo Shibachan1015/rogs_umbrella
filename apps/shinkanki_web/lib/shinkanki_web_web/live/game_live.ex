@@ -434,26 +434,30 @@ defmodule ShinkankiWebWeb.GameLive do
               role="form"
               aria-label="チャットメッセージ送信フォーム"
             >
-              <.input
-                field={@chat_form[:body]}
-                type="textarea"
-                placeholder="想いを紡ぐ..."
-                class="hud-chat-input min-h-20 text-sm"
-                phx-hook="ChatInput"
-                autofocus
-                aria-label="メッセージ本文"
-                aria-describedby="chat-body-help"
-              />
+              <div class="chat-input-wrapper">
+                <.input
+                  field={@chat_form[:body]}
+                  type="textarea"
+                  placeholder="想いを紡ぐ..."
+                  class="hud-chat-input min-h-20 text-sm"
+                  phx-hook="ChatInput"
+                  autofocus
+                  aria-label="メッセージ本文"
+                  aria-describedby="chat-body-help"
+                />
+              </div>
               <p id="chat-body-help" class="sr-only">メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。</p>
 
               <div class="flex items-center gap-2">
-                <.input
-                  field={@chat_form[:author]}
-                  type="text"
-                  class="hud-chat-input text-xs uppercase tracking-[0.3em]"
-                  placeholder="署名"
-                  aria-label="送信者名"
-                />
+                <div class="chat-input-wrapper flex-1">
+                  <.input
+                    field={@chat_form[:author]}
+                    type="text"
+                    class="hud-chat-input text-xs uppercase tracking-[0.3em]"
+                    placeholder="署名"
+                    aria-label="送信者名"
+                  />
+                </div>
                 <button
                   type="submit"
                   class="cta-button cta-solid h-10 px-4 flex items-center gap-2 tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -461,7 +465,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   aria-label="メッセージを送信"
                 >
                   <span class="phx-submit-loading:hidden">送信</span>
-                  <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
+                  <span class="hidden phx-submit-loading:inline-flex items-center gap-2 chat-submit-loading">
                     <svg
                       class="animate-spin h-3 w-3"
                       xmlns="http://www.w3.org/2000/svg"
@@ -735,11 +739,12 @@ defmodule ShinkankiWebWeb.GameLive do
         role="region"
         aria-label="手札"
       >
-        <div class="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2 bg-shu text-washi px-4 md:px-6 py-1 rounded-t-lg font-bold shadow-md border-x-2 border-t-2 border-sumi text-xs md:text-base z-10">
+        <div class="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2 glass-puck text-[var(--color-landing-text-primary)] font-bold shadow-md text-xs md:text-base z-10 tracking-[0.3em]">
           手札
         </div>
+        <div class="hand-scroll-shadow" aria-hidden="true"></div>
         <div
-          class="h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-4 px-4 md:px-8 overflow-x-auto scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent pb-2"
+          class="hand-card-tray h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-4 px-4 md:px-8 overflow-x-auto scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent pb-2"
           role="group"
           aria-label="手札カード"
         >
@@ -761,7 +766,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     [
                       "hover:z-10 w-16 h-24 md:w-24 md:h-36",
                       if(@selected_card_id == card.id,
-                        do: "ring-4 ring-shu/50 border-shu scale-105",
+                        do: "ring-4 ring-shu/50 border-shu scale-105 ofuda-card--selected",
                         else: ""
                       ),
                       if(@game_state.currency < card.cost,
@@ -786,7 +791,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     [
                       "hover:z-10 w-16 h-24 md:w-24 md:h-36",
                       if(@selected_card_id == card.id,
-                        do: "ring-4 ring-shu/50 border-shu scale-105",
+                      do: "ring-4 ring-shu/50 border-shu scale-105 ofuda-card--selected",
                         else: ""
                       ),
                       if(@game_state.currency < card.cost,
@@ -812,11 +817,11 @@ defmodule ShinkankiWebWeb.GameLive do
           role="region"
           aria-label="才能カード"
         >
-          <div class="absolute -top-3 md:-top-4 left-1/2 transform -translate-x-1/2 bg-kin text-washi px-3 md:px-4 py-0.5 rounded-t-lg font-bold shadow-md border-x-2 border-t-2 border-sumi text-[10px] md:text-xs z-10">
+          <div class="absolute -top-3 md:-top-4 left-1/2 transform -translate-x-1/2 glass-puck text-[var(--color-landing-text-primary)] px-3 md:px-4 py-0.5 font-bold shadow-md border border-kin/30 text-[10px] md:text-xs z-10 tracking-[0.3em]">
             才能カード
           </div>
           <div
-            class="h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-3 px-4 md:px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-kin scrollbar-track-transparent pb-2 pt-2"
+            class="hand-card-tray h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-3 px-4 md:px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-kin scrollbar-track-transparent pb-2 pt-2"
             role="group"
             aria-label="利用可能な才能カード"
           >

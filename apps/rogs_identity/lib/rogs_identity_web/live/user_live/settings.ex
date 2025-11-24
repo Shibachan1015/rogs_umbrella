@@ -9,95 +9,201 @@ defmodule RogsIdentityWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="text-center">
-        <.header>
-          Account Settings
-          <:subtitle>Manage your account email address and password settings</:subtitle>
-        </.header>
-      </div>
+      <div class="mdc-card" style="max-width: 600px; margin: 48px auto;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
+            Account Settings
+          </h1>
+          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+            Manage your account email address and password settings
+          </p>
+        </div>
 
-      <div :if={!@email_confirmed} class="alert alert-warning mb-4">
-        <.icon name="hero-exclamation-triangle" class="size-6 shrink-0" />
-        <div>
-          <p class="font-semibold">Email not confirmed</p>
-          <p>Please confirm your email address to access all features.</p>
-          <button
-            phx-click="resend_confirmation"
-            phx-disable-with="Sending..."
-            class="btn btn-sm btn-primary mt-2"
+        <div
+          :if={!@email_confirmed}
+          class="mdc-card"
+          style="background-color: #fff3cd; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
+        >
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <span class="material-icons" style="color: #f57c00; font-size: 24px;">warning</span>
+            <div style="flex: 1;">
+              <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500; color: #e65100;">
+                Email not confirmed
+              </p>
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #e65100;">
+                Please confirm your email address to access all features.
+              </p>
+              <button
+                phx-click="resend_confirmation"
+                phx-disable-with="Sending..."
+                class="mdc-button mdc-button--raised mdc-ripple"
+                style="height: 32px; padding: 0 12px; font-size: 12px;"
+              >
+                Resend confirmation email
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          :if={@email_confirmed}
+          class="mdc-card"
+          style="background-color: #d4edda; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
+        >
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <span class="material-icons" style="color: #388e3c; font-size: 24px;">check_circle</span>
+            <div style="flex: 1;">
+              <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500; color: #2e7d32;">
+                Email confirmed
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #2e7d32;">
+                Your email address has been confirmed.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
+          <.input
+            field={@name_form[:name]}
+            type="text"
+            label="Display Name"
+            placeholder="Optional"
+            autocomplete="name"
+          />
+          <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
+        </.form>
+
+        <div class="mdc-divider" style="margin: 24px 0;" />
+
+        <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
+          <.input
+            field={@email_form[:email]}
+            type="email"
+            label="Email"
+            autocomplete="username"
+            required
+          />
+          <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
+        </.form>
+
+        <div class="mdc-divider" style="margin: 24px 0;" />
+
+        <.form
+          for={@password_form}
+          id="password_form"
+          action={~p"/users/update-password"}
+          method="post"
+          phx-change="validate_password"
+          phx-submit="update_password"
+          phx-trigger-action={@trigger_submit}
+        >
+          <input
+            name={@password_form[:email].name}
+            type="hidden"
+            id="hidden_user_email"
+            autocomplete="username"
+            value={@current_email}
+          />
+          <.input
+            field={@password_form[:password]}
+            type="password"
+            label="New password"
+            autocomplete="new-password"
+            required
+          />
+          <.input
+            field={@password_form[:password_confirmation]}
+            type="password"
+            label="Confirm new password"
+            autocomplete="new-password"
+          />
+          <.button variant="primary" phx-disable-with="Saving...">
+            Save Password
+          </.button>
+        </.form>
+
+        <div class="mdc-divider" style="margin: 24px 0;" />
+
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 18px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
+            Active Sessions
+          </h3>
+          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0 0 16px 0;">
+            Manage your active sessions. You can sign out from other devices here.
+          </p>
+
+          <div
+            :if={@sessions == []}
+            style="text-align: center; padding: 32px 0; color: var(--md-text-secondary);"
           >
-            Resend confirmation email
-          </button>
+            <p>No active sessions found.</p>
+          </div>
+
+          <div :if={@sessions != []} style="display: flex; flex-direction: column; gap: 12px;">
+            <div
+              :for={{session, index} <- Enum.with_index(@sessions)}
+              class="mdc-card"
+              style={
+                if session.is_current do
+                  "padding: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #e3f2fd; border-left: 4px solid var(--md-primary);"
+                else
+                  "padding: 16px; display: flex; align-items: center; justify-content: space-between;"
+                end
+              }
+            >
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 14px; font-weight: 500; color: var(--md-text-primary);">
+                    {if session.is_current, do: "Current Session", else: "Session #{index + 1}"}
+                  </span>
+                  <span
+                    :if={session.is_current}
+                    style="padding: 2px 8px; font-size: 11px; font-weight: 500; background-color: var(--md-primary); color: white; border-radius: 12px;"
+                  >
+                    Active
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: var(--md-text-secondary);">
+                  <p style="margin: 0 0 4px 0;">
+                    Signed in: {Calendar.strftime(
+                      session.authenticated_at || session.inserted_at,
+                      "%B %d, %Y at %I:%M %p"
+                    )}
+                  </p>
+                  <p style="margin: 0; font-size: 11px; opacity: 0.7;">
+                    Last activity: {Calendar.strftime(session.inserted_at, "%B %d, %Y at %I:%M %p")}
+                  </p>
+                </div>
+              </div>
+              <button
+                :if={!session.is_current}
+                phx-click="delete_session"
+                phx-value-session-id={session.id}
+                phx-disable-with="Deleting..."
+                class="mdc-button mdc-button--outlined mdc-ripple"
+                style="height: 32px; padding: 0 12px; font-size: 12px; color: var(--md-error); border-color: var(--md-error);"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <div
+            :if={@sessions != [] and length(@sessions) > 1}
+            style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0, 0, 0, 0.12);"
+          >
+            <button
+              phx-click="delete_all_other_sessions"
+              phx-disable-with="Signing out..."
+              class="mdc-button mdc-button--outlined mdc-ripple"
+              style="width: 100%; color: var(--md-error); border-color: var(--md-error);"
+            >
+              Sign Out from All Other Devices
+            </button>
+          </div>
         </div>
       </div>
-
-      <div :if={@email_confirmed} class="alert alert-success mb-4">
-        <.icon name="hero-check-circle" class="size-6 shrink-0" />
-        <div>
-          <p class="font-semibold">Email confirmed</p>
-          <p>Your email address has been confirmed.</p>
-        </div>
-      </div>
-
-      <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
-        <.input
-          field={@name_form[:name]}
-          type="text"
-          label="Display Name"
-          placeholder="Optional"
-          autocomplete="name"
-        />
-        <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
-      </.form>
-
-      <div class="divider" />
-
-      <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-        <.input
-          field={@email_form[:email]}
-          type="email"
-          label="Email"
-          autocomplete="username"
-          required
-        />
-        <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
-      </.form>
-
-      <div class="divider" />
-
-      <.form
-        for={@password_form}
-        id="password_form"
-        action={~p"/users/update-password"}
-        method="post"
-        phx-change="validate_password"
-        phx-submit="update_password"
-        phx-trigger-action={@trigger_submit}
-      >
-        <input
-          name={@password_form[:email].name}
-          type="hidden"
-          id="hidden_user_email"
-          autocomplete="username"
-          value={@current_email}
-        />
-        <.input
-          field={@password_form[:password]}
-          type="password"
-          label="New password"
-          autocomplete="new-password"
-          required
-        />
-        <.input
-          field={@password_form[:password_confirmation]}
-          type="password"
-          label="Confirm new password"
-          autocomplete="new-password"
-        />
-        <.button variant="primary" phx-disable-with="Saving...">
-          Save Password
-        </.button>
-      </.form>
     </Layouts.app>
     """
   end
@@ -116,11 +222,17 @@ defmodule RogsIdentityWeb.UserLive.Settings do
     {:ok, push_navigate(socket, to: ~p"/users/settings")}
   end
 
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = socket.assigns.current_scope.user
     name_changeset = Accounts.change_user_name(user, %{})
     email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
     password_changeset = Accounts.change_user_password(user, %{}, hash_password: false)
+
+    # Get current session token from session
+    current_token = Map.get(session, "user_token")
+
+    # Get all active sessions with current session marked
+    sessions = Accounts.list_user_session_tokens(user, current_token)
 
     socket =
       socket
@@ -130,6 +242,8 @@ defmodule RogsIdentityWeb.UserLive.Settings do
       |> assign(:email_form, to_form(email_changeset, as: "user"))
       |> assign(:password_form, to_form(password_changeset, as: "user"))
       |> assign(:trigger_submit, false)
+      |> assign(:sessions, sessions)
+      |> assign(:current_token, current_token)
 
     {:ok, socket}
   end
@@ -243,6 +357,47 @@ defmodule RogsIdentityWeb.UserLive.Settings do
        |> assign(:email_confirmed, Accounts.email_confirmed?(user))}
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_session", %{"session-id" => session_id}, socket) do
+    user = socket.assigns.current_scope.user
+    current_token = socket.assigns.current_token
+
+    case Accounts.delete_user_session_token_by_id(user, session_id) do
+      :ok ->
+        # Reload sessions
+        sessions = Accounts.list_user_session_tokens(user, current_token)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Session signed out successfully.")
+         |> assign(:sessions, sessions)}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Failed to delete session.")}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_all_other_sessions", _params, socket) do
+    user = socket.assigns.current_scope.user
+    current_token = socket.assigns.current_token
+
+    if current_token do
+      deleted_count = Accounts.delete_all_other_sessions(user, current_token)
+
+      # Reload sessions (should only have current one now)
+      sessions = Accounts.list_user_session_tokens(user, current_token)
+      sessions = Enum.map(sessions, fn session -> Map.delete(session, :token) end)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, "Signed out from #{deleted_count} other device(s).")
+       |> assign(:sessions, sessions)}
+    else
+      {:noreply, put_flash(socket, :error, "Unable to identify current session.")}
     end
   end
 end

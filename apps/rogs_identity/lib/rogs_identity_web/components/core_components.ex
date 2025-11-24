@@ -55,25 +55,28 @@ defmodule RogsIdentityWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class={[
+        "mdc-snackbar",
+        @kind == :info && "mdc-snackbar--info",
+        @kind == :error && "mdc-snackbar--error",
+        @kind == :success && "mdc-snackbar--success"
+      ]}
       {@rest}
     >
-      <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
-      ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
-        <div>
-          <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
-        </div>
-        <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label="close">
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
-        </button>
+      <span class="material-icons" style="font-size: 20px;">
+        {if @kind == :info, do: "info", else: if(@kind == :error, do: "error", else: "check_circle")}
+      </span>
+      <div style="flex: 1;">
+        <p :if={@title} style="font-weight: 500; margin-bottom: 4px;">{@title}</p>
+        <p style="margin: 0;">{msg}</p>
       </div>
+      <button
+        type="button"
+        style="background: none; border: none; color: white; cursor: pointer; padding: 4px; margin-left: 8px;"
+        aria-label="close"
+      >
+        <span class="material-icons" style="font-size: 20px;">close</span>
+      </button>
     </div>
     """
   end
@@ -93,11 +96,17 @@ defmodule RogsIdentityWeb.CoreComponents do
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variant_class =
+      case assigns[:variant] do
+        "primary" -> "mdc-button mdc-button--raised mdc-ripple"
+        _ -> "mdc-button mdc-button--outlined mdc-ripple"
+      end
 
     assigns =
       assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
+        [variant_class, assigns[:class] || ""]
+        |> Enum.filter(&(&1 != ""))
+        |> Enum.join(" ")
       end)
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
@@ -247,21 +256,26 @@ defmodule RogsIdentityWeb.CoreComponents do
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
+    has_value = assigns[:value] && assigns[:value] != ""
+    placeholder = if assigns[:label] && !has_value, do: " ", else: assigns[:rest][:placeholder]
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <input
-          type={@type}
-          name={@name}
-          id={@id}
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
-          ]}
-          {@rest}
-        />
+    <div class="mdc-text-field">
+      <input
+        type={@type}
+        name={@name}
+        id={@id}
+        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        placeholder={placeholder}
+        class={[
+          "mdc-text-field__input",
+          @class,
+          @errors != [] && (@error_class || "border-red-500")
+        ]}
+        {@rest}
+      />
+      <label :if={@label} for={@id} class="mdc-text-field__label">
+        {@label}
       </label>
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
@@ -271,8 +285,8 @@ defmodule RogsIdentityWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
+    <p style="margin-top: 4px; display: flex; gap: 4px; align-items: center; font-size: 12px; color: var(--md-error);">
+      <span class="material-icons" style="font-size: 16px;">error</span>
       {render_slot(@inner_block)}
     </p>
     """

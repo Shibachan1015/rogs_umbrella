@@ -102,4 +102,378 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Miyabi Theme Colors */
+@theme {
+  /* Miyabi Base Colors */
+  --color-washi: #fcfaf2;
+  --color-washi-dark: #efece4;
+  --color-sumi: #1c1c1c;
+  --color-sumi-light: #444444;
+  --color-shu: #d3381c;
+  --color-matsu: #4a593d;
+  --color-kin: #c7b370;
+  --color-sakura: #eec4ce;
+  --color-kohaku: #bf783a;
+
+  /* Material Design 3 inspired - Surface Colors */
+  --color-surface: #fcfaf2;
+  --color-surface-variant: #efece4;
+  --color-surface-container: #f5f3eb;
+  --color-surface-container-high: #ede9df;
+  --color-surface-container-highest: #e5e1d7;
+
+  /* Material Design 3 inspired - State Colors */
+  --color-on-surface: #1c1c1c;
+  --color-on-surface-variant: #444444;
+  --color-outline: rgba(28, 28, 28, 0.12);
+  --color-outline-variant: rgba(28, 28, 28, 0.08);
+
+  /* Material Design 3 inspired - Primary Colors (Shu-based) */
+  --color-primary: #d3381c;
+  --color-on-primary: #fcfaf2;
+  --color-primary-container: rgba(211, 56, 28, 0.12);
+  --color-on-primary-container: #8b1f0e;
+
+  /* Material Design 3 inspired - Secondary Colors (Matsu-based) */
+  --color-secondary: #4a593d;
+  --color-on-secondary: #fcfaf2;
+  --color-secondary-container: rgba(74, 89, 61, 0.12);
+  --color-on-secondary-container: #2d3524;
+
+  /* Material Design 3 inspired - Tertiary Colors (Sakura-based) */
+  --color-tertiary: #eec4ce;
+  --color-on-tertiary: #1c1c1c;
+  --color-tertiary-container: rgba(238, 196, 206, 0.2);
+  --color-on-tertiary-container: #8b5a6a;
+
+  /* Material Design 3 inspired - Error Colors */
+  --color-error: #ba1a1a;
+  --color-on-error: #fcfaf2;
+  --color-error-container: rgba(186, 26, 26, 0.12);
+  --color-on-error-container: #93000a;
+
+  /* Material Design 3 inspired - Elevation Shadows */
+  --elevation-0: none;
+  --elevation-1: 0px 1px 2px 0px rgba(28, 28, 28, 0.08), 0px 1px 3px 0px rgba(28, 28, 28, 0.12);
+  --elevation-2: 0px 2px 4px 0px rgba(28, 28, 28, 0.08), 0px 2px 6px 0px rgba(28, 28, 28, 0.12);
+  --elevation-3: 0px 4px 8px 0px rgba(28, 28, 28, 0.08), 0px 4px 12px 0px rgba(28, 28, 28, 0.12);
+}
+
+/* Miyabi Theme Utility Classes */
+.bg-washi { background-color: var(--color-washi); }
+.bg-washi-dark { background-color: var(--color-washi-dark); }
+.text-sumi { color: var(--color-sumi); }
+.text-sumi-light { color: var(--color-sumi-light); }
+.text-shu { color: var(--color-shu); }
+.text-matsu { color: var(--color-matsu); }
+.text-kin { color: var(--color-kin); }
+.text-sakura { color: var(--color-sakura); }
+.text-kohaku { color: var(--color-kohaku); }
+
+.border-sumi { border-color: var(--color-sumi); }
+.border-shu { border-color: var(--color-shu); }
+.border-matsu { border-color: var(--color-matsu); }
+
+/* Ofuda-style card (お札風カード) */
+.ofuda-card {
+  background: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--elevation-2);
+  transition: all 0.2s ease;
+}
+
+.ofuda-card:hover {
+  box-shadow: var(--elevation-3);
+  transform: translateY(-2px);
+}
+
+/* Hanko-style button (印鑑風ボタン) */
+.hanko-button {
+  background: var(--color-shu);
+  color: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: var(--elevation-1);
+}
+
+.hanko-button:hover {
+  background: var(--color-on-primary-container);
+  color: var(--color-sumi);
+  box-shadow: var(--elevation-2);
+  transform: translateY(-1px);
+}
+
+.hanko-button:active {
+  transform: translateY(0);
+  box-shadow: var(--elevation-1);
+}
+
+/* Chat Animations */
+@keyframes message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typing-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.message-enter {
+  animation: message-appear 0.3s ease-out;
+}
+
+.typing-indicator {
+  animation: typing-pulse 1.5s ease-in-out infinite;
+}
+
+.sidebar-enter {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Smooth scroll behavior */
+#messages {
+  scroll-behavior: smooth;
+}
+
+/* Message hover effects */
+.ofuda-card {
+  transition: all 0.2s ease;
+}
+
+.ofuda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-3);
+}
+
+/* Button press animation */
+.hanko-button:active {
+  transform: scale(0.98);
+}
+
+/* Focus ring animations */
+input:focus,
+textarea:focus {
+  transition: all 0.2s ease;
+}
+
+/* Loading state animations */
+.phx-click-loading,
+.phx-submit-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.phx-click-loading::after,
+.phx-submit-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid var(--color-sumi);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Torii Resonance Design System tokens */
+:root {
+  --color-landing-bg: #0f1117;
+  --color-landing-panel: rgba(18, 20, 28, 0.9);
+  --color-landing-lines: rgba(199, 179, 112, 0.2);
+  --color-landing-gold: #c7b370;
+  --color-landing-pale: #f4efe1;
+  --color-landing-text-secondary: rgba(244, 239, 225, 0.8);
+  --color-landing-slate: rgba(15, 17, 23, 0.85);
+}
+
+.landing-body {
+  background: radial-gradient(circle at top, rgba(199, 179, 112, 0.08), transparent 55%),
+    var(--color-landing-bg);
+  min-height: 100vh;
+  color: var(--color-landing-pale);
+  position: relative;
+}
+
+.torii-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  padding: 3rem 1.5rem;
+  background: linear-gradient(135deg, rgba(199, 179, 112, 0.2), rgba(15, 17, 23, 0.4));
+  border: 1px solid rgba(199, 179, 112, 0.15);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+}
+
+.torii-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.torii-lines::before,
+.torii-lines::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 160%;
+  top: -30%;
+  background: linear-gradient(180deg, rgba(199, 179, 112, 0), rgba(199, 179, 112, 0.5));
+  opacity: 0.4;
+}
+
+.torii-lines::before {
+  left: 35%;
+}
+
+.torii-lines::after {
+  right: 35%;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 2.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.cta-button.cta-solid {
+  background: var(--color-landing-gold);
+  color: #1b1b1f;
+  box-shadow: 0 12px 40px rgba(199, 179, 112, 0.35);
+}
+
+.cta-button.cta-solid:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 50px rgba(199, 179, 112, 0.45);
+}
+
+.cta-button.cta-outline {
+  border-color: rgba(244, 239, 225, 0.4);
+  color: var(--color-landing-pale);
+}
+
+.cta-button.cta-outline:hover {
+  border-color: var(--color-landing-gold);
+  color: var(--color-landing-gold);
+}
+
+.concept-card {
+  background: rgba(18, 20, 28, 0.85);
+  border: 1px solid rgba(199, 179, 112, 0.15);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.concept-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(199, 179, 112, 0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease-in-out;
+}
+
+.concept-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(199, 179, 112, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.concept-card:hover::before {
+  transform: translateX(100%);
+}
+
+.hud-panel {
+  background: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: var(--elevation-2);
+}
+
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.torii-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(199, 179, 112, 0.4), transparent);
+  margin: 1.5rem 0;
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+  transition: box-shadow 0.2s ease;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px rgba(211, 56, 28, 0.7);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* This file is for your main application CSS */

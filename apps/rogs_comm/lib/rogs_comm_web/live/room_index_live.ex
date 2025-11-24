@@ -60,81 +60,110 @@ defmodule RogsCommWeb.RoomIndexLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="max-w-4xl mx-auto px-4 py-8">
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">チャットルーム</h1>
-          <p class="text-gray-600 mt-2">ルームを作成するか、既存のルームに参加してください</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">ルームを作成</h2>
-            <.form for={@form} id="room-form" phx-change="validate" phx-submit="save">
-              <.input
-                field={@form[:name]}
-                type="text"
-                label="ルーム名"
-                placeholder="例: 森の守り手の部屋"
-                required
-              />
-              <.input
-                field={@form[:topic]}
-                type="text"
-                label="トピック（任意）"
-                placeholder="例: 森の管理について話し合います"
-              />
-              <.input
-                field={@form[:is_private]}
-                type="checkbox"
-                label="非公開ルーム"
-              />
-              <button
-                type="submit"
-                class="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                作成
-              </button>
-            </.form>
+      <div class="min-h-screen bg-washi">
+        <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+          <div class="mb-8 md:mb-12 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-sumi border-b-4 border-shu pb-4 inline-block">
+              チャットルーム
+            </h1>
+            <p class="text-sumi-light mt-4 text-lg">ルームを作成するか、既存のルームに参加してください</p>
           </div>
 
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">ルーム一覧</h2>
-            <div class="space-y-3">
-              <div
-                :for={room <- @rooms}
-                class="border rounded-lg p-4 hover:bg-gray-50 transition"
-              >
-                <.link
-                  navigate={~p"/rooms/#{room.id}/chat"}
-                  class="block"
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+            <div class="ofuda-card">
+              <h2 class="text-xl font-semibold text-sumi mb-6 border-l-4 border-matsu pl-3">
+                ルームを作成
+              </h2>
+              <.form for={@form} id="room-form" phx-change="validate" phx-submit="save">
+                <.input
+                  field={@form[:name]}
+                  type="text"
+                  label="ルーム名"
+                  placeholder="例: 森の守り手の部屋"
+                  required
+                  class="bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20"
+                />
+                <.input
+                  field={@form[:topic]}
+                  type="text"
+                  label="トピック（任意）"
+                  placeholder="例: 森の管理について話し合います"
+                  class="bg-washi border-2 border-sumi text-sumi focus:border-matsu focus:ring-2 focus:ring-matsu/20"
+                />
+                <div class="mt-4">
+                  <.input
+                    field={@form[:is_private]}
+                    type="checkbox"
+                    label="非公開ルーム"
+                    class="text-shu"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="mt-6 w-full hanko-button"
                 >
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <h3 class="font-semibold text-gray-900">{room.name}</h3>
-                      <p :if={room.topic} class="text-sm text-gray-600 mt-1">{room.topic}</p>
-                      <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span>最大参加者: {room.max_participants}人</span>
-                        <span :if={room.is_private} class="text-red-600">非公開</span>
+                  作成
+                </button>
+              </.form>
+            </div>
+
+            <div>
+              <h2 class="text-xl font-semibold text-sumi mb-6 border-l-4 border-shu pl-3">
+                ルーム一覧
+              </h2>
+              <div class="space-y-4">
+                <div
+                  :for={room <- @rooms}
+                  class="ofuda-card hover:shadow-md transition-all duration-200"
+                >
+                  <.link
+                    navigate={~p"/rooms/#{room.id}/chat"}
+                    class="block"
+                  >
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h3 class="font-semibold text-sumi text-lg border-l-2 border-matsu pl-2">
+                          {room.name}
+                        </h3>
+                        <p :if={room.topic} class="text-sm text-sumi-light mt-2">
+                          {room.topic}
+                        </p>
+                        <div class="flex items-center gap-4 mt-3 text-xs">
+                          <span class="text-sumi-light bg-washi-dark px-2 py-1 rounded border border-sumi/20">
+                            最大参加者: {room.max_participants}人
+                          </span>
+                          <span
+                            :if={room.is_private}
+                            class="text-shu bg-shu/10 px-2 py-1 rounded border border-shu"
+                          >
+                            非公開
+                          </span>
+                        </div>
                       </div>
+                      <svg
+                        class="w-6 h-6 text-matsu flex-shrink-0 ml-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
                     </div>
-                    <svg
-                      class="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </.link>
-              </div>
-              <div :if={@rooms == []} class="text-center text-gray-500 py-8">
-                ルームがありません。新しいルームを作成してください。
+                  </.link>
+                </div>
+                <div
+                  :if={@rooms == []}
+                  class="text-center text-sumi-light py-12 ofuda-card"
+                >
+                  <div class="text-4xl mb-4">🏛️</div>
+                  <p class="text-lg">ルームがありません</p>
+                  <p class="text-sm mt-2">新しいルームを作成してください</p>
+                </div>
               </div>
             </div>
           </div>

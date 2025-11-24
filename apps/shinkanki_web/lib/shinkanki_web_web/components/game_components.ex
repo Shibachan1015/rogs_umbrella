@@ -1677,10 +1677,11 @@ defmodule ShinkankiWebWeb.GameComponents do
   Renders a player info card showing role and status.
   """
   attr :player_id, :string, required: true
-  attr :player_name, :string, default: "プレイヤー"
+  attr :player_name, :string, required: true
   attr :role, :atom, default: nil
   attr :is_current_player, :boolean, default: false
   attr :is_ready, :boolean, default: false
+  attr :is_current_turn, :boolean, default: false
   attr :class, :string, default: nil
   attr :rest, :global
 
@@ -1694,8 +1695,9 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "p-3 rounded-lg border-2 border-double transition-all duration-300",
-        if(@is_current_player, do: "ring-2 ring-shu/50", else: ""),
+        "p-3 rounded-lg border-2 border-double transition-all duration-300 relative",
+        if(@is_current_player, do: "ring-2 ring-shu/50 shadow-md", else: ""),
+        if(@is_current_turn, do: "ring-2 ring-kin/50 animate-pulse", else: ""),
         if(@role_data,
           do: "border-#{@role_data.color} bg-#{@role_data.color}/5",
           else: "border-sumi/30 bg-sumi/5"
@@ -1706,28 +1708,62 @@ defmodule ShinkankiWebWeb.GameComponents do
       aria-label={"プレイヤー: #{@player_name}"}
       {@rest}
     >
+      <!-- Current Turn Indicator -->
+      <%= if @is_current_turn do %>
+        <div class="absolute -top-2 -right-2 w-6 h-6 bg-kin rounded-full border-2 border-sumi flex items-center justify-center shadow-lg z-10">
+          <span class="text-xs font-bold text-sumi">⚡</span>
+        </div>
+      <% end %>
+      
+    <!-- Header -->
       <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-1">
           <%= if @role_data do %>
-            <div class="text-2xl">{@role_data.icon}</div>
+            <div class="text-2xl flex-shrink-0">{@role_data.icon}</div>
+          <% else %>
+            <div class="w-8 h-8 rounded-full bg-sumi/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-xs text-sumi/60">?</span>
+            </div>
           <% end %>
-          <div>
-            <div class="font-bold text-sumi text-sm">{@player_name}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-sumi text-sm truncate">{@player_name}</div>
             <%= if @is_current_player do %>
-              <div class="text-xs text-shu">（あなた）</div>
+              <div class="text-xs text-shu font-semibold">（あなた）</div>
             <% end %>
           </div>
         </div>
-        <%= if @is_ready do %>
-          <div class="w-3 h-3 bg-matsu rounded-full" aria-label="準備完了"></div>
-        <% else %>
-          <div class="w-3 h-3 bg-sumi/30 rounded-full" aria-label="準備中"></div>
-        <% end %>
+        <!-- Status Indicators -->
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <%= if @is_ready do %>
+            <div
+              class="w-3 h-3 bg-matsu rounded-full shadow-sm animate-pulse"
+              aria-label="準備完了"
+              title="準備完了"
+            >
+            </div>
+          <% else %>
+            <div class="w-3 h-3 bg-sumi/30 rounded-full" aria-label="準備中" title="準備中">
+            </div>
+          <% end %>
+        </div>
       </div>
+      
+    <!-- Role Information -->
       <%= if @role_data do %>
-        <div class="text-xs text-sumi/70">
-          <div class="font-semibold mb-1">{@role_data.name}</div>
-          <div>{@role_data.focus}</div>
+        <div class="mt-2 pt-2 border-t border-sumi/20">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-bold text-sumi">{@role_data.name}</span>
+            <span class={[
+              "text-[10px] px-2 py-0.5 rounded-full font-semibold",
+              "bg-#{@role_data.color}/20 text-#{@role_data.color} border border-#{@role_data.color}/30"
+            ]}>
+              {@role_data.focus}
+            </span>
+          </div>
+        </div>
+      <% else %>
+        <div class="mt-2 pt-2 border-t border-sumi/20">
+          <div class="text-[10px] text-sumi/50 italic">役割未選択</div>
         </div>
       <% end %>
     </div>
@@ -1751,6 +1787,132 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   defp get_role_data(_), do: nil
+
+  @doc """
+  Renders a modal displaying demurrage (減衰) information.
+  Shows the currency before and after demurrage with animation.
+  """
+  attr :show, :boolean, default: false
+  attr :previous_currency, :integer, default: 0
+  attr :current_currency, :integer, default: 0
+  attr :demurrage_amount, :integer, default: 0
+  attr :id, :string, default: "demurrage-modal"
+  attr :rest, :global
+
+  def demurrage_modal(assigns) do
+    demurrage_percentage =
+      if assigns.previous_currency > 0,
+        do: abs(assigns.demurrage_amount) / assigns.previous_currency * 100,
+        else: 0
+
+    assigns = assign(assigns, :demurrage_percentage, Float.round(demurrage_percentage, 1))
+
+    ~H"""
+    <%= if @show do %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+        phx-click="close_demurrage"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="demurrage-modal-title"
+        {@rest}
+      >
+        <div
+          class="relative bg-washi border-4 border-double border-kin rounded-lg shadow-2xl max-w-md w-full mx-4 animate-slide-in-up"
+          phx-click-away="close_demurrage"
+        >
+          <button
+            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors z-10"
+            phx-click="close_demurrage"
+            aria-label="モーダルを閉じる"
+          >
+            <span class="text-lg font-bold">×</span>
+          </button>
+
+          <div class="p-6 md:p-8">
+            <!-- Header -->
+            <div class="text-center mb-6">
+              <div class="text-4xl mb-3 animate-bounce">💸</div>
+              <h2 id="demurrage-modal-title" class="text-2xl md:text-3xl font-bold text-sumi mb-2">
+                減衰フェーズ
+              </h2>
+              <p class="text-sm text-sumi/70">空環ポイントが減衰しました</p>
+            </div>
+            
+    <!-- Currency Display with Animation -->
+            <div class="space-y-4 mb-6">
+              <!-- Before -->
+              <div class="bg-kin/10 border-2 border-kin/30 rounded-lg p-4 text-center">
+                <div class="text-xs uppercase tracking-[0.3em] text-kin/70 mb-2">減衰前</div>
+                <div class="text-3xl md:text-4xl font-bold text-kin" id="demurrage-before">
+                  {@previous_currency}
+                </div>
+                <div class="text-xs text-kin/60 mt-1">空環ポイント</div>
+              </div>
+              
+    <!-- Arrow -->
+              <div class="flex items-center justify-center">
+                <div class="w-12 h-0.5 bg-kin/50 relative">
+                  <div class="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-8 border-l-kin/50 border-t-4 border-t-transparent border-b-4 border-b-transparent">
+                  </div>
+                </div>
+                <div class="mx-3 text-2xl text-shu animate-pulse">↓</div>
+                <div class="w-12 h-0.5 bg-kin/50 relative">
+                  <div class="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-8 border-l-kin/50 border-t-4 border-t-transparent border-b-4 border-b-transparent">
+                  </div>
+                </div>
+              </div>
+              
+    <!-- After -->
+              <div class="bg-shu/10 border-2 border-shu/30 rounded-lg p-4 text-center animate-pulse">
+                <div class="text-xs uppercase tracking-[0.3em] text-shu/70 mb-2">減衰後</div>
+                <div class="text-3xl md:text-4xl font-bold text-shu" id="demurrage-after">
+                  {@current_currency}
+                </div>
+                <div class="text-xs text-shu/60 mt-1">空環ポイント</div>
+              </div>
+            </div>
+            
+    <!-- Demurrage Amount -->
+            <div class="bg-sumi/10 border border-sumi/20 rounded-lg p-4 mb-6">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-sumi">減衰量</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xl font-bold text-shu">
+                    {if @demurrage_amount < 0,
+                      do: "#{@demurrage_amount}",
+                      else: "-#{@demurrage_amount}"}
+                  </span>
+                  <span class="text-sm text-sumi/60">
+                    ({@demurrage_percentage}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+    <!-- Explanation -->
+            <div class="bg-washi-dark border border-sumi/20 rounded-lg p-4 mb-6">
+              <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">減衰について</div>
+              <p class="text-sm text-sumi/80 leading-relaxed">
+                空環マネーは貯め込むと価値が減ります。積極的に使って循環させることが重要です。
+              </p>
+            </div>
+            
+    <!-- Close Button -->
+            <button
+              class="w-full px-6 py-3 bg-kin text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-kin/80 transition-colors shadow-md"
+              phx-click="close_demurrage"
+              aria-label="閉じる"
+            >
+              了解
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
 
   @doc """
   Renders a toast notification with Miyabi theme.

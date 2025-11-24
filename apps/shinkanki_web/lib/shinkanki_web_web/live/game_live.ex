@@ -287,6 +287,7 @@ defmodule ShinkankiWebWeb.GameLive do
                 role={player[:role] || player["role"]}
                 is_current_player={(player[:id] || player["id"]) == @user_id}
                 is_ready={player[:is_ready] || player["is_ready"] || false}
+                is_current_turn={is_current_player_turn(@game_state, player[:id] || player["id"])}
                 class="w-full"
               />
             </div>
@@ -830,6 +831,15 @@ defmodule ShinkankiWebWeb.GameLive do
       id="card-detail-modal"
     />
 
+    <!-- Demurrage Display Modal -->
+    <.demurrage_modal
+      show={@show_demurrage}
+      previous_currency={@previous_currency}
+      current_currency={@game_state.currency}
+      demurrage_amount={@game_state.demurrage || 0}
+      id="demurrage-modal"
+    />
+
     <!-- Ending Screen -->
     <.ending_screen
       show={@show_ending}
@@ -1302,11 +1312,16 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
     # Update game state when broadcast from GameServer
     new_status = game.status || :waiting
+    new_phase = game.phase || :event
+    previous_currency = socket.assigns.game_state.currency || 0
+
+    # Show demurrage modal when entering demurrage phase
+    entering_demurrage = new_phase == :demurrage && socket.assigns.current_phase != :demurrage
 
     socket =
       socket
       |> assign(:game_state, format_game_state(game))
-      |> assign(:current_phase, game.phase || :event)
+      |> assign(:current_phase, new_phase)
       |> assign(:current_event, format_current_event(game))
       |> assign(:game_status, new_status)
       |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
@@ -1316,6 +1331,15 @@ defmodule ShinkankiWebWeb.GameLive do
       # Show ending screen if game ended
       |> assign(:show_ending, new_status in [:won, :lost])
       |> assign(:ending_type, game.ending_type)
+      # Show demurrage modal when entering demurrage phase
+      |> assign(
+        :show_demurrage,
+        if(entering_demurrage, do: true, else: socket.assigns.show_demurrage)
+      )
+      |> assign(
+        :previous_currency,
+        if(entering_demurrage, do: previous_currency, else: socket.assigns.previous_currency)
+      )
 
     {:noreply, socket}
   end

@@ -504,17 +504,21 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       id={@id}
-      class="bg-washi border-2 border-kin rounded-lg p-4 shadow-lg max-w-md"
+      class="resonance-modal-frame border border-kin/40 p-5 max-w-md text-[var(--color-landing-text-primary)]"
       role="dialog"
       aria-label="才能カード選択"
       {@rest}
     >
       <div class="mb-3">
-        <h3 class="text-sm font-bold text-sumi mb-1">才能カードを選択（最大{@max_selection}枚）</h3>
-        <p class="text-xs text-sumi/60 mb-2">アクションカードに重ねて効果を強化できます</p>
-        <div class="flex items-center gap-2 text-xs text-kin/80 bg-kin/10 px-2 py-1 rounded border border-kin/20">
+        <h3 class="text-sm font-bold mb-1 tracking-[0.2em]">
+          才能カードを選択（最大{@max_selection}枚）
+        </h3>
+        <p class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
+          アクションカードに重ねて効果を強化できます
+        </p>
+        <div class="flex items-center gap-2 text-xs text-kin bg-kin/15 px-2 py-1 rounded border border-kin/30">
           <span class="font-semibold">💡 ヒント:</span>
-          <span>最大{@max_selection}枚まで重ねて、効果に+{@max_selection}のボーナスを得られます</span>
+          <span>最大{@max_selection}枚まで重ねてボーナスを獲得</span>
         </div>
       </div>
 
@@ -547,19 +551,19 @@ defmodule ShinkankiWebWeb.GameComponents do
       <% end %>
 
       <%= if length(@selected_talent_ids) > 0 do %>
-        <div class="mt-3 pt-3 border-t border-kin/20">
-          <div class="text-xs text-sumi/70 mb-2">
+        <div class="mt-3 pt-3 border-t border-white/10">
+          <div class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
             選択中: {length(@selected_talent_ids)} / {@max_selection}
           </div>
           <div class="flex gap-2">
             <button
-              class="flex-1 bg-kin text-sumi px-3 py-2 rounded border border-sumi hover:bg-kin/80 transition-colors text-sm font-semibold"
+              class="flex-1 cta-button cta-solid justify-center tracking-[0.3em]"
               phx-click="confirm_talent_selection"
             >
               確定
             </button>
             <button
-              class="flex-1 bg-washi text-sumi px-3 py-2 rounded border border-sumi hover:bg-sumi/5 transition-colors text-sm"
+              class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
               phx-click="cancel_talent_selection"
             >
               キャンセル

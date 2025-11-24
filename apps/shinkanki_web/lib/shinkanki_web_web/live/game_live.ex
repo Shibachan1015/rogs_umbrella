@@ -508,7 +508,8 @@ defmodule ShinkankiWebWeb.GameLive do
 
     <!-- Event Card Display (Event Phase) -->
           <%= if @current_phase == :event && @current_event do %>
-            <div class="w-full max-w-md mx-auto animate-fade-in">
+            <div class="w-full max-w-md mx-auto animate-fade-in hud-panel text-[var(--color-landing-text-primary)]">
+              <div class="hud-section-title mb-3 text-center">現在のイベント</div>
               <.event_card
                 title={@current_event[:title] || @current_event["title"] || "イベント"}
                 description={@current_event[:description] || @current_event["description"] || ""}
@@ -522,9 +523,13 @@ defmodule ShinkankiWebWeb.GameLive do
             <!-- Active Projects Display -->
             <%= if length(@active_projects) > 0 && @game_status == :playing do %>
               <div class="w-full max-w-5xl mb-4 sm:mb-6">
-                <div class="text-center mb-3">
-                  <h2 class="text-lg sm:text-xl font-bold text-sumi mb-1">共創プロジェクト</h2>
-                  <p class="text-xs sm:text-sm text-sumi/60">才能カードを捧げて進捗を進めましょう</p>
+                <div class="text-center mb-3 text-[var(--color-landing-text-primary)]">
+                  <h2 class="text-lg sm:text-xl font-bold tracking-[0.3em] mb-1">
+                    共創プロジェクト
+                  </h2>
+                  <p class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)]">
+                    才能カードを捧げて進捗を進めましょう
+                  </p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-2 sm:px-4">
                   <%= for project <- @active_projects do %>
@@ -596,18 +601,18 @@ defmodule ShinkankiWebWeb.GameLive do
                     class="transition-all duration-1000"
                   />
                 </svg>
-                <div class="text-center relative z-10 px-2 sm:px-4">
-                  <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sumi/60">
+                <div class="text-center relative z-10 px-2 sm:px-4 text-[var(--color-landing-text-primary)]">
+                  <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
                     Life Index
                   </div>
                   <div
                     id="life-index-value"
-                    class="text-3xl sm:text-4xl md:text-7xl font-bold text-shu font-serif mb-1 sm:mb-2 life-index-value"
+                    class="text-3xl sm:text-4xl md:text-7xl font-bold text-[var(--color-landing-pale)] font-serif mb-1 sm:mb-2 life-index-value"
                     phx-update="ignore"
                   >
                     {life_index(@game_state)}
                   </div>
-                  <div class="text-[9px] sm:text-[10px] md:text-xs text-sumi/50 uppercase tracking-[0.3em] sm:tracking-[0.5em]">
+                  <div class="text-[9px] sm:text-[10px] md:text-xs text-[var(--color-landing-text-secondary)] uppercase tracking-[0.3em] sm:tracking-[0.5em]">
                     Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
                   </div>
                 </div>

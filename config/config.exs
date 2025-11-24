@@ -44,7 +44,6 @@ config :rogs_identity, RogsIdentityWeb.Endpoint,
 
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Local
 
-
 config :rogs_comm, RogsCommWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   url: [host: "localhost"],

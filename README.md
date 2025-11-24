@@ -2,6 +2,10 @@
 
 ROGs Umbrellaプロジェクトの認証システムです。
 
+## デザインシステム
+
+このリポジトリのUI実装は **Torii Resonance Design System (TRDS)** を基準にしています。色やタイポグラフィ、コンポーネント規約については [`docs/torii_resonance_design_system.md`](docs/torii_resonance_design_system.md) を参照してください。
+
 ## 概要
 
 `rogs_identity`は、ROGs Umbrellaプロジェクト全体で使用される認証システムです。以下の機能を提供します：

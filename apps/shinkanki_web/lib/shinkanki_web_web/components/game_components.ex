@@ -1799,10 +1799,7 @@ defmodule ShinkankiWebWeb.GameComponents do
         "p-3 rounded-lg border-2 border-double transition-all duration-300 relative",
         if(@is_current_player, do: "ring-2 ring-shu/50 shadow-md", else: ""),
         if(@is_current_turn, do: "ring-2 ring-kin/50 animate-pulse", else: ""),
-        if(@role_data,
-          do: "border-#{@role_data.color} bg-#{@role_data.color}/5",
-          else: "border-sumi/30 bg-sumi/5"
-        ),
+        role_color_classes(@role_data),
         @class
       ]}
       role="article"
@@ -1856,7 +1853,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             <span class="text-xs font-bold text-sumi">{@role_data.name}</span>
             <span class={[
               "text-[10px] px-2 py-0.5 rounded-full font-semibold",
-              "bg-#{@role_data.color}/20 text-#{@role_data.color} border border-#{@role_data.color}/30"
+              role_badge_classes(@role_data)
             ]}>
               {@role_data.focus}
             </span>
@@ -1888,6 +1885,30 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   defp get_role_data(_), do: nil
+
+  defp role_color_classes(nil), do: "border-white/10 bg-white/5"
+
+  defp role_color_classes(%{color: color}) do
+    case color do
+      "matsu" -> "border-matsu bg-matsu/10"
+      "sakura" -> "border-sakura bg-sakura/10"
+      "kohaku" -> "border-kohaku bg-kohaku/10"
+      "kin" -> "border-kin bg-kin/10"
+      _ -> "border-white/10 bg-white/5"
+    end
+  end
+
+  defp role_badge_classes(nil), do: "bg-white/10 text-white border border-white/20"
+
+  defp role_badge_classes(%{color: color}) do
+    case color do
+      "matsu" -> "bg-matsu/20 text-matsu border border-matsu/30"
+      "sakura" -> "bg-sakura/20 text-sakura border border-sakura/30"
+      "kohaku" -> "bg-kohaku/20 text-kohaku border border-kohaku/30"
+      "kin" -> "bg-kin/20 text-kin border border-kin/30"
+      _ -> "bg-white/10 text-white border border-white/20"
+    end
+  end
 
   @doc """
   Renders a modal displaying demurrage (減衰) information.

@@ -51,6 +51,9 @@ defmodule RogsIdentityWeb.Layouts do
           <span class="identity-email">
             {@current_scope.user.email}
           </span>
+          <.link href={~p"/users/profile"} class="identity-nav__link">
+            Profile
+          </.link>
           <.link href={~p"/users/settings"} class="identity-nav__link identity-nav__cta">
             Settings
           </.link>

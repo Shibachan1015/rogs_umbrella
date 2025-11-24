@@ -16,12 +16,14 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
         </div>
 
         <div :if={local_mail_adapter?()} class="info-callout">
-          <.icon name="hero-information-circle" class="size-5 shrink-0 text-[var(--color-landing-gold)]" />
+          <.icon
+            name="hero-information-circle"
+            class="size-5 shrink-0 text-[var(--color-landing-gold)]"
+          />
           <div>
             <strong>Local mail adapter active.</strong>
             <p class="text-sm text-[var(--color-landing-text-secondary)]">
-              Visit the
-              <.link href="/dev/mailbox" class="link-muted">mailbox page</.link>
+              Visit the <.link href="/dev/mailbox" class="link-muted">mailbox page</.link>
               to preview outgoing messages.
             </p>
           </div>
@@ -71,7 +73,10 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
     if attempt_count >= 3 do
       {:noreply,
        socket
-       |> put_flash(:error, "Password reset is cooling down. Give it a little time and try again.")}
+       |> put_flash(
+         :error,
+         "Password reset is cooling down. Give it a little time and try again."
+       )}
     else
       if user = Accounts.get_user_by_email(email) do
         Accounts.deliver_password_reset_instructions(

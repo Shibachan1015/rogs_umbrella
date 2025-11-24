@@ -24,8 +24,11 @@ defmodule RogsComm.SignalingFixtures do
     |> signaling_session_attrs()
     |> Signaling.create_session()
     |> case do
-      {:ok, session} -> session
-      {:error, changeset} -> raise "signaling_session_fixture failed: #{inspect(changeset.errors)}"
+      {:ok, session} ->
+        session
+
+      {:error, changeset} ->
+        raise "signaling_session_fixture failed: #{inspect(changeset.errors)}"
     end
   end
 end

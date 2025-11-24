@@ -490,6 +490,7 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             </.form>
           </div>
+        </div>
         </aside>
 
     <!-- Main Board -->

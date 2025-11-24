@@ -149,6 +149,11 @@ defmodule MyAppWeb.Router do
 
     get "/profile", ProfileController, :show
     get "/settings", SettingsController, :edit
+
+    live_session :torii_profile,
+      on_mount: [{RogsIdentityWeb.UserAuth, :require_authenticated}] do
+      live "/users/profile", RogsIdentityWeb.UserLive.Profile, :show
+    end
   end
 end
 ```
@@ -211,6 +216,25 @@ defmodule MyAppWeb.UserHelper do
     RogsIdentity.get_user(user_id)
   end
 end
+```
+
+### 例5: Federated apps設定
+
+`config/config.exs` に以下のような `:federated_apps` を定義すると、`/users/profile` でTRDSスタイルのSSOカードが表示されます：
+
+```elixir
+config :rogs_identity, :federated_apps,
+  [
+    %{
+      id: :shinkanki_web,
+      name: "Shinkanki Web",
+      description: "Game interface & LiveView HUD.",
+      scopes: ["gameplay", "state-sync"],
+      surface: :game,
+      url: "http://localhost:4000",
+      status: :connected
+    }
+  ]
 ```
 
 ## ベストプラクティス

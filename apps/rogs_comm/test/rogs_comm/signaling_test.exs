@@ -33,6 +33,7 @@ defmodule RogsComm.SignalingTest do
 
     test "auto-generates created_at if not provided" do
       room = room_fixture()
+
       attrs = %{
         room_id: room.id,
         from_user_id: Ecto.UUID.generate(),
@@ -46,6 +47,7 @@ defmodule RogsComm.SignalingTest do
 
     test "fails with invalid event_type" do
       room = room_fixture()
+
       attrs = %{
         room_id: room.id,
         from_user_id: Ecto.UUID.generate(),
@@ -59,7 +61,13 @@ defmodule RogsComm.SignalingTest do
 
     test "fails when required fields are missing" do
       assert {:error, changeset} = Signaling.create_session(%{})
-      assert %{room_id: ["can't be blank"], from_user_id: ["can't be blank"], event_type: ["can't be blank"], payload: ["can't be blank"]} = errors_on(changeset)
+
+      assert %{
+               room_id: ["can't be blank"],
+               from_user_id: ["can't be blank"],
+               event_type: ["can't be blank"],
+               payload: ["can't be blank"]
+             } = errors_on(changeset)
     end
   end
 
@@ -85,6 +93,7 @@ defmodule RogsComm.SignalingTest do
 
     test "respects limit option" do
       room = room_fixture()
+
       for i <- 1..5 do
         signaling_session_fixture(%{room_id: room.id, event_type: "offer"})
       end
@@ -106,19 +115,21 @@ defmodule RogsComm.SignalingTest do
       other_user_id = Ecto.UUID.generate()
 
       # Sessions between from_user and to_user
-      session1 = signaling_session_fixture(%{
-        room_id: room.id,
-        from_user_id: from_user_id,
-        to_user_id: to_user_id,
-        event_type: "offer"
-      })
+      session1 =
+        signaling_session_fixture(%{
+          room_id: room.id,
+          from_user_id: from_user_id,
+          to_user_id: to_user_id,
+          event_type: "offer"
+        })
 
-      session2 = signaling_session_fixture(%{
-        room_id: room.id,
-        from_user_id: to_user_id,
-        to_user_id: from_user_id,
-        event_type: "answer"
-      })
+      session2 =
+        signaling_session_fixture(%{
+          room_id: room.id,
+          from_user_id: to_user_id,
+          to_user_id: from_user_id,
+          event_type: "answer"
+        })
 
       # Session with other user (should not be included)
       signaling_session_fixture(%{

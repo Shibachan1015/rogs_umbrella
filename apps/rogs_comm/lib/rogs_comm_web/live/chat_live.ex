@@ -647,6 +647,7 @@ defmodule RogsCommWeb.ChatLive do
         <section class="torii-hero my-6 md:my-10" aria-labelledby="chat-hero-title">
           <div class="torii-lines" aria-hidden="true"></div>
           <div class="relative z-10 text-center md:text-left max-w-4xl mx-auto space-y-4">
+            <% share_link = url(~p"/rooms/#{@room_id}/chat") %>
             <p class="text-sm uppercase tracking-[0.5em] text-[var(--color-landing-text-secondary)]">
               Humans are one of the Myriad Gods
             </p>
@@ -666,6 +667,17 @@ defmodule RogsCommWeb.ChatLive do
               <a href="#chat-panel" class="cta-button cta-outline focus-ring">
                 現在のルームを見る
               </a>
+              <button
+                type="button"
+                id="room-share-button"
+                class="cta-button cta-outline focus-ring flex items-center gap-2 justify-center"
+                phx-hook="CopyLinkHook"
+                data-copy-url={share_link}
+              >
+                <span aria-hidden="true">🔗</span>
+                <span data-copy-label>ルームリンクをコピー</span>
+                <span data-copy-feedback class="sr-only" aria-live="polite"></span>
+              </button>
             </div>
             <div
               class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]"

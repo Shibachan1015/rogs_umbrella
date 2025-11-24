@@ -164,7 +164,10 @@ defmodule ShinkankiWebWeb.GameLive do
             <!-- Turn Progress -->
             <div class="w-full">
               <div class="flex justify-between items-center mb-1">
-                <span class="text-xs text-sumi/60" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
+                <span
+                  class="text-xs text-sumi/60"
+                  aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
+                >
                   Turn {@game_state.turn} / {@game_state.max_turns}
                 </span>
                 <span class="text-xs font-bold text-shu">
@@ -190,7 +193,51 @@ defmodule ShinkankiWebWeb.GameLive do
               <.phase_indicator current_phase={@current_phase} />
             </div>
             
-     <!-- Game Start Button (Waiting State) -->
+    <!-- Discussion Phase Ready Button -->
+            <%= if @current_phase == :discussion && @game_status == :playing do %>
+              <div class="pt-4 border-t border-sumi/30">
+                <div class="text-center space-y-2">
+                  <div class="text-xs text-sumi/60">
+                    相談フェーズ - 準備ができたらボタンを押してください
+                  </div>
+                  <%= if get_player_ready_status(@players, @user_id) do %>
+                    <div class="text-xs text-matsu font-semibold">
+                      ✓ 準備完了
+                    </div>
+                  <% else %>
+                    <button
+                      class="w-full px-4 py-2 bg-matsu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-matsu/90 transition-colors"
+                      phx-click="execute_action"
+                      phx-value-action="mark_discussion_ready"
+                      aria-label="準備完了"
+                    >
+                      準備完了
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            
+    <!-- Current Player Indicator (Action Phase) -->
+            <%= if @current_phase == :action && @game_status == :playing do %>
+              <div class="pt-4 border-t border-sumi/30">
+                <div class="text-center space-y-2">
+                  <div class="text-xs uppercase tracking-[0.3em] text-sumi/60">
+                    現在のターン
+                  </div>
+                  <div class="text-sm font-bold text-shu">
+                    {get_current_player_name(@game_state, @players) || "プレイヤー"}
+                  </div>
+                  <%= if is_current_player_turn(@game_state, @user_id) do %>
+                    <div class="text-xs text-matsu font-semibold">
+                      ← あなたのターンです
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            
+    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
               <div class="pt-4 border-t border-sumi/30 space-y-3">
                 <!-- Player List -->
@@ -213,7 +260,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
                 
-                <!-- Start Button -->
+    <!-- Start Button -->
                 <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
                     <button
@@ -233,8 +280,8 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
           </div>
-
-          <!-- Players Info -->
+          
+    <!-- Players Info -->
           <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
             <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
             <div class="space-y-2">
@@ -732,12 +779,14 @@ defmodule ShinkankiWebWeb.GameLive do
       show={@show_card_detail}
       card={@detail_card}
       current_currency={@game_state.currency}
-      current_params={%{
-        forest: @game_state.forest,
-        culture: @game_state.culture,
-        social: @game_state.social,
-        currency: @game_state.currency
-      }}
+      current_params={
+        %{
+          forest: @game_state.forest,
+          culture: @game_state.culture,
+          social: @game_state.social,
+          currency: @game_state.currency
+        }
+      }
       id="card-detail-modal"
     />
 
@@ -1171,7 +1220,6 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("show_demurrage", _params, socket) do
     # Show demurrage display (typically called when entering demurrage phase)
     previous = socket.assigns.game_state.currency
-    current = trunc(previous * 0.9)  # 10% decay
 
     {:noreply,
      socket
@@ -1707,4 +1755,49 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   defp convert_to_atom(id), do: id
+
+  defp get_player_ready_status(players, user_id) when is_list(players) do
+    case Enum.find(players, fn p -> (p[:id] || p["id"]) == user_id end) do
+      nil -> false
+      player -> player[:is_ready] || player["is_ready"] || false
+    end
+  end
+
+  defp get_player_ready_status(_players, _user_id), do: false
+
+  defp get_current_player_name(game_state, players) when is_list(players) do
+    # Get current player from game state
+    current_player_id =
+      case game_state do
+        %{player_order: order, current_player_index: index} when is_list(order) and index >= 0 ->
+          Enum.at(order, index)
+
+        _ ->
+          nil
+      end
+
+    case current_player_id do
+      nil ->
+        nil
+
+      id ->
+        case Enum.find(players, fn p -> (p[:id] || p["id"]) == id end) do
+          nil -> "Player #{String.slice(id, 0, 8)}"
+          player -> player[:name] || player["name"] || "Player"
+        end
+    end
+  end
+
+  defp get_current_player_name(_game_state, _players), do: nil
+
+  defp is_current_player_turn(game_state, user_id) do
+    case game_state do
+      %{player_order: order, current_player_index: index} when is_list(order) and index >= 0 ->
+        current_player_id = Enum.at(order, index)
+        current_player_id == user_id
+
+      _ ->
+        false
+    end
+  end
 end

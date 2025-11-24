@@ -1,6 +1,9 @@
 defmodule ShinkankiWebWeb.GameComponents do
   use Phoenix.Component
 
+  import ShinkankiWebWeb.CoreComponents
+  alias Phoenix.LiveView.JS
+
   @doc """
   Renders a card looking like an "Ofuda" (Talisman).
   """
@@ -1001,6 +1004,207 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   @doc """
+  Renders a card detail modal for viewing card information.
+  Shows detailed card information including description, cost, effects, and usage conditions.
+  """
+  attr :show, :boolean, default: false
+  attr :card, :map, default: nil
+  attr :current_currency, :integer, default: 0
+  attr :current_params, :map, default: %{}
+  attr :id, :string, default: "card-detail-modal"
+  attr :rest, :global
+
+  def card_detail_modal(assigns) do
+    ~H"""
+    <%= if @show && @card do %>
+      <%
+        card_cost = @card[:cost] || @card["cost"] || 0
+        card_effect = @card[:effect] || @card["effect"] || %{}
+        card_type = @card[:type] || @card["type"] || :action
+        card_description = @card[:description] || @card["description"] || ""
+        card_tags = @card[:tags] || @card["tags"] || []
+        can_afford = @current_currency >= card_cost
+      %>
+      <div
+        id={@id}
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+        phx-click="close_card_detail"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-detail-title"
+        {@rest}
+      >
+        <div
+          class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-slide-in-up"
+          phx-click-away="close_card_detail"
+          phx-window-keydown={JS.push("close_card_detail") |> JS.dispatch("keydown", detail: %{key: "Escape"})}
+        >
+          <button
+            class="absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30 transition-colors z-10"
+            phx-click="close_card_detail"
+            aria-label="モーダルを閉じる"
+          >
+            <span class="text-lg font-bold">×</span>
+          </button>
+
+          <div class="p-6">
+            <h2 id="card-detail-title" class="text-2xl font-bold text-sumi mb-4">カード詳細</h2>
+
+            <!-- Card Preview -->
+            <div class="mb-6 flex justify-center">
+              <.ofuda_card
+                title={@card[:title] || @card["title"] || "カード"}
+                description={card_description}
+                cost={card_cost}
+                type={card_type}
+                class="scale-125"
+              />
+            </div>
+
+            <!-- Card Type Badge -->
+            <div class="mb-4 flex items-center gap-2">
+              <span class={[
+                "px-3 py-1 rounded-full text-xs font-semibold",
+                case card_type do
+                  :action -> "bg-shu/10 text-shu border border-shu/30"
+                  :reaction -> "bg-matsu/10 text-matsu border border-matsu/30"
+                  :event -> "bg-sumi/10 text-sumi border border-sumi/30"
+                  _ -> "bg-sumi/10 text-sumi border border-sumi/30"
+                end
+              ]}>
+                <%= case card_type do
+                  :action -> "アクションカード"
+                  :reaction -> "リアクションカード"
+                  :event -> "イベントカード"
+                  _ -> "カード"
+                end %>
+              </span>
+              <%= if length(card_tags) > 0 do %>
+                <div class="flex gap-1">
+                  <%= for tag <- card_tags do %>
+                    <span class="px-2 py-1 bg-kin/10 text-kin border border-kin/30 rounded text-xs">
+                      {tag}
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Description -->
+            <%= if card_description != "" do %>
+              <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
+                <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">説明</div>
+                <p class="text-sm text-sumi leading-relaxed">{card_description}</p>
+              </div>
+            <% end %>
+
+            <!-- Cost Display -->
+            <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-sumi">コスト（空環）</span>
+                <div class="flex items-center gap-2">
+                  <span class={[
+                    "text-lg font-bold",
+                    if(can_afford, do: "text-kin", else: "text-shu")
+                  ]}>
+                    {card_cost}
+                  </span>
+                  <span class="text-sm text-sumi/60">
+                    （現在: {@current_currency}）
+                  </span>
+                  <%= if not can_afford do %>
+                    <span class="text-xs text-shu">（不足）</span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Effects Display -->
+            <%= if map_size(card_effect) > 0 do %>
+              <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
+                <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-3">効果</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <%= if Map.has_key?(card_effect, :forest) or Map.has_key?(card_effect, :f) do %>
+                    <div class="bg-matsu/10 border border-matsu/30 rounded p-2 text-center">
+                      <div class="text-[10px] text-matsu/70 mb-1">F (森)</div>
+                      <div class="text-sm font-bold text-matsu">
+                        {format_effect_value(card_effect[:forest] || card_effect[:f])}
+                      </div>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(card_effect, :culture) or Map.has_key?(card_effect, :k) do %>
+                    <div class="bg-sakura/10 border border-sakura/30 rounded p-2 text-center">
+                      <div class="text-[10px] text-sakura/70 mb-1">K (文化)</div>
+                      <div class="text-sm font-bold text-sakura">
+                        {format_effect_value(card_effect[:culture] || card_effect[:k])}
+                      </div>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(card_effect, :social) or Map.has_key?(card_effect, :s) do %>
+                    <div class="bg-kohaku/10 border border-kohaku/30 rounded p-2 text-center">
+                      <div class="text-[10px] text-kohaku/70 mb-1">S (社会)</div>
+                      <div class="text-sm font-bold text-kohaku">
+                        {format_effect_value(card_effect[:social] || card_effect[:s])}
+                      </div>
+                    </div>
+                  <% end %>
+                  <%= if Map.has_key?(card_effect, :currency) or Map.has_key?(card_effect, :p) do %>
+                    <div class="bg-kin/10 border border-kin/30 rounded p-2 text-center">
+                      <div class="text-[10px] text-kin/70 mb-1">P (空環)</div>
+                      <div class="text-sm font-bold text-kin">
+                        {format_effect_value(card_effect[:currency] || card_effect[:p])}
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <!-- Usage Conditions -->
+            <div class="mb-4 p-3 bg-washi-dark border border-sumi/20 rounded">
+              <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">使用条件</div>
+              <ul class="space-y-1 text-sm text-sumi/80">
+                <li class="flex items-center gap-2">
+                  <%= if can_afford do %>
+                    <.icon name="hero-check-circle" class="w-4 h-4 text-matsu" />
+                  <% else %>
+                    <.icon name="hero-x-circle" class="w-4 h-4 text-shu" />
+                  <% end %>
+                  <span>空環ポイント: {card_cost}以上</span>
+                </li>
+                <%= if card_type == :action do %>
+                  <li class="flex items-center gap-2">
+                    <.icon name="hero-check-circle" class="w-4 h-4 text-matsu" />
+                    <span>アクションフェーズで使用可能</span>
+                  </li>
+                <% end %>
+                <%= if card_type == :reaction do %>
+                  <li class="flex items-center gap-2">
+                    <.icon name="hero-check-circle" class="w-4 h-4 text-matsu" />
+                    <span>リアクションとして使用可能</span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+
+            <!-- Close Button -->
+            <div class="flex justify-end mt-6">
+              <button
+                class="px-6 py-2 rounded-lg border-2 border-sumi bg-washi text-sumi hover:bg-sumi/5 transition-colors font-semibold"
+                phx-click="close_card_detail"
+                aria-label="閉じる"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  @doc """
   Renders an ending screen based on game result.
   Shows different endings based on Life Index and game status.
   """
@@ -1335,6 +1539,82 @@ defmodule ShinkankiWebWeb.GameComponents do
     <% end %>
     """
   end
+
+  @doc """
+  Renders a player info card showing role and status.
+  """
+  attr :player_id, :string, required: true
+  attr :player_name, :string, default: "プレイヤー"
+  attr :role, :atom, default: nil
+  attr :is_current_player, :boolean, default: false
+  attr :is_ready, :boolean, default: false
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  def player_info_card(assigns) do
+    role_data = get_role_data(assigns.role)
+
+    assigns =
+      assigns
+      |> assign(:role_data, role_data)
+
+    ~H"""
+    <div
+      class={[
+        "p-3 rounded-lg border-2 border-double transition-all duration-300",
+        if(@is_current_player, do: "ring-2 ring-shu/50", else: ""),
+        if(@role_data, do: "border-#{@role_data.color} bg-#{@role_data.color}/5", else: "border-sumi/30 bg-sumi/5"),
+        @class
+      ]}
+      role="article"
+      aria-label={"プレイヤー: #{@player_name}"}
+      {@rest}
+    >
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <%= if @role_data do %>
+            <div class="text-2xl">{@role_data.icon}</div>
+          <% end %>
+          <div>
+            <div class="font-bold text-sumi text-sm">{@player_name}</div>
+            <%= if @is_current_player do %>
+              <div class="text-xs text-shu">（あなた）</div>
+            <% end %>
+          </div>
+        </div>
+        <%= if @is_ready do %>
+          <div class="w-3 h-3 bg-matsu rounded-full" aria-label="準備完了"></div>
+        <% else %>
+          <div class="w-3 h-3 bg-sumi/30 rounded-full" aria-label="準備中"></div>
+        <% end %>
+      </div>
+      <%= if @role_data do %>
+        <div class="text-xs text-sumi/70">
+          <div class="font-semibold mb-1">{@role_data.name}</div>
+          <div>{@role_data.focus}</div>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp get_role_data(:forest_guardian) do
+    %{name: "森の守り手", focus: "F (Forest) の保護と育成", color: "matsu", icon: "🌲"}
+  end
+
+  defp get_role_data(:culture_keeper) do
+    %{name: "文化の継承者", focus: "K (Culture) の継承と発展", color: "sakura", icon: "🌸"}
+  end
+
+  defp get_role_data(:community_light) do
+    %{name: "コミュニティの灯火", focus: "S (Social) の結束と強化", color: "kohaku", icon: "🕯️"}
+  end
+
+  defp get_role_data(:akasha_engineer) do
+    %{name: "空環エンジニア", focus: "P (Akasha) の循環と技術", color: "kin", icon: "⚡"}
+  end
+
+  defp get_role_data(_), do: nil
 
   @doc """
   Renders a toast notification with Miyabi theme.

@@ -28,4 +28,3 @@ defmodule RogsComm.Signaling.SignalingSession do
     |> validate_inclusion(:event_type, ~w(offer answer ice-candidate peer-ready))
   end
 end
-

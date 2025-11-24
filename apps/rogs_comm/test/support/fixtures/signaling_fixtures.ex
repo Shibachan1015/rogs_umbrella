@@ -29,4 +29,3 @@ defmodule RogsComm.SignalingFixtures do
     end
   end
 end
-

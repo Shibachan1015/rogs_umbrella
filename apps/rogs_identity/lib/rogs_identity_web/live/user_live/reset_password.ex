@@ -7,14 +7,14 @@ defmodule RogsIdentityWeb.UserLive.ResetPassword do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Reset your password</p>
-            <:subtitle>
-              Enter your new password below
-            </:subtitle>
-          </.header>
+      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
+            Reset your password
+          </h1>
+          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+            Enter your new password below
+          </p>
         </div>
 
         <.form
@@ -40,13 +40,13 @@ defmodule RogsIdentityWeb.UserLive.ResetPassword do
             required
           />
 
-          <.button class="btn btn-primary w-full" phx-disable-with="Resetting...">
+          <.button variant="primary" style="width: 100%; margin-top: 8px;" phx-disable-with="Resetting...">
             Reset password
           </.button>
         </.form>
 
-        <div class="text-center">
-          <.link navigate={~p"/users/log-in"} class="text-sm font-semibold">
+        <div style="text-align: center; margin-top: 24px;">
+          <.link navigate={~p"/users/log-in"} style="color: var(--md-primary); text-decoration: none; font-size: 14px; font-weight: 500;">
             Back to log in
           </.link>
         </div>

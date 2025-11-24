@@ -411,19 +411,42 @@ defmodule RogsIdentity.Accounts do
 
   @doc """
   Gets all active session tokens for a user.
+  Optionally marks which session is the current one.
   """
-  def list_user_session_tokens(user) do
-    from(t in UserToken,
-      where: t.user_id == ^user.id and t.context == "session",
-      where: t.inserted_at > ago(14, "day"),
-      order_by: [desc: t.inserted_at],
-      select: %{
-        id: t.id,
-        inserted_at: t.inserted_at,
-        authenticated_at: t.authenticated_at
-      }
-    )
-    |> Repo.all()
+  def list_user_session_tokens(user, current_token \\ nil) do
+    sessions =
+      from(t in UserToken,
+        where: t.user_id == ^user.id and t.context == "session",
+        where: t.inserted_at > ago(14, "day"),
+        order_by: [desc: t.inserted_at],
+        select: %{
+          id: t.id,
+          inserted_at: t.inserted_at,
+          authenticated_at: t.authenticated_at,
+          token: t.token
+        }
+      )
+      |> Repo.all()
+
+    # Mark current session if current_token is provided
+    sessions_with_current =
+      if current_token do
+        Enum.map(sessions, fn session ->
+          is_current = session.token == current_token
+          # Remove token from result for security
+          session
+          |> Map.put(:is_current, is_current)
+          |> Map.delete(:token)
+        end)
+      else
+        Enum.map(sessions, fn session ->
+          session
+          |> Map.put(:is_current, false)
+          |> Map.delete(:token)
+        end)
+      end
+
+    sessions_with_current
   end
 
   @doc """

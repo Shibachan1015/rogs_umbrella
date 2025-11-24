@@ -162,44 +162,111 @@ defmodule ShinkankiWebWeb.GameLive do
               {@game_state.room}
             </div>
             <!-- Turn Progress -->
-            <div class="w-full">
-              <div class="flex justify-between items-center mb-1">
-                <span
-              class="text-xs text-sumi/60"
-              aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
-            >
-              Turn {@game_state.turn} / {@game_state.max_turns}
-                </span>
-                <span class="text-xs font-bold text-shu">
-                  {rem(@game_state.max_turns - @game_state.turn, @game_state.max_turns + 1)} ターン残り
-                </span>
-              </div>
-              <div class="w-full h-2 bg-sumi/10 rounded-full overflow-hidden border border-sumi/20">
-                <div
-                  class="h-full bg-shu transition-all duration-500"
-                  style={"width: #{trunc(@game_state.turn / @game_state.max_turns * 100)}%"}
-                  role="progressbar"
-                  aria-valuenow={@game_state.turn}
-                  aria-valuemin="1"
-                  aria-valuemax={@game_state.max_turns}
-                  aria-label={"ターン進行: #{@game_state.turn}/#{@game_state.max_turns}"}
-                >
+            <div class="w-full space-y-2">
+              <% remaining_turns = max(0, @game_state.max_turns - @game_state.turn)
+              progress_percentage = trunc(@game_state.turn / @game_state.max_turns * 100)
+              is_warning = remaining_turns <= 5
+              is_critical = remaining_turns <= 3 %>
+              <!-- Turn Numbers -->
+              <div class="flex justify-between items-baseline">
+                <div class="flex items-baseline gap-2">
+                  <span
+                    class="text-xs uppercase tracking-[0.2em] text-sumi/60"
+                    aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
+                  >
+                    Turn {@game_state.turn} / {@game_state.max_turns}
+                  </span>
+                  <span class="text-[10px] text-sumi/40">
+                    ({progress_percentage}%)
+                  </span>
                 </div>
+                <div class={[
+                  "flex items-baseline gap-1",
+                  if(is_critical, do: "turn-remaining-warning", else: "")
+                ]}>
+                  <span class={[
+                    "text-lg sm:text-xl font-bold font-serif",
+                    if(is_critical,
+                      do: "text-shu",
+                      else: if(is_warning, do: "text-kohaku", else: "text-matsu")
+                    )
+                  ]}>
+                    {remaining_turns}
+                  </span>
+                  <span class={[
+                    "text-xs font-semibold",
+                    if(is_critical,
+                      do: "text-shu",
+                      else: if(is_warning, do: "text-kohaku", else: "text-sumi/60")
+                    )
+                  ]}>
+                    ターン残り
+                  </span>
+                </div>
+              </div>
+              
+    <!-- Progress Bar -->
+              <div class={[
+                "w-full h-3 bg-sumi/10 rounded-full overflow-hidden border",
+                if(is_critical,
+                  do: "border-shu/30 turn-progress-glow",
+                  else: if(is_warning, do: "border-kohaku/30", else: "border-sumi/20")
+                )
+              ]}>
+                <div class="turn-progress-bar h-full">
+                  <div
+                    class={[
+                      "h-full transition-all duration-700 ease-out rounded-full",
+                      if(is_critical,
+                        do: "bg-gradient-to-r from-shu to-shu/80",
+                        else:
+                          if(is_warning,
+                            do: "bg-gradient-to-r from-kohaku to-kohaku/80",
+                            else: "bg-gradient-to-r from-matsu to-matsu/80"
+                          )
+                      )
+                    ]}
+                    style={"width: #{progress_percentage}%"}
+                    role="progressbar"
+                    aria-valuenow={@game_state.turn}
+                    aria-valuemin="1"
+                    aria-valuemax={@game_state.max_turns}
+                    aria-label={"ターン進行: #{@game_state.turn}/#{@game_state.max_turns} (#{progress_percentage}%)"}
+                  >
+                  </div>
+                </div>
+              </div>
+              
+    <!-- Warning Message -->
+              <%= if is_critical do %>
+                <div class="text-center">
+                  <span class="text-xs font-semibold text-shu animate-pulse">
+                    ⚠ 残りターンが少なくなっています
+                  </span>
+                </div>
+              <% else %>
+                <%= if is_warning do %>
+                  <div class="text-center">
+                    <span class="text-xs text-kohaku">
+                      残りターンに注意
+                    </span>
+                  </div>
+                <% end %>
+              <% end %>
             </div>
-          </div>
-
-          <!-- Phase Indicator -->
-          <div class="pt-2 border-t border-sumi/30">
-            <.phase_indicator current_phase={@current_phase} />
-          </div>
-
-          <!-- Discussion Phase Ready Button -->
+            
+    <!-- Phase Indicator -->
+            <div class="pt-2 border-t border-sumi/30">
+              <.phase_indicator current_phase={@current_phase} />
+            </div>
+            
+    <!-- Discussion Phase Ready Button -->
             <%= if @current_phase == :discussion && @game_status == :playing do %>
               <div class="pt-4 border-t border-sumi/30">
                 <div class="text-center space-y-2">
                   <div class="text-xs text-sumi/60">
                     相談フェーズ - 準備ができたらボタンを押してください
-            </div>
+                  </div>
                   <%= if get_player_ready_status(@players, @user_id) do %>
                     <div class="text-xs text-matsu font-semibold">
                       ✓ 準備完了
@@ -217,8 +284,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             <% end %>
-
-            <!-- Current Player Indicator (Action Phase) -->
+            
+    <!-- Current Player Indicator (Action Phase) -->
             <%= if @current_phase == :action && @game_status == :playing do %>
               <div class="pt-4 border-t border-sumi/30">
                 <div class="text-center space-y-2">
@@ -236,8 +303,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             <% end %>
-
-            <!-- Game Start Button (Waiting State) -->
+            
+    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
               <div class="pt-4 border-t border-sumi/30 space-y-3">
                 <!-- Player List -->
@@ -259,7 +326,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
                   </div>
                 </div>
-
+                
     <!-- Start Button -->
                 <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
@@ -280,7 +347,7 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
           </div>
-
+          
     <!-- Players Info -->
           <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
             <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
@@ -424,7 +491,7 @@ defmodule ShinkankiWebWeb.GameLive do
             </.form>
           </div>
         </aside>
-
+        
     <!-- Main Board -->
         <main
           class="flex-1 relative overflow-hidden flex flex-col items-center p-2 sm:p-4 md:p-8 lg:ml-0"
@@ -437,7 +504,7 @@ defmodule ShinkankiWebWeb.GameLive do
               <.phase_indicator current_phase={@current_phase} />
             </div>
           <% end %>
-
+          
     <!-- Event Card Display (Event Phase) -->
           <%= if @current_phase == :event && @current_event do %>
             <div class="w-full max-w-md mx-auto animate-fade-in">
@@ -491,167 +558,167 @@ defmodule ShinkankiWebWeb.GameLive do
             <% end %>
             <div
               class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
-            role="region"
-            aria-label="Life Index表示"
-          >
-            <!-- Life Index Circle -->
-            <div
-              class="absolute inset-0 m-auto w-[75%] max-w-[600px] aspect-square rounded-full border-2 border-sumi/20 flex items-center justify-center life-index-ring"
-              aria-label={"Life Index: #{life_index(@game_state)}"}
-              role="meter"
-              aria-valuenow={life_index(@game_state)}
-              aria-valuemin="0"
-              aria-valuemax={@game_state.life_index_target}
+              role="region"
+              aria-label="Life Index表示"
             >
-              <!-- Circular progress SVG -->
-              <svg
-                class="absolute inset-0 w-full h-full circular-progress"
-                viewBox="0 0 200 200"
-                aria-hidden="true"
+              <!-- Life Index Circle -->
+              <div
+                class="absolute inset-0 m-auto w-[75%] max-w-[600px] aspect-square rounded-full border-2 border-sumi/20 flex items-center justify-center life-index-ring"
+                aria-label={"Life Index: #{life_index(@game_state)}"}
+                role="meter"
+                aria-valuenow={life_index(@game_state)}
+                aria-valuemin="0"
+                aria-valuemax={@game_state.life_index_target}
               >
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="90"
-                  fill="none"
-                  stroke="rgba(28, 28, 28, 0.1)"
-                  stroke-width="8"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="90"
-                  fill="none"
-                  stroke="rgba(211, 56, 28, 0.3)"
-                  stroke-width="8"
-                  stroke-dasharray={circumference()}
-                  stroke-dashoffset={
-                    circumference_offset(life_index(@game_state), @game_state.life_index_target)
-                  }
-                  stroke-linecap="round"
-                  class="transition-all duration-1000"
-                />
-              </svg>
+                <!-- Circular progress SVG -->
+                <svg
+                  class="absolute inset-0 w-full h-full circular-progress"
+                  viewBox="0 0 200 200"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="90"
+                    fill="none"
+                    stroke="rgba(28, 28, 28, 0.1)"
+                    stroke-width="8"
+                  />
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="90"
+                    fill="none"
+                    stroke="rgba(211, 56, 28, 0.3)"
+                    stroke-width="8"
+                    stroke-dasharray={circumference()}
+                    stroke-dashoffset={
+                      circumference_offset(life_index(@game_state), @game_state.life_index_target)
+                    }
+                    stroke-linecap="round"
+                    class="transition-all duration-1000"
+                  />
+                </svg>
                 <div class="text-center relative z-10 px-2 sm:px-4">
                   <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sumi/60">
-                  Life Index
-                </div>
-                <div
+                    Life Index
+                  </div>
+                  <div
                     id="life-index-value"
                     class="text-3xl sm:text-4xl md:text-7xl font-bold text-shu font-serif mb-1 sm:mb-2 life-index-value"
-                  phx-update="ignore"
-                >
-                  {life_index(@game_state)}
-                </div>
+                    phx-update="ignore"
+                  >
+                    {life_index(@game_state)}
+                  </div>
                   <div class="text-[9px] sm:text-[10px] md:text-xs text-sumi/50 uppercase tracking-[0.3em] sm:tracking-[0.5em]">
-                  Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
+                    Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <!-- Gauges -->
-            <div
+              
+    <!-- Gauges -->
+              <div
                 class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Forest (F) ゲージ"
-            >
+                role="group"
+                aria-label="Forest (F) ゲージ"
+              >
                 <span class="text-matsu font-bold text-xs sm:text-sm md:text-xl">Forest (F)</span>
-              <div
+                <div
                   class="w-20 sm:w-24 md:w-40 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.forest}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Forest: #{@game_state.forest}"}
-              >
-                <div
+                  role="progressbar"
+                  aria-valuenow={@game_state.forest}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Forest: #{@game_state.forest}"}
+                >
+                  <div
                     id="forest-gauge-bar"
-                  class="h-full bg-matsu transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.forest)}%"}
-                  phx-update="ignore"
-                >
+                    class="h-full bg-matsu transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.forest)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.forest}
+                  </span>
                 </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.forest}
-                </span>
               </div>
-            </div>
 
-            <div
+              <div
                 class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-2 sm:left-4 md:left-20 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Culture (K) ゲージ"
-            >
+                role="group"
+                aria-label="Culture (K) ゲージ"
+              >
                 <span class="text-sakura font-bold text-xs sm:text-sm md:text-xl">Culture (K)</span>
-              <div
-                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.culture}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Culture: #{@game_state.culture}"}
-              >
                 <div
+                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  role="progressbar"
+                  aria-valuenow={@game_state.culture}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Culture: #{@game_state.culture}"}
+                >
+                  <div
                     id="culture-gauge-bar"
-                  class="h-full bg-sakura transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.culture)}%"}
-                  phx-update="ignore"
-                >
+                    class="h-full bg-sakura transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.culture)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.culture}
+                  </span>
                 </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.culture}
-                </span>
               </div>
-            </div>
 
-            <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-2 sm:right-4 md:right-20 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Social (S) ゲージ"
-            >
-                <span class="text-kohaku font-bold text-xs sm:text-sm md:text-xl">Social (S)</span>
               <div
-                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.social}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Social: #{@game_state.social}"}
+                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-2 sm:right-4 md:right-20 flex flex-col items-center drop-shadow-sm"
+                role="group"
+                aria-label="Social (S) ゲージ"
               >
+                <span class="text-kohaku font-bold text-xs sm:text-sm md:text-xl">Social (S)</span>
                 <div
-                    id="social-gauge-bar"
-                  class="h-full bg-kohaku transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.social)}%"}
-                  phx-update="ignore"
+                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  role="progressbar"
+                  aria-valuenow={@game_state.social}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Social: #{@game_state.social}"}
                 >
+                  <div
+                    id="social-gauge-bar"
+                    class="h-full bg-kohaku transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.social)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.social}
+                  </span>
                 </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.social}
-                </span>
               </div>
             </div>
-          </div>
-
-          <!-- Actions (Stamps) -->
-          <div
+            
+    <!-- Actions (Stamps) -->
+            <div
               class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
-            role="toolbar"
-            aria-label="アクションボタン"
-          >
-            <.hanko_btn
-              :for={button <- @action_buttons}
-              label={button.label}
-              color={button.color}
+              role="toolbar"
+              aria-label="アクションボタン"
+            >
+              <.hanko_btn
+                :for={button <- @action_buttons}
+                label={button.label}
+                color={button.color}
                 class="shadow-lg hover:-translate-y-1 transition w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
-              aria-label={button.label <> "を実行"}
+                aria-label={button.label <> "を実行"}
                 phx-click="execute_action"
                 phx-value-action={button.action || button.label}
-            />
-          </div>
+              />
+            </div>
           <% end %>
         </main>
       </div>
-
+      
     <!-- Bottom Hand -->
       <div
         class="h-32 md:h-48 bg-washi-dark border-t-4 border-sumi z-30 relative shadow-[0_-10px_20px_rgba(0,0,0,0.1)] overflow-hidden"
@@ -697,20 +764,20 @@ defmodule ShinkankiWebWeb.GameLive do
                   }
                 />
               <% else %>
-          <.ofuda_card
-            id={card.id}
-            title={card.title}
-            cost={card.cost}
-            type={card.type}
-            phx-click="select_card"
+                <.ofuda_card
+                  id={card.id}
+                  title={card.title}
+                  cost={card.cost}
+                  type={card.type}
+                  phx-click="select_card"
                   phx-dblclick="use_card"
-            phx-value-card-id={card.id}
+                  phx-value-card-id={card.id}
                   class={
                     [
-              "hover:z-10 w-16 h-24 md:w-24 md:h-36",
-              if(@selected_card_id == card.id,
-                do: "ring-4 ring-shu/50 border-shu scale-105",
-                else: ""
+                      "hover:z-10 w-16 h-24 md:w-24 md:h-36",
+                      if(@selected_card_id == card.id,
+                        do: "ring-4 ring-shu/50 border-shu scale-105",
+                        else: ""
                       ),
                       if(@game_state.currency < card.cost,
                         do: "opacity-50 cursor-not-allowed",
@@ -723,11 +790,11 @@ defmodule ShinkankiWebWeb.GameLive do
                   aria-disabled={@game_state.currency < card.cost}
                 />
               <% end %>
-        </div>
+            </div>
           <% end %>
+        </div>
       </div>
-    </div>
-
+      
     <!-- Talent Cards Area (Action Phase) -->
       <%= if @current_phase == :action && length(@player_talents) > 0 do %>
         <div
@@ -755,7 +822,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div
@@ -861,6 +928,14 @@ defmodule ShinkankiWebWeb.GameLive do
       turn={@game_state.turn}
       max_turns={@game_state.max_turns}
       id="ending-screen"
+    />
+
+    <!-- Role Selection Screen -->
+    <.role_selection_screen
+      show={@show_role_selection}
+      selected_role={@selected_role}
+      available_roles={[]}
+      id="role-selection-screen"
     />
 
     <!-- Toast notifications -->

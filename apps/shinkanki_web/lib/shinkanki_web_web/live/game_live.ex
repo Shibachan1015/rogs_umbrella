@@ -28,7 +28,9 @@ defmodule ShinkankiWebWeb.GameLive do
             :ok
 
           error ->
-            IO.inspect(error, label: "Failed to start game session")
+            # Log error but don't block mount - game might already exist
+            require Logger
+            Logger.warning("Failed to start game session: #{inspect(error)}")
         end
 
       _game ->
@@ -49,7 +51,9 @@ defmodule ShinkankiWebWeb.GameLive do
         :ok
 
       error ->
-        IO.inspect(error, label: "Failed to join player")
+        # Log error but don't block mount - player might already be joined
+        require Logger
+        Logger.warning("Failed to join player: #{inspect(error)}")
     end
 
     # Get initial game state
@@ -164,13 +168,31 @@ defmodule ShinkankiWebWeb.GameLive do
               <.phase_indicator current_phase={@current_phase} />
             </div>
             
-    <!-- Game Start Button (Waiting State) -->
+     <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
-              <div class="pt-4 border-t border-sumi/30">
-                <div class="text-center space-y-2">
-                  <div class="text-xs text-sumi/60">
+              <div class="pt-4 border-t border-sumi/30 space-y-3">
+                <!-- Player List -->
+                <div class="space-y-2">
+                  <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 text-center">
+                    参加プレイヤー
+                  </div>
+                  <div class="space-y-1 max-h-32 overflow-y-auto">
+                    <%= for {player_id, player} <- @game_state.players || %{} do %>
+                      <div class="text-xs text-sumi/80 px-2 py-1 bg-washi/50 rounded border border-sumi/20">
+                        <span class="font-semibold">{player.name || "Player"}</span>
+                        <%= if player_id == @user_id do %>
+                          <span class="text-sumi/50 ml-1">(あなた)</span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-sumi/60 text-center">
                     {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
                   </div>
+                </div>
+                
+                <!-- Start Button -->
+                <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
                     <button
                       class="w-full px-4 py-2 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -181,8 +203,8 @@ defmodule ShinkankiWebWeb.GameLive do
                       ゲームを開始
                     </button>
                   <% else %>
-                    <div class="text-xs text-sumi/60">
-                      最小プレイヤー数に達していません
+                    <div class="text-xs text-sumi/60 text-center py-2">
+                      最小プレイヤー数（1人）に達していません
                     </div>
                   <% end %>
                 </div>

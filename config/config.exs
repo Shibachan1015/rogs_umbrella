@@ -44,7 +44,6 @@ config :rogs_identity, RogsIdentityWeb.Endpoint,
 
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Local
 
-
 config :rogs_comm, RogsCommWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   url: [host: "localhost"],
@@ -63,7 +62,7 @@ config :shinkanki_web, ShinkankiWebWeb.Endpoint,
     formats: [html: ShinkankiWebWeb.ErrorHTML, json: ShinkankiWebWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: ShinkankiWeb.PubSub,
+  pubsub_server: Shinkanki.PubSub,
   live_view: [signing_salt: "ZBs41IVB"]
 
 # 認証用

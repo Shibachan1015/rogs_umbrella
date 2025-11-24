@@ -89,4 +89,3 @@ defmodule Shinkanki.GameStartConditionTest do
     end
   end
 end
-

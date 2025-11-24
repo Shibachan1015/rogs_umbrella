@@ -16,12 +16,14 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
         </div>
 
         <div :if={local_mail_adapter?()} class="info-callout">
-          <.icon name="hero-information-circle" class="size-5 shrink-0 text-[var(--color-landing-gold)]" />
+          <.icon
+            name="hero-information-circle"
+            class="size-5 shrink-0 text-[var(--color-landing-gold)]"
+          />
           <div>
             <strong>Local mail adapter active.</strong>
             <p class="text-sm text-[var(--color-landing-text-secondary)]">
-              Visit the
-              <.link href="/dev/mailbox" class="link-muted">mailbox page</.link>
+              Visit the <.link href="/dev/mailbox" class="link-muted">mailbox page</.link>
               to preview outgoing messages.
             </p>
           </div>

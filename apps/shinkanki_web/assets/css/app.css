@@ -1452,9 +1452,115 @@ html {
   position: relative;
   padding: 1.5rem;
   overflow: hidden;
+  background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.08), transparent 50%),
+    linear-gradient(135deg, rgba(15, 20, 25, 0.95), rgba(26, 31, 46, 0.85));
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.game-main::before,
+.game-main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.game-main::before {
+  background: linear-gradient(120deg, rgba(212, 175, 55, 0.08), transparent 60%);
+  opacity: 0.6;
+}
+
+.game-main::after {
+  background-image: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08) 0, transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(212, 175, 55, 0.08) 0, transparent 45%);
+  mix-blend-mode: screen;
+  opacity: 0.4;
 }
 
 .turn-progress-track {
   background: rgba(255, 255, 255, 0.05);
 }
->>>>>>> origin/main
+
+.life-index-orb {
+  position: relative;
+  width: min(90vw, 720px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.15), transparent 60%),
+    rgba(252, 250, 242, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 50px 120px rgba(15, 20, 25, 0.45), inset 0 0 60px rgba(255, 255, 255, 0.08);
+  margin: 0 auto;
+}
+
+.life-index-orb::before,
+.life-index-orb::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: inherit;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  pointer-events: none;
+}
+
+.life-index-orb::after {
+  inset: 16%;
+  border: 1px dashed rgba(21, 24, 35, 0.08);
+}
+
+.life-index-core {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 1px solid rgba(21, 24, 35, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.gauge-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background: rgba(15, 20, 25, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.gauge-track {
+  width: clamp(120px, 18vw, 220px);
+  height: 0.55rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.8s var(--motion-easing-standard);
+  box-shadow: 0 0 12px currentColor;
+}
+
+.gauge-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  color: rgba(21, 24, 35, 0.85);
+}

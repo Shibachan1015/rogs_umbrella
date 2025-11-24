@@ -1531,8 +1531,12 @@ defmodule ShinkankiWebWeb.GameComponents do
         name_en: "Forest Guardian",
         focus: "F (Forest) の保護と育成",
         description: "自然環境の豊かさを守り、育む役割。森を大切にし、生態系のバランスを保つ責任があります。",
+        detailed_description:
+          "森の守り手は、自然環境の保護と育成を専門とします。Forest (F) の値を高めるアクションカードに特に適しており、生態系のバランスを保ちながら、持続可能な成長を実現します。",
+        strengths: ["Forest の増加に優れている", "生態系のバランス維持", "自然資源の効率的な活用"],
         color: "matsu",
-        icon: "🌲"
+        icon: "🌲",
+        bg_gradient: "from-matsu/20 via-matsu/10 to-transparent"
       },
       %{
         id: :culture_keeper,
@@ -1540,8 +1544,12 @@ defmodule ShinkankiWebWeb.GameComponents do
         name_en: "Culture Keeper",
         focus: "K (Culture) の継承と発展",
         description: "伝統、芸術、知恵を継承し、発展させる役割。文化の価値を守りながら、新しい表現を生み出します。",
+        detailed_description:
+          "文化の継承者は、伝統と革新のバランスを取ります。Culture (K) の値を高めるアクションカードに特に適しており、文化の価値を守りながら、新しい表現を生み出します。",
+        strengths: ["Culture の増加に優れている", "伝統と革新のバランス", "文化的価値の創造"],
         color: "sakura",
-        icon: "🌸"
+        icon: "🌸",
+        bg_gradient: "from-sakura/20 via-sakura/10 to-transparent"
       },
       %{
         id: :community_light,
@@ -1549,8 +1557,12 @@ defmodule ShinkankiWebWeb.GameComponents do
         name_en: "Community Light",
         focus: "S (Social) の結束と強化",
         description: "人々のつながりを深め、コミュニティを強くする役割。信頼関係を築き、協力の輪を広げます。",
+        detailed_description:
+          "コミュニティの灯火は、人々のつながりを深め、協力を促進します。Social (S) の値を高めるアクションカードに特に適しており、チーム全体の結束を強化します。",
+        strengths: ["Social の増加に優れている", "チーム協力の促進", "信頼関係の構築"],
         color: "kohaku",
-        icon: "🕯️"
+        icon: "🕯️",
+        bg_gradient: "from-kohaku/20 via-kohaku/10 to-transparent"
       },
       %{
         id: :akasha_engineer,
@@ -1558,8 +1570,12 @@ defmodule ShinkankiWebWeb.GameComponents do
         name_en: "Akasha Engineer",
         focus: "P (Akasha) の循環と技術",
         description: "空環マネーの循環を管理し、技術を発展させる役割。経済システムを最適化し、持続可能な循環を実現します。",
+        detailed_description:
+          "空環エンジニアは、空環マネーの循環を管理し、技術を発展させます。Akasha (P) の値を高めるアクションカードに特に適しており、経済システムを最適化し、持続可能な循環を実現します。",
+        strengths: ["Akasha の増加に優れている", "経済システムの最適化", "技術の発展"],
         color: "kin",
-        icon: "⚡"
+        icon: "⚡",
+        bg_gradient: "from-kin/20 via-kin/10 to-transparent"
       }
     ]
 
@@ -1575,42 +1591,63 @@ defmodule ShinkankiWebWeb.GameComponents do
         aria-labelledby="role-selection-title"
         {@rest}
       >
-        <div class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div class="relative bg-washi border-4 border-double border-sumi rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
           <!-- Header -->
-          <div class="p-6 md:p-8 text-center border-b-4 border-double border-sumi">
+          <div class="p-6 md:p-8 text-center border-b-4 border-double border-sumi bg-gradient-to-b from-washi to-washi-dark">
             <h1
               id="role-selection-title"
-              class="text-2xl md:text-3xl font-bold text-sumi mb-2 writing-mode-vertical"
+              class="text-3xl md:text-4xl font-bold text-sumi mb-3"
             >
               役割を選択
             </h1>
-            <p class="text-sm md:text-base text-sumi/70">あなたの役割を選んでください</p>
+            <p class="text-sm md:text-base text-sumi/70 mb-2">あなたの専門性を選んで、チームに貢献しましょう</p>
+            <p class="text-xs text-sumi/50">4つの役割から1つを選択してください</p>
           </div>
           
     <!-- Role Cards -->
           <div class="p-6 md:p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               <%= for role <- @roles do %>
                 <% is_selected = @selected_role != nil && @selected_role == role.id
 
                 is_available =
                   Enum.empty?(@available_roles) || Enum.member?(@available_roles, role.id)
 
-                color_class =
+                border_color_class =
                   case role.color do
-                    "matsu" -> "border-matsu bg-matsu/5"
-                    "sakura" -> "border-sakura bg-sakura/5"
-                    "kohaku" -> "border-kohaku bg-kohaku/5"
-                    "kin" -> "border-kin bg-kin/5"
-                    _ -> "border-sumi bg-sumi/5"
+                    "matsu" -> "border-matsu"
+                    "sakura" -> "border-sakura"
+                    "kohaku" -> "border-kohaku"
+                    "kin" -> "border-kin"
+                    _ -> "border-sumi"
+                  end
+
+                bg_color_class =
+                  case role.color do
+                    "matsu" -> "bg-matsu/10"
+                    "sakura" -> "bg-sakura/10"
+                    "kohaku" -> "bg-kohaku/10"
+                    "kin" -> "bg-kin/10"
+                    _ -> "bg-sumi/10"
+                  end
+
+                text_color_class =
+                  case role.color do
+                    "matsu" -> "text-matsu"
+                    "sakura" -> "text-sakura"
+                    "kohaku" -> "text-kohaku"
+                    "kin" -> "text-kin"
+                    _ -> "text-sumi"
                   end %>
                 <div
                   class={[
-                    "relative p-6 rounded-lg border-4 border-double transition-all duration-300 cursor-pointer",
-                    color_class,
+                    "relative p-6 md:p-8 rounded-xl border-4 border-double transition-all duration-500 cursor-pointer overflow-hidden",
+                    border_color_class,
+                    bg_color_class,
                     if(is_selected,
-                      do: "ring-4 ring-shu/50 scale-105 shadow-xl",
-                      else: "hover:scale-105 hover:shadow-lg"
+                      do:
+                        "ring-4 ring-shu/50 scale-105 shadow-2xl transform rotate-0 role-card-selected",
+                      else: "hover:scale-105 hover:shadow-xl hover:rotate-1"
                     ),
                     if(not is_available, do: "opacity-50 cursor-not-allowed", else: "")
                   ]}
@@ -1620,28 +1657,81 @@ defmodule ShinkankiWebWeb.GameComponents do
                   aria-label={"役割: #{role.name}"}
                   aria-pressed={is_selected}
                 >
-                  <%= if is_selected do %>
-                    <div class="absolute top-2 right-2 w-8 h-8 bg-shu text-washi rounded-full flex items-center justify-center text-lg">
-                      ✓
+                  <!-- Background Gradient -->
+                  <div class={["absolute inset-0 bg-gradient-to-br", role.bg_gradient, "opacity-50"]}>
+                  </div>
+                  
+    <!-- Content -->
+                  <div class="relative z-10">
+                    <%= if is_selected do %>
+                      <div class="absolute top-3 right-3 w-10 h-10 bg-shu text-washi rounded-full flex items-center justify-center text-xl font-bold shadow-lg animate-pulse">
+                        ✓
+                      </div>
+                    <% end %>
+                    
+    <!-- Icon and Title -->
+                    <div class="text-center mb-6">
+                      <div class={[
+                        "text-6xl md:text-7xl mb-3 transform transition-transform duration-300",
+                        if(is_selected, do: "role-icon-hover", else: "hover:scale-110")
+                      ]}>
+                        {role.icon}
+                      </div>
+                      <h2 class={[
+                        "text-2xl md:text-3xl font-bold mb-2",
+                        text_color_class
+                      ]}>
+                        {role.name}
+                      </h2>
+                      <p class="text-xs md:text-sm text-sumi/60 uppercase tracking-wider mb-4">
+                        {role.name_en}
+                      </p>
                     </div>
-                  <% end %>
-
-                  <div class="text-center mb-4">
-                    <div class="text-4xl mb-2">{role.icon}</div>
-                    <h2 class="text-xl md:text-2xl font-bold text-sumi mb-1 writing-mode-vertical">
-                      {role.name}
-                    </h2>
-                    <p class="text-xs text-sumi/60 mb-2">{role.name_en}</p>
-                  </div>
-
-                  <div class="mb-3">
-                    <div class="text-sm font-semibold text-sumi/80 mb-1">焦点</div>
-                    <p class="text-sm text-sumi">{role.focus}</p>
-                  </div>
-
-                  <div>
-                    <div class="text-sm font-semibold text-sumi/80 mb-1">説明</div>
-                    <p class="text-xs leading-relaxed text-sumi/70">{role.description}</p>
+                    
+    <!-- Focus -->
+                    <div class="mb-4 p-3 rounded-lg bg-washi/80 border border-sumi/20">
+                      <div class="text-xs font-semibold text-sumi/80 mb-1 uppercase tracking-wider">
+                        焦点
+                      </div>
+                      <p class={["text-sm font-bold", text_color_class]}>
+                        {role.focus}
+                      </p>
+                    </div>
+                    
+    <!-- Description -->
+                    <div class="mb-4">
+                      <div class="text-xs font-semibold text-sumi/80 mb-2 uppercase tracking-wider">
+                        概要
+                      </div>
+                      <p class="text-sm leading-relaxed text-sumi/80">
+                        {role.description}
+                      </p>
+                    </div>
+                    
+    <!-- Detailed Description (shown when selected) -->
+                    <%= if is_selected do %>
+                      <div class="mt-4 p-4 rounded-lg bg-washi/90 border-2 border-sumi/30 animate-fade-in">
+                        <div class="text-xs font-semibold text-sumi/80 mb-2 uppercase tracking-wider">
+                          詳細
+                        </div>
+                        <p class="text-xs leading-relaxed text-sumi/70 mb-3">
+                          {role.detailed_description}
+                        </p>
+                        <div class="mt-3 pt-3 border-t border-sumi/20">
+                          <div class="text-xs font-semibold text-sumi/80 mb-2 uppercase tracking-wider">
+                            強み
+                          </div>
+                          <ul class="space-y-1">
+                            <%= for strength <- role.strengths do %>
+                              <li class="text-xs text-sumi/70 flex items-start">
+                                <span class="text-shu mr-2">•</span>
+                                <span>{strength}</span>
+                              </li>
+                            <% end %>
+                          </ul>
+                        </div>
+                      </div>
+                    <% end %>
                   </div>
                 </div>
               <% end %>
@@ -1649,21 +1739,32 @@ defmodule ShinkankiWebWeb.GameComponents do
             
     <!-- Action Buttons -->
             <%= if @selected_role do %>
-              <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                <button
-                  class="flex-1 px-6 py-3 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors"
-                  phx-click="confirm_role_selection"
-                  aria-label="役割を確定"
-                >
-                  役割を確定
-                </button>
-                <button
-                  class="flex-1 px-6 py-3 bg-washi text-sumi rounded-lg border-2 border-sumi hover:bg-sumi/5 transition-colors font-semibold"
-                  phx-click="cancel_role_selection"
-                  aria-label="キャンセル"
-                >
-                  キャンセル
-                </button>
+              <div class="mt-8 pt-6 border-t-4 border-double border-sumi">
+                <div class="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
+                  <button
+                    class="flex-1 px-8 py-4 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg hover:bg-shu/90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    phx-click="confirm_role_selection"
+                    aria-label="役割を確定"
+                  >
+                    ✓ 役割を確定
+                  </button>
+                  <button
+                    class="flex-1 px-8 py-4 bg-washi text-sumi rounded-lg border-4 border-double border-sumi hover:bg-sumi/5 hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-md hover:shadow-lg"
+                    phx-click="cancel_role_selection"
+                    aria-label="キャンセル"
+                  >
+                    キャンセル
+                  </button>
+                </div>
+                <p class="text-center mt-4 text-xs text-sumi/50">
+                  選択した役割はゲーム中変更できません
+                </p>
+              </div>
+            <% else %>
+              <div class="mt-6 text-center">
+                <p class="text-sm text-sumi/60">
+                  上記の役割カードをクリックして選択してください
+                </p>
               </div>
             <% end %>
           </div>

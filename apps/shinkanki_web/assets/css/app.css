@@ -790,6 +790,121 @@ html {
 .easing-decelerated { transition-timing-function: var(--motion-easing-decelerated); }
 .easing-accelerated { transition-timing-function: var(--motion-easing-accelerated); }
 
+/* Turn Progress Animations */
+@keyframes turn-progress-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes turn-warning-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes turn-progress-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(211, 56, 28, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(211, 56, 28, 0.6);
+  }
+}
+
+.turn-progress-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.turn-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.turn-remaining-warning {
+  animation: turn-warning-pulse 2s ease-in-out infinite;
+}
+
+.turn-progress-glow {
+  animation: turn-progress-glow 2s ease-in-out infinite;
+}
+
+/* Role Selection Animations */
+@keyframes role-card-hover {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(1deg);
+  }
+  100% {
+    transform: scale(1.05) rotate(0deg);
+  }
+}
+
+@keyframes role-card-select {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(211, 56, 28, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px 5px rgba(211, 56, 28, 0.6);
+  }
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px 3px rgba(211, 56, 28, 0.5);
+  }
+}
+
+@keyframes role-icon-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.role-card-selected {
+  animation: role-card-select 0.5s ease-out;
+}
+
+.role-icon-hover:hover {
+  animation: role-icon-pulse 2s ease-in-out infinite;
+}
+
 /* --------------------------------------------------
    Landing Page Redesign
    -------------------------------------------------- */
@@ -1195,3 +1310,4 @@ html {
     padding: 4rem 1.25rem;
   }
 }
+>>>>>>> origin/main

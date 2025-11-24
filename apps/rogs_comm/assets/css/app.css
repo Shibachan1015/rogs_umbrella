@@ -102,4 +102,214 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Miyabi Theme Colors */
+@theme {
+  /* Miyabi Base Colors */
+  --color-washi: #fcfaf2;
+  --color-washi-dark: #efece4;
+  --color-sumi: #1c1c1c;
+  --color-sumi-light: #444444;
+  --color-shu: #d3381c;
+  --color-matsu: #4a593d;
+  --color-kin: #c7b370;
+  --color-sakura: #eec4ce;
+  --color-kohaku: #bf783a;
+
+  /* Material Design 3 inspired - Surface Colors */
+  --color-surface: #fcfaf2;
+  --color-surface-variant: #efece4;
+  --color-surface-container: #f5f3eb;
+  --color-surface-container-high: #ede9df;
+  --color-surface-container-highest: #e5e1d7;
+
+  /* Material Design 3 inspired - State Colors */
+  --color-on-surface: #1c1c1c;
+  --color-on-surface-variant: #444444;
+  --color-outline: rgba(28, 28, 28, 0.12);
+  --color-outline-variant: rgba(28, 28, 28, 0.08);
+
+  /* Material Design 3 inspired - Primary Colors (Shu-based) */
+  --color-primary: #d3381c;
+  --color-on-primary: #fcfaf2;
+  --color-primary-container: rgba(211, 56, 28, 0.12);
+  --color-on-primary-container: #8b1f0e;
+
+  /* Material Design 3 inspired - Secondary Colors (Matsu-based) */
+  --color-secondary: #4a593d;
+  --color-on-secondary: #fcfaf2;
+  --color-secondary-container: rgba(74, 89, 61, 0.12);
+  --color-on-secondary-container: #2d3524;
+
+  /* Material Design 3 inspired - Tertiary Colors (Sakura-based) */
+  --color-tertiary: #eec4ce;
+  --color-on-tertiary: #1c1c1c;
+  --color-tertiary-container: rgba(238, 196, 206, 0.2);
+  --color-on-tertiary-container: #8b5a6a;
+
+  /* Material Design 3 inspired - Error Colors */
+  --color-error: #ba1a1a;
+  --color-on-error: #fcfaf2;
+  --color-error-container: rgba(186, 26, 26, 0.12);
+  --color-on-error-container: #93000a;
+
+  /* Material Design 3 inspired - Elevation Shadows */
+  --elevation-0: none;
+  --elevation-1: 0px 1px 2px 0px rgba(28, 28, 28, 0.08), 0px 1px 3px 0px rgba(28, 28, 28, 0.12);
+  --elevation-2: 0px 2px 4px 0px rgba(28, 28, 28, 0.08), 0px 2px 6px 0px rgba(28, 28, 28, 0.12);
+  --elevation-3: 0px 4px 8px 0px rgba(28, 28, 28, 0.08), 0px 4px 12px 0px rgba(28, 28, 28, 0.12);
+}
+
+/* Miyabi Theme Utility Classes */
+.bg-washi { background-color: var(--color-washi); }
+.bg-washi-dark { background-color: var(--color-washi-dark); }
+.text-sumi { color: var(--color-sumi); }
+.text-sumi-light { color: var(--color-sumi-light); }
+.text-shu { color: var(--color-shu); }
+.text-matsu { color: var(--color-matsu); }
+.text-kin { color: var(--color-kin); }
+.text-sakura { color: var(--color-sakura); }
+.text-kohaku { color: var(--color-kohaku); }
+
+.border-sumi { border-color: var(--color-sumi); }
+.border-shu { border-color: var(--color-shu); }
+.border-matsu { border-color: var(--color-matsu); }
+
+/* Ofuda-style card (お札風カード) */
+.ofuda-card {
+  background: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--elevation-2);
+  transition: all 0.2s ease;
+}
+
+.ofuda-card:hover {
+  box-shadow: var(--elevation-3);
+  transform: translateY(-2px);
+}
+
+/* Hanko-style button (印鑑風ボタン) */
+.hanko-button {
+  background: var(--color-shu);
+  color: var(--color-washi);
+  border: 2px solid var(--color-sumi);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: var(--elevation-1);
+}
+
+.hanko-button:hover {
+  background: var(--color-on-primary-container);
+  color: var(--color-sumi);
+  box-shadow: var(--elevation-2);
+  transform: translateY(-1px);
+}
+
+.hanko-button:active {
+  transform: translateY(0);
+  box-shadow: var(--elevation-1);
+}
+
+/* Chat Animations */
+@keyframes message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typing-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.message-enter {
+  animation: message-appear 0.3s ease-out;
+}
+
+.typing-indicator {
+  animation: typing-pulse 1.5s ease-in-out infinite;
+}
+
+.sidebar-enter {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Smooth scroll behavior */
+#messages {
+  scroll-behavior: smooth;
+}
+
+/* Message hover effects */
+.ofuda-card {
+  transition: all 0.2s ease;
+}
+
+.ofuda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-3);
+}
+
+/* Button press animation */
+.hanko-button:active {
+  transform: scale(0.98);
+}
+
+/* Focus ring animations */
+input:focus,
+textarea:focus {
+  transition: all 0.2s ease;
+}
+
+/* Loading state animations */
+.phx-click-loading,
+.phx-submit-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.phx-click-loading::after,
+.phx-submit-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid var(--color-sumi);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* This file is for your main application CSS */

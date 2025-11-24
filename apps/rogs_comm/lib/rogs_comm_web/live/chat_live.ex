@@ -469,7 +469,7 @@ defmodule RogsCommWeb.ChatLive do
       pattern = ~r/#{escaped_query}/iu
 
       Regex.replace(pattern, content, fn match ->
-        ~s(<mark class="bg-yellow-200 px-1 rounded">#{match}</mark>)
+        ~s(<mark class="bg-kin/30 text-sumi px-1 rounded border border-kin">#{match}</mark>)
       end)
     end
   end
@@ -482,35 +482,39 @@ defmodule RogsCommWeb.ChatLive do
     <Layouts.app flash={@flash}>
       <div
         id="chat-root"
-        class="flex h-screen flex-col md:flex-row"
+        class="flex h-screen flex-col md:flex-row bg-washi"
         data-room-id={@room_id}
         data-display-name={@display_name}
         phx-hook="TypingHook"
       >
-        <aside class="w-full md:w-64 border-r bg-base-200 px-4 py-6 space-y-6 overflow-y-auto">
+        <aside class="w-full md:w-64 border-r-2 border-sumi bg-washi-dark px-4 py-6 space-y-6 overflow-y-auto sidebar-enter">
           <div>
-            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
-              Rooms
+            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
+              ルーム一覧
             </h2>
             <nav class="mt-3 space-y-2">
               <.link
                 :for={room <- @rooms}
                 navigate={~p"/rooms/#{room.id}/chat"}
                 class={[
-                  "block rounded-lg px-3 py-2 text-sm font-medium transition",
-                  room.id == @room_id && "bg-base-100 shadow-sm",
-                  room.id != @room_id && "hover:bg-base-300/60"
+                  "block rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ofuda-card",
+                  room.id == @room_id && "bg-shu text-washi border-2 border-sumi",
+                  room.id != @room_id && "hover:bg-washi hover:shadow-md"
                 ]}
               >
-                <div class="text-base-content">{room.name}</div>
-                <p class="text-xs text-base-content/60 truncate">{room.topic}</p>
+                <div class={["font-semibold", room.id == @room_id && "text-washi", room.id != @room_id && "text-sumi"]}>
+                  {room.name}
+                </div>
+                <p class={["text-xs truncate mt-1", room.id == @room_id && "text-washi/80", room.id != @room_id && "text-sumi-light"]}>
+                  {room.topic}
+                </p>
               </.link>
             </nav>
           </div>
 
           <div>
-            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
-              Display name
+            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
+              表示名
             </h2>
             <.form
               for={@name_form}
@@ -518,10 +522,15 @@ defmodule RogsCommWeb.ChatLive do
               id="display-name-form"
               class="mt-2 space-y-2"
             >
-              <.input field={@name_form[:display_name]} type="text" placeholder="anonymous" />
+              <.input
+                field={@name_form[:display_name]}
+                type="text"
+                placeholder="匿名"
+                class="bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20"
+              />
               <button
                 type="submit"
-                class="w-full rounded-md bg-base-content/80 px-3 py-2 text-sm text-base-100"
+                class="w-full hanko-button text-sm"
               >
                 更新
               </button>
@@ -529,7 +538,7 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div>
-            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
               メッセージ検索
             </h2>
             <.form
@@ -544,12 +553,13 @@ defmodule RogsCommWeb.ChatLive do
                 type="text"
                 placeholder="検索..."
                 autocomplete="off"
+                class="bg-washi border-2 border-sumi text-sumi focus:border-matsu focus:ring-2 focus:ring-matsu/20"
               />
               <button
                 :if={@search_mode}
                 type="button"
                 phx-click="clear_search"
-                class="w-full rounded-md bg-gray-500 px-3 py-2 text-sm text-white hover:bg-gray-600"
+                class="w-full rounded-md bg-sumi-light text-washi px-3 py-2 text-sm hover:bg-sumi transition-colors duration-200"
               >
                 検索をクリア
               </button>
@@ -557,35 +567,40 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div>
-            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
-              Online ({Enum.count(@presences)})
+            <h2 class="text-sm font-semibold text-sumi uppercase tracking-widest mb-3 border-b-2 border-sumi pb-2">
+              オンライン ({Enum.count(@presences)})
             </h2>
             <div class="mt-3 space-y-2">
               <div
                 :for={{user_id, meta} <- list_presences(@presences)}
-                class="flex items-center gap-2 text-sm"
+                class="flex items-center gap-2 text-sm bg-washi px-2 py-1 rounded border border-sumi/20"
               >
-                <div class="h-2 w-2 rounded-full bg-green-500"></div>
-                <span class="text-base-content">{meta.user_email || "anonymous"}</span>
+                <div class="h-2 w-2 rounded-full bg-matsu border border-sumi"></div>
+                <span class="text-sumi">{meta.user_email || "匿名"}</span>
               </div>
             </div>
           </div>
         </aside>
 
-        <div class="flex flex-1 flex-col">
-          <div class="bg-white shadow-sm border-b px-4 py-3">
+        <div class="flex flex-1 flex-col bg-washi">
+          <div class="bg-washi-dark border-b-2 border-sumi px-4 py-3 shadow-md">
             <div class="flex items-center justify-between">
               <div>
-                <h1 class="text-xl font-semibold text-gray-900">{@room.name}</h1>
-                <p class="text-sm text-gray-500">{@room.topic}</p>
+                <h1 class="text-xl font-semibold text-sumi border-l-4 border-shu pl-3">{@room.name}</h1>
+                <p class="text-sm text-sumi-light mt-1">{@room.topic}</p>
               </div>
-              <div :if={@search_mode} class="text-sm text-blue-600">
+              <div :if={@search_mode} class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu">
                 検索モード: {length(@search_results)}件見つかりました
               </div>
             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4" id="messages" phx-update="stream">
+          <div
+            class="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4"
+            id="messages"
+            phx-update="stream"
+            phx-hook="ChatScrollHook"
+          >
             <div
               :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
               class="text-center py-2"
@@ -593,84 +608,85 @@ defmodule RogsCommWeb.ChatLive do
               <button
                 phx-click="load_older_messages"
                 phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
-                class="text-sm text-blue-600 hover:text-blue-800 px-4 py-2 rounded border border-blue-300 hover:bg-blue-50"
+                class="text-sm text-matsu hover:text-shu px-4 py-2 rounded border-2 border-matsu hover:border-shu bg-washi hover:bg-washi-dark transition-all duration-200"
               >
                 古いメッセージを読み込む
               </button>
             </div>
             <div
               :if={@search_mode && Enum.count(@streams.messages) == 0}
-              class="text-center py-8 text-gray-500"
+              class="text-center py-8 text-sumi-light"
             >
-              検索結果が見つかりませんでした
+              <div class="text-4xl mb-2">🔍</div>
+              <p>検索結果が見つかりませんでした</p>
             </div>
             <div
               :for={{id, message} <- @streams.messages}
               id={id}
-              class="flex flex-col group hover:bg-gray-50 p-2 rounded"
+              class="flex flex-col group ofuda-card hover:shadow-md transition-all duration-200 message-enter"
             >
-              <div class="flex items-center justify-between">
-                <div class="text-sm text-gray-500">
-                  <span class="font-semibold text-gray-900">{message.user_email}</span>
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm text-sumi-light">
+                  <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">{message.user_email}</span>
                   <span class="ml-2">
                     {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
                   </span>
-                  <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-gray-400">
+                  <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-kohaku">
                     (編集済み)
                   </span>
                 </div>
                 <div
                   :if={Map.get(message, :user_id) == @current_user_id}
-                  class="opacity-0 group-hover:opacity-100 flex gap-2"
+                  class="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity duration-200"
                 >
                   <button
                     phx-click="edit_message"
                     phx-value-message_id={message.id}
-                    class="text-xs text-blue-600 hover:text-blue-800"
+                    class="text-xs text-matsu hover:text-shu px-2 py-1 rounded border border-matsu hover:border-shu transition-colors duration-200"
                   >
                     編集
                   </button>
                   <button
                     phx-click="delete_message"
                     phx-value-message_id={message.id}
-                    class="text-xs text-red-600 hover:text-red-800"
+                    class="text-xs text-shu hover:bg-shu hover:text-washi px-2 py-1 rounded border border-shu transition-colors duration-200"
                   >
                     削除
                   </button>
                 </div>
               </div>
               <p
-                class="text-gray-800 text-base"
+                class="text-sumi text-base leading-relaxed"
                 :if={!@search_mode}
               >
                 {message.content}
               </p>
               <p
-                class="text-gray-800 text-base"
+                class="text-sumi text-base leading-relaxed"
                 :if={@search_mode}
                 phx-no-format
               >
                 {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
               </p>
             </div>
-            <div :if={map_size(@typing_users) > 0} class="text-sm text-gray-500 italic mt-2">
-              {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
+            <div :if={map_size(@typing_users) > 0} class="text-sm text-sumi-light italic mt-2 bg-sakura/20 px-3 py-2 rounded border border-sakura typing-indicator">
+              <span class="text-sakura typing-indicator">✍️</span> {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
             </div>
           </div>
 
-          <div class="bg-white border-t px-2 md:px-4 py-3">
+          <div class="bg-washi-dark border-t-2 border-sumi px-2 md:px-4 py-3 shadow-lg">
             <.form for={@form} id="chat-form" phx-submit="submit">
               <div class="flex space-x-2">
                 <.input
                   field={@form[:content]}
                   type="text"
                   placeholder="メッセージを入力..."
-                  class="flex-1 text-sm md:text-base"
+                  class="flex-1 text-sm md:text-base bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20 rounded-lg"
                   autocomplete="off"
                 />
                 <button
                   type="submit"
-                  class="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base whitespace-nowrap"
+                  class="px-4 md:px-6 py-2 hanko-button text-sm md:text-base whitespace-nowrap"
                 >
                   送信
                 </button>

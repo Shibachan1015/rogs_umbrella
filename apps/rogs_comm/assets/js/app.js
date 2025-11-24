@@ -27,12 +27,13 @@ import topbar from "../vendor/topbar"
 import ChatRealtime from "./chat_channel"
 import WebRTCHook from "./webrtc_hook"
 import TypingHook from "./typing_hook"
+import ChatScrollHook from "./chat_scroll_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 ChatRealtime.connect(csrfToken)
 
-const hooks = {...colocatedHooks, WebRTCHook, TypingHook}
+const hooks = {...colocatedHooks, WebRTCHook, TypingHook, ChatScrollHook}
 
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

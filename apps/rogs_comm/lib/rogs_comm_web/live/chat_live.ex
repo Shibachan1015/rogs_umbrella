@@ -422,7 +422,10 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
-            <div :if={@has_older_messages && Enum.count(@streams.messages) > 0} class="text-center py-2">
+            <div
+              :if={@has_older_messages && Enum.count(@streams.messages) > 0}
+              class="text-center py-2"
+            >
               <button
                 phx-click="load_older_messages"
                 phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}

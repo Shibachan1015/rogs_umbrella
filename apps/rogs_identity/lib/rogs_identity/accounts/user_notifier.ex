@@ -9,7 +9,7 @@ defmodule RogsIdentity.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"RogsIdentity", "contact@example.com"})
+      |> from({"Torii Identity · 神環記", "auth@torii.identity"})
       |> subject(subject)
       |> text_body(body)
 
@@ -18,24 +18,30 @@ defmodule RogsIdentity.Accounts.UserNotifier do
     end
   end
 
+  defp trds_body(title, lines) when is_list(lines) do
+    """
+    ── #{title} ────────────────────────────────
+
+    #{Enum.join(lines, "\n\n")}
+
+    ────────────────────────────────────────────
+    Torii Identity · 神環記
+    """
+  end
+
   @doc """
   Deliver instructions to update a user email.
   """
   def deliver_update_email_instructions(user, url) do
-    deliver(user.email, "Update email instructions", """
-
-    ==============================
-
-    Hi #{user.email},
-
-    You can change your email by visiting the URL below:
-
-    #{url}
-
-    If you didn't request this change, please ignore this.
-
-    ==============================
-    """)
+    deliver(
+      user.email,
+      "Torii Identity | Confirm your new address",
+      trds_body("Update Email", [
+        "Hi #{user.email},",
+        "We received a request to move your account correspondence. Continue the passage by opening:\n\n#{url}",
+        "If this resonance wasn't initiated by you, simply ignore this message and your address stays as-is."
+      ])
+    )
   end
 
   @doc """
@@ -49,78 +55,48 @@ defmodule RogsIdentity.Accounts.UserNotifier do
   end
 
   defp deliver_confirmation_instructions_private(user, url) do
-    deliver(user.email, "Confirmation instructions", """
-
-    ==============================
-
-    Hi #{user.email},
-
-    You can confirm your account by visiting the URL below:
-
-    #{url}
-
-    If you didn't create an account with us, please ignore this.
-
-    ==============================
-    """)
+    deliver(
+      user.email,
+      "Torii Identity | Confirm your arrival",
+      trds_body("Account Confirmation", [
+        "Hi #{user.email},",
+        "Step through the Torii and activate your account:\n\n#{url}",
+        "Didn't expect this? Disregard the mail and no changes will occur."
+      ])
+    )
   end
 
   defp deliver_magic_link_instructions(user, url) do
-    deliver(user.email, "Log in instructions", """
-
-    ==============================
-
-    Hi #{user.email},
-
-    You can log into your account by visiting the URL below:
-
-    #{url}
-
-    If you didn't request this email, please ignore this.
-
-    ==============================
-    """)
+    deliver(
+      user.email,
+      "Torii Identity | One-tap login",
+      trds_body("Magic Link", [
+        "Hi #{user.email},",
+        "Resume your session by visiting the link below within the next hour:\n\n#{url}",
+        "If this wasn't you, you can safely ignore the message—no one gains access without the link."
+      ])
+    )
   end
 
   @doc """
   Deliver confirmation instructions (public function for resending).
   """
   def deliver_confirmation_instructions(user, url) do
-    deliver(user.email, "Confirmation instructions", """
-
-    ==============================
-
-    Hi #{user.email},
-
-    You can confirm your account by visiting the URL below:
-
-    #{url}
-
-    If you didn't create an account with us, please ignore this.
-
-    ==============================
-    """)
+    deliver_confirmation_instructions_private(user, url)
   end
 
   @doc """
   Deliver instructions to reset password.
   """
   def deliver_password_reset_instructions(user, url) do
-    deliver(user.email, "Reset password instructions", """
-
-    ==============================
-
-    Hi #{user.email},
-
-    You can reset your password by visiting the URL below:
-
-    #{url}
-
-    This link will expire in 6 hours.
-
-    If you didn't request this change, please ignore this.
-
-    ==============================
-    """)
+    deliver(
+      user.email,
+      "Torii Identity | Password reset",
+      trds_body("Reset Password", [
+        "Hi #{user.email},",
+        "Re-establish your credentials with the link below (valid for 6 hours):\n\n#{url}",
+        "If this wasn't your action, you can ignore this notice—your password remains untouched."
+      ])
+    )
   end
 end

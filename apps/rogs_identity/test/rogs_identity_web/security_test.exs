@@ -71,7 +71,7 @@ defmodule RogsIdentityWeb.SecurityTest do
 
       assert conn.status == 429
 
-      assert %{"error" => "Too many login attempts. Please try again later."} =
+      assert %{"error" => "Login attempts are cooling down. Hold for a moment and retry."} =
                json_response(conn, 429)
     end
 

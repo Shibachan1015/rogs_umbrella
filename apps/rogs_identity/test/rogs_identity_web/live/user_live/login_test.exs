@@ -70,7 +70,10 @@ defmodule RogsIdentityWeb.UserLive.LoginTest do
       render_submit(form, %{user: %{remember_me: true}})
 
       conn = follow_trigger_action(form, conn)
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "We couldn't verify those credentials. Try again or reset your password."
+
       assert redirected_to(conn) == ~p"/users/log-in"
     end
   end

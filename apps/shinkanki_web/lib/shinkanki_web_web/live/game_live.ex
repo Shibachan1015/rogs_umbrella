@@ -1,53 +1,111 @@
 defmodule ShinkankiWebWeb.GameLive do
   use ShinkankiWebWeb, :live_view
 
-  alias RogsComm.PubSub
+  alias RogsComm.PubSub, as: CommPubSub
   alias RogsComm.Messages
+  alias Shinkanki
 
   def mount(params, _session, socket) do
-    # Get room_id from params or use default from game_state
-    room_id = params["room_id"] || mock_game_state().room
+    # Get room_id from params or generate new one
+    room_id = params["room_id"] || generate_room_id()
+
+    # Get user info from session (from rogs_identity)
+    user_id =
+      (socket.assigns[:current_user] && socket.assigns.current_user.id) || Ecto.UUID.generate()
+
+    user_email =
+      (socket.assigns[:current_user] && socket.assigns.current_user.email) || "anonymous"
+
+    # Start game session if not exists
+    case Shinkanki.get_current_state(room_id) do
+      nil ->
+        # Game doesn't exist, start a new one
+        case Shinkanki.start_game_session(room_id) do
+          {:ok, _pid} ->
+            :ok
+
+          {:error, {:already_started, _pid}} ->
+            :ok
+
+          error ->
+            # Log error but don't block mount - game might already exist
+            require Logger
+            Logger.warning("Failed to start game session: #{inspect(error)}")
+        end
+
+      _game ->
+        :ok
+    end
+
+    # Join player to game
+    player_name = user_email || "Player #{String.slice(user_id, 0, 8)}"
+
+    case Shinkanki.join_player(room_id, user_id, player_name) do
+      {:ok, _game} ->
+        :ok
+
+      {:error, :already_joined} ->
+        :ok
+
+      {:error, :game_already_started} ->
+        :ok
+
+      error ->
+        # Log error but don't block mount - player might already be joined
+        require Logger
+        Logger.warning("Failed to join player: #{inspect(error)}")
+    end
+
+    # Get initial game state
+    game_state = Shinkanki.get_current_state(room_id) || %{}
 
     socket =
       socket
-      |> assign(:game_state, mock_game_state())
+      |> assign(:game_state, format_game_state(game_state))
       |> assign(:room_id, room_id)
-      |> assign(:hand_cards, mock_hand_cards())
+      |> assign(:user_id, user_id)
+      |> assign(:user_email, user_email)
+      |> assign(:player_name, player_name)
+      |> assign(:hand_cards, get_hand_cards(game_state, user_id))
       |> assign(:action_buttons, mock_actions())
       |> assign(:chat_form, chat_form())
-      |> assign(:user_id, Ecto.UUID.generate())
-      |> assign(:user_email, "anonymous")
       |> assign(:toasts, [])
       |> assign(:selected_card_id, nil)
-      |> assign(:current_phase, :event)
-      |> assign(:current_event, mock_current_event())
+      |> assign(:current_phase, game_state.phase || :event)
+      |> assign(:current_event, format_current_event(game_state))
       |> assign(:show_event_modal, false)
-      |> assign(:player_talents, mock_player_talents())
+      |> assign(:player_talents, get_player_talents(game_state, user_id))
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
-      |> assign(:active_projects, mock_active_projects())
+      |> assign(:active_projects, get_active_projects(game_state))
       |> assign(:show_project_contribute, false)
       |> assign(:project_contribute_id, nil)
       |> assign(:selected_talent_for_contribution, nil)
       |> assign(:show_action_confirm, false)
       |> assign(:confirm_card_id, nil)
-      |> assign(:show_ending, false)
-      |> assign(:game_status, :playing)
+      |> assign(:show_ending, game_state.status in [:won, :lost])
+      |> assign(:game_status, game_state.status || :waiting)
+      |> assign(:ending_type, game_state.ending_type)
       |> assign(:show_role_selection, false)
       |> assign(:selected_role, nil)
       |> assign(:player_role, nil)
-      |> assign(:players, mock_players())
+      |> assign(:players, get_players(game_state))
       |> assign(:show_demurrage, false)
       |> assign(:previous_currency, 0)
       |> assign(:show_card_detail, false)
       |> assign(:detail_card, nil)
+      |> assign(:can_start, Shinkanki.can_start?(room_id))
 
     socket =
       if connected?(socket) do
         # Subscribe to rogs_comm PubSub for real-time chat updates
-        topic = "room:#{room_id}"
-        Phoenix.PubSub.subscribe(PubSub, topic)
+        chat_topic = "room:#{room_id}"
+        Phoenix.PubSub.subscribe(CommPubSub, chat_topic)
+
+        # Subscribe to shinkanki PubSub for game state updates
+        game_topic = "shinkanki:game:#{room_id}"
+        Phoenix.PubSub.subscribe(Shinkanki.PubSub, game_topic)
 
         # Load initial messages from rogs_comm
         messages = load_messages(room_id)
@@ -126,11 +184,54 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
-
-            <!-- Phase Indicator -->
+            
+    <!-- Phase Indicator -->
             <div class="pt-2 border-t border-sumi/30">
               <.phase_indicator current_phase={@current_phase} />
             </div>
+            
+     <!-- Game Start Button (Waiting State) -->
+            <%= if @game_status == :waiting do %>
+              <div class="pt-4 border-t border-sumi/30 space-y-3">
+                <!-- Player List -->
+                <div class="space-y-2">
+                  <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 text-center">
+                    参加プレイヤー
+                  </div>
+                  <div class="space-y-1 max-h-32 overflow-y-auto">
+                    <%= for {player_id, player} <- @game_state.players || %{} do %>
+                      <div class="text-xs text-sumi/80 px-2 py-1 bg-washi/50 rounded border border-sumi/20">
+                        <span class="font-semibold">{player.name || "Player"}</span>
+                        <%= if player_id == @user_id do %>
+                          <span class="text-sumi/50 ml-1">(あなた)</span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-sumi/60 text-center">
+                    {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
+                  </div>
+                </div>
+                
+                <!-- Start Button -->
+                <div class="pt-2 border-t border-sumi/20">
+                  <%= if @can_start do %>
+                    <button
+                      class="w-full px-4 py-2 bg-shu text-washi rounded-lg border-2 border-sumi font-semibold hover:bg-shu/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      phx-click="execute_action"
+                      phx-value-action="start_game"
+                      aria-label="ゲームを開始"
+                    >
+                      ゲームを開始
+                    </button>
+                  <% else %>
+                    <div class="text-xs text-sumi/60 text-center py-2">
+                      最小プレイヤー数（1人）に達していません
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
 
           <!-- Players Info -->
@@ -275,7 +376,7 @@ defmodule ShinkankiWebWeb.GameLive do
             </.form>
           </div>
         </aside>
-
+        
     <!-- Main Board -->
         <main
           class="flex-1 relative overflow-hidden flex items-center justify-center p-2 sm:p-4 md:p-8 lg:ml-0"
@@ -295,169 +396,169 @@ defmodule ShinkankiWebWeb.GameLive do
               />
             </div>
           <% else %>
-          <div
-            class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
-            role="region"
-            aria-label="Life Index表示"
-          >
-            <!-- Life Index Circle -->
             <div
-              class="absolute inset-0 m-auto w-[75%] max-w-[600px] aspect-square rounded-full border-2 border-sumi/20 flex items-center justify-center life-index-ring"
-              aria-label={"Life Index: #{life_index(@game_state)}"}
-              role="meter"
-              aria-valuenow={life_index(@game_state)}
-              aria-valuemin="0"
-              aria-valuemax={@game_state.life_index_target}
+              class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
+              role="region"
+              aria-label="Life Index表示"
             >
-              <!-- Circular progress SVG -->
-              <svg
-                class="absolute inset-0 w-full h-full circular-progress"
-                viewBox="0 0 200 200"
-                aria-hidden="true"
+              <!-- Life Index Circle -->
+              <div
+                class="absolute inset-0 m-auto w-[75%] max-w-[600px] aspect-square rounded-full border-2 border-sumi/20 flex items-center justify-center life-index-ring"
+                aria-label={"Life Index: #{life_index(@game_state)}"}
+                role="meter"
+                aria-valuenow={life_index(@game_state)}
+                aria-valuemin="0"
+                aria-valuemax={@game_state.life_index_target}
               >
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="90"
-                  fill="none"
-                  stroke="rgba(28, 28, 28, 0.1)"
-                  stroke-width="8"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="90"
-                  fill="none"
-                  stroke="rgba(211, 56, 28, 0.3)"
-                  stroke-width="8"
-                  stroke-dasharray={circumference()}
-                  stroke-dashoffset={
-                    circumference_offset(life_index(@game_state), @game_state.life_index_target)
-                  }
-                  stroke-linecap="round"
-                  class="transition-all duration-1000"
-                />
-              </svg>
-              <div class="text-center relative z-10 px-2 sm:px-4">
-                <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sumi/60">
-                  Life Index
-                </div>
-                <div
-                  id="life-index-value"
-                  class="text-3xl sm:text-4xl md:text-7xl font-bold text-shu font-serif mb-1 sm:mb-2 life-index-value"
-                  phx-update="ignore"
+                <!-- Circular progress SVG -->
+                <svg
+                  class="absolute inset-0 w-full h-full circular-progress"
+                  viewBox="0 0 200 200"
+                  aria-hidden="true"
                 >
-                  {life_index(@game_state)}
-                </div>
-                <div class="text-[9px] sm:text-[10px] md:text-xs text-sumi/50 uppercase tracking-[0.3em] sm:tracking-[0.5em]">
-                  Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="90"
+                    fill="none"
+                    stroke="rgba(28, 28, 28, 0.1)"
+                    stroke-width="8"
+                  />
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="90"
+                    fill="none"
+                    stroke="rgba(211, 56, 28, 0.3)"
+                    stroke-width="8"
+                    stroke-dasharray={circumference()}
+                    stroke-dashoffset={
+                      circumference_offset(life_index(@game_state), @game_state.life_index_target)
+                    }
+                    stroke-linecap="round"
+                    class="transition-all duration-1000"
+                  />
+                </svg>
+                <div class="text-center relative z-10 px-2 sm:px-4">
+                  <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sumi/60">
+                    Life Index
+                  </div>
+                  <div
+                    id="life-index-value"
+                    class="text-3xl sm:text-4xl md:text-7xl font-bold text-shu font-serif mb-1 sm:mb-2 life-index-value"
+                    phx-update="ignore"
+                  >
+                    {life_index(@game_state)}
+                  </div>
+                  <div class="text-[9px] sm:text-[10px] md:text-xs text-sumi/50 uppercase tracking-[0.3em] sm:tracking-[0.5em]">
+                    Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
+                  </div>
                 </div>
               </div>
-            </div>
-
+              
     <!-- Gauges -->
-            <div
-              class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Forest (F) ゲージ"
-            >
-              <span class="text-matsu font-bold text-xs sm:text-sm md:text-xl">Forest (F)</span>
               <div
-                class="w-20 sm:w-24 md:w-40 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.forest}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Forest: #{@game_state.forest}"}
+                class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
+                role="group"
+                aria-label="Forest (F) ゲージ"
               >
+                <span class="text-matsu font-bold text-xs sm:text-sm md:text-xl">Forest (F)</span>
                 <div
-                  id="forest-gauge-bar"
-                  class="h-full bg-matsu transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.forest)}%"}
-                  phx-update="ignore"
+                  class="w-20 sm:w-24 md:w-40 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  role="progressbar"
+                  aria-valuenow={@game_state.forest}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Forest: #{@game_state.forest}"}
                 >
+                  <div
+                    id="forest-gauge-bar"
+                    class="h-full bg-matsu transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.forest)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.forest}
+                  </span>
                 </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.forest}
-                </span>
+              </div>
+
+              <div
+                class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-2 sm:left-4 md:left-20 flex flex-col items-center drop-shadow-sm"
+                role="group"
+                aria-label="Culture (K) ゲージ"
+              >
+                <span class="text-sakura font-bold text-xs sm:text-sm md:text-xl">Culture (K)</span>
+                <div
+                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  role="progressbar"
+                  aria-valuenow={@game_state.culture}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Culture: #{@game_state.culture}"}
+                >
+                  <div
+                    id="culture-gauge-bar"
+                    class="h-full bg-sakura transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.culture)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.culture}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-2 sm:right-4 md:right-20 flex flex-col items-center drop-shadow-sm"
+                role="group"
+                aria-label="Social (S) ゲージ"
+              >
+                <span class="text-kohaku font-bold text-xs sm:text-sm md:text-xl">Social (S)</span>
+                <div
+                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  role="progressbar"
+                  aria-valuenow={@game_state.social}
+                  aria-valuemin="0"
+                  aria-valuemax="20"
+                  aria-label={"Social: #{@game_state.social}"}
+                >
+                  <div
+                    id="social-gauge-bar"
+                    class="h-full bg-kohaku transition-all duration-700 ease-out"
+                    style={"width: #{gauge_width(@game_state.social)}%"}
+                    phx-update="ignore"
+                  >
+                  </div>
+                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                    {@game_state.social}
+                  </span>
+                </div>
               </div>
             </div>
-
-            <div
-              class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-2 sm:left-4 md:left-20 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Culture (K) ゲージ"
-            >
-              <span class="text-sakura font-bold text-xs sm:text-sm md:text-xl">Culture (K)</span>
-              <div
-                class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.culture}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Culture: #{@game_state.culture}"}
-              >
-                <div
-                  id="culture-gauge-bar"
-                  class="h-full bg-sakura transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.culture)}%"}
-                  phx-update="ignore"
-                >
-                </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.culture}
-                </span>
-              </div>
-            </div>
-
-            <div
-              class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-2 sm:right-4 md:right-20 flex flex-col items-center drop-shadow-sm"
-              role="group"
-              aria-label="Social (S) ゲージ"
-            >
-              <span class="text-kohaku font-bold text-xs sm:text-sm md:text-xl">Social (S)</span>
-              <div
-                class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
-                role="progressbar"
-                aria-valuenow={@game_state.social}
-                aria-valuemin="0"
-                aria-valuemax="20"
-                aria-label={"Social: #{@game_state.social}"}
-              >
-                <div
-                  id="social-gauge-bar"
-                  class="h-full bg-kohaku transition-all duration-700 ease-out"
-                  style={"width: #{gauge_width(@game_state.social)}%"}
-                  phx-update="ignore"
-                >
-                </div>
-                <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
-                  {@game_state.social}
-                </span>
-              </div>
-            </div>
-          </div>
-
+            
     <!-- Actions (Stamps) -->
-          <div
-            class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
-            role="toolbar"
-            aria-label="アクションボタン"
-          >
-            <.hanko_btn
-              :for={button <- @action_buttons}
-              label={button.label}
-              color={button.color}
-              class="shadow-lg hover:-translate-y-1 transition w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
-              aria-label={button.label <> "を実行"}
-              phx-click="execute_action"
-              phx-value-action={button.action || button.label}
-            />
-          </div>
+            <div
+              class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
+              role="toolbar"
+              aria-label="アクションボタン"
+            >
+              <.hanko_btn
+                :for={button <- @action_buttons}
+                label={button.label}
+                color={button.color}
+                class="shadow-lg hover:-translate-y-1 transition w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
+                aria-label={button.label <> "を実行"}
+                phx-click="execute_action"
+                phx-value-action={button.action || button.label}
+              />
+            </div>
           <% end %>
         </main>
       </div>
-
+      
     <!-- Bottom Hand -->
       <div
         class="h-32 md:h-48 bg-washi-dark border-t-4 border-sumi z-30 relative shadow-[0_-10px_20px_rgba(0,0,0,0.1)] overflow-hidden"
@@ -473,10 +574,8 @@ defmodule ShinkankiWebWeb.GameLive do
           aria-label="手札カード"
         >
           <%= for card <- @hand_cards do %>
-            <%
-              # Check if this card has talents stacked
-              card_talents = get_card_talents(card.id, assigns)
-            %>
+            <% # Check if this card has talents stacked
+            card_talents = get_card_talents(card.id, assigns) %>
             <div class="relative">
               <%= if length(card_talents) > 0 do %>
                 <.action_card_with_talents
@@ -535,7 +634,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Talent Cards Area (Action Phase) -->
       <%= if @current_phase == :action && length(@player_talents) > 0 do %>
         <div
@@ -563,7 +662,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div
@@ -602,12 +701,14 @@ defmodule ShinkankiWebWeb.GameLive do
       card={get_card_by_id(@confirm_card_id, assigns)}
       talent_cards={get_card_talents(@confirm_card_id, assigns)}
       current_currency={@game_state.currency}
-      current_params={%{
-        forest: @game_state.forest,
-        culture: @game_state.culture,
-        social: @game_state.social,
-        currency: @game_state.currency
-      }}
+      current_params={
+        %{
+          forest: @game_state.forest,
+          culture: @game_state.culture,
+          social: @game_state.social,
+          currency: @game_state.currency
+        }
+      }
       id="action-confirm-modal"
     />
 
@@ -638,6 +739,24 @@ defmodule ShinkankiWebWeb.GameLive do
         currency: @game_state.currency
       }}
       id="card-detail-modal"
+    />
+
+    <!-- Ending Screen -->
+    <.ending_screen
+      show={@show_ending}
+      game_status={@game_status}
+      life_index={life_index(@game_state)}
+      final_stats={
+        %{
+          forest: @game_state.forest,
+          culture: @game_state.culture,
+          social: @game_state.social,
+          currency: @game_state.currency
+        }
+      }
+      turn={@game_state.turn}
+      max_turns={@game_state.max_turns}
+      id="ending-screen"
     />
 
     <!-- Toast notifications -->
@@ -738,10 +857,19 @@ defmodule ShinkankiWebWeb.GameLive do
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
 
     if card do
-      {:noreply,
-       socket
-       |> assign(:show_action_confirm, true)
-       |> assign(:confirm_card_id, card_id)}
+      # If card has tags that can use talents, show talent selector first
+      if card[:tags] && length(card[:tags]) > 0 do
+        {:noreply,
+         socket
+         |> assign(:show_talent_selector, true)
+         |> assign(:talent_selector_card_id, card_id)
+         |> assign(:selected_talents_for_card, [])}
+      else
+        {:noreply,
+         socket
+         |> assign(:show_action_confirm, true)
+         |> assign(:confirm_card_id, card_id)}
+      end
     else
       {:noreply, socket}
     end
@@ -750,31 +878,74 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("confirm_action", _params, socket) do
     card_id = socket.assigns.confirm_card_id
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
 
     if card && socket.assigns.game_state.currency >= card.cost do
-      # Get talent cards for this card (for future use)
-      _talent_cards = get_card_talents(card_id, socket.assigns)
+      # Get talent cards for this card
+      talent_ids = socket.assigns.selected_talents_for_card
+      card_id_atom = convert_to_atom(card_id)
 
-      # TODO: Implement actual card usage logic when backend is ready
-      toast_id = "toast-#{System.unique_integer([:positive])}"
+      case Shinkanki.play_action(room_id, user_id, card_id_atom, talent_ids) do
+        {:ok, _game} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
 
-      new_toast = %{
-        id: toast_id,
-        kind: :success,
-        message: "カード「#{card.title}」を使用しました。"
-      }
+          new_toast = %{
+            id: toast_id,
+            kind: :success,
+            message: "カード「#{card.title}」を使用しました。"
+          }
 
-      socket =
-        socket
-        |> assign(:selected_card_id, nil)
-        |> assign(:show_action_confirm, false)
-        |> assign(:confirm_card_id, nil)
-        |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+          socket =
+            socket
+            |> assign(:selected_card_id, nil)
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> assign(:selected_talents_for_card, [])
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
-      # Auto-remove toast after 3 seconds
-      Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
-      {:noreply, socket}
+          {:noreply, socket}
+
+        {:error, :not_your_turn} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "まだあなたのターンではありません。"
+          }
+
+          socket =
+            socket
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+
+        {:error, reason} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "カードの使用に失敗しました: #{inspect(reason)}"
+          }
+
+          socket =
+            socket
+            |> assign(:show_action_confirm, false)
+            |> assign(:confirm_card_id, nil)
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+      end
     else
       toast_id = "toast-#{System.unique_integer([:positive])}"
 
@@ -811,7 +982,11 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, assign(socket, :show_event_modal, false)}
   end
 
-  def handle_event("add_talent_to_card", %{"talent-id" => _talent_id, "card-id" => card_id}, socket) do
+  def handle_event(
+        "add_talent_to_card",
+        %{"talent-id" => _talent_id, "card-id" => card_id},
+        socket
+      ) do
     # Open talent selector for this card
     {:noreply,
      socket
@@ -838,23 +1013,15 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("confirm_talent_selection", _params, socket) do
+    # Close talent selector and show action confirmation
     card_id = socket.assigns.talent_selector_card_id
-    selected_talents = socket.assigns.selected_talents_for_card
-
-    # Update card with talents (in real implementation, this would update game state)
-    # For now, we'll just show a toast
-    toast = %{
-      id: Ecto.UUID.generate(),
-      kind: :success,
-      message: "才能カードを#{length(selected_talents)}枚選択しました"
-    }
 
     {:noreply,
      socket
      |> assign(:show_talent_selector, false)
-     |> assign(:talent_selector_card_id, nil)
-     |> assign(:selected_talents_for_card, [])
-     |> update(:toasts, fn toasts -> [toast | toasts] end)}
+     |> assign(:show_action_confirm, true)
+     |> assign(:confirm_card_id, card_id)
+     |> assign(:talent_selector_card_id, nil)}
   end
 
   def handle_event("cancel_talent_selection", _params, socket) do
@@ -881,28 +1048,58 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:selected_talent_for_contribution, nil)}
   end
 
-  def handle_event("contribute_talent", %{"talent-id" => talent_id, "project-id" => _project_id}, socket) do
+  def handle_event(
+        "contribute_talent",
+        %{"talent-id" => talent_id, "project-id" => _project_id},
+        socket
+      ) do
     {:noreply, assign(socket, :selected_talent_for_contribution, talent_id)}
   end
 
   def handle_event("confirm_talent_contribution", _params, socket) do
     project_id = socket.assigns.project_contribute_id
     talent_id = socket.assigns.selected_talent_for_contribution
+    room_id = socket.assigns.room_id
+    user_id = socket.assigns.user_id
 
     if project_id && talent_id do
-      # In real implementation, this would update the project progress
-      toast = %{
-        id: Ecto.UUID.generate(),
-        kind: :success,
-        message: "才能カードをプロジェクトに捧げました"
-      }
+      project_id_atom = convert_to_atom(project_id)
+      talent_id_atom = convert_to_atom(talent_id)
 
-      {:noreply,
-       socket
-       |> assign(:show_project_contribute, false)
-       |> assign(:project_contribute_id, nil)
-       |> assign(:selected_talent_for_contribution, nil)
-       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      case Shinkanki.contribute_talent_to_project(
+             room_id,
+             user_id,
+             project_id_atom,
+             talent_id_atom
+           ) do
+        {:ok, _game} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :success,
+            message: "才能カードをプロジェクトに捧げました"
+          }
+
+          {:noreply,
+           socket
+           |> assign(:show_project_contribute, false)
+           |> assign(:project_contribute_id, nil)
+           |> assign(:selected_talent_for_contribution, nil)
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+
+        {:error, reason} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :error,
+            message: "才能カードの貢献に失敗しました: #{inspect(reason)}"
+          }
+
+          {:noreply,
+           socket
+           |> assign(:show_project_contribute, false)
+           |> assign(:project_contribute_id, nil)
+           |> assign(:selected_talent_for_contribution, nil)
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      end
     else
       {:noreply, socket}
     end
@@ -1012,6 +1209,27 @@ defmodule ShinkankiWebWeb.GameLive do
     }
 
     {:noreply, stream(socket, :chat_messages, [message])}
+  end
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
+    # Update game state when broadcast from GameServer
+    new_status = game.status || :waiting
+
+    socket =
+      socket
+      |> assign(:game_state, format_game_state(game))
+      |> assign(:current_phase, game.phase || :event)
+      |> assign(:current_event, format_current_event(game))
+      |> assign(:game_status, new_status)
+      |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
+      |> assign(:player_talents, get_player_talents(game, socket.assigns.user_id))
+      |> assign(:active_projects, get_active_projects(game))
+      |> assign(:can_start, Shinkanki.can_start?(socket.assigns.room_id))
+      # Show ending screen if game ended
+      |> assign(:show_ending, new_status in [:won, :lost])
+      |> assign(:ending_type, game.ending_type)
+
+    {:noreply, socket}
   end
 
   def handle_info({:remove_toast, toast_id}, socket) do
@@ -1298,4 +1516,195 @@ defmodule ShinkankiWebWeb.GameLive do
       }
     ]
   end
+
+  defp get_players(nil), do: mock_players()
+
+  defp get_players(%{players: players} = _game) when is_map(players) do
+    Enum.map(players, fn {user_id, player} ->
+      %{
+        id: user_id,
+        name: player.name || "Player",
+        role: player.role,
+        is_ready: player.is_ready || false
+      }
+    end)
+  end
+
+  defp get_players(_game), do: mock_players()
+
+  # Helper functions to connect to Shinkanki context
+  defp generate_room_id do
+    "ROOM-#{System.unique_integer([:positive]) |> Integer.to_string() |> String.pad_leading(4, "0")}"
+  end
+
+  defp format_game_state(nil), do: mock_game_state()
+
+  defp format_game_state(%{} = game) do
+    %{
+      room: game.room_id || "UNKNOWN",
+      turn: game.turn || 1,
+      max_turns: 20,
+      forest: game.forest || 50,
+      culture: game.culture || 50,
+      social: game.social || 50,
+      currency: game.currency || 100,
+      demurrage: calculate_demurrage(game.currency || 100),
+      life_index_target: 40,
+      phase: game.phase || :event
+    }
+  end
+
+  defp calculate_demurrage(currency) do
+    new_currency = floor(currency * 0.9)
+    new_currency - currency
+  end
+
+  defp format_current_event(nil), do: nil
+  defp format_current_event(%{current_event: nil}), do: nil
+
+  defp format_current_event(%{current_event: event_id}) when is_atom(event_id) do
+    case Shinkanki.Card.get_event(event_id) do
+      nil ->
+        nil
+
+      event ->
+        %{
+          title: event.name,
+          description: event.description,
+          effect: event.effect,
+          category: get_event_category(event.tags)
+        }
+    end
+  end
+
+  defp format_current_event(%{current_event: event_id}) when is_binary(event_id) do
+    event_id_atom = convert_to_atom(event_id)
+    format_current_event(%{current_event: event_id_atom})
+  end
+
+  defp format_current_event(_), do: nil
+
+  defp get_event_category(tags) when is_list(tags) do
+    cond do
+      Enum.member?(tags, :disaster) -> :disaster
+      Enum.member?(tags, :festival) -> :festival
+      Enum.member?(tags, :blessing) -> :blessing
+      Enum.member?(tags, :economy) -> :economy
+      true -> :neutral
+    end
+  end
+
+  defp get_event_category(_), do: :neutral
+
+  defp get_hand_cards(nil, _user_id), do: mock_hand_cards()
+
+  defp get_hand_cards(%{hands: hands} = _game, user_id) when is_map(hands) do
+    case Map.get(hands, user_id) do
+      nil ->
+        []
+
+      card_ids when is_list(card_ids) ->
+        Enum.map(card_ids, fn card_id ->
+          case Shinkanki.Card.get_action(card_id) do
+            nil ->
+              nil
+
+            card ->
+              %{
+                id: card.id,
+                title: card.name,
+                cost: card.cost || 0,
+                type: card.type || :action,
+                tags: card.tags || []
+              }
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+      _ ->
+        []
+    end
+  end
+
+  defp get_hand_cards(_game, _user_id), do: mock_hand_cards()
+
+  defp get_player_talents(nil, _user_id), do: mock_player_talents()
+
+  defp get_player_talents(%{players: players} = _game, user_id) when is_map(players) do
+    case Map.get(players, user_id) do
+      nil ->
+        []
+
+      player ->
+        Enum.map(player.talents || [], fn talent_id ->
+          talent_id_atom = convert_to_atom(talent_id)
+
+          case Shinkanki.Card.get_talent(talent_id_atom) do
+            nil ->
+              nil
+
+            talent ->
+              %{
+                id: talent.id,
+                name: talent.name,
+                description: talent.description,
+                compatible_tags: talent.compatible_tags || [],
+                is_used: Enum.member?(player.used_talents || [], talent_id)
+              }
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  defp get_player_talents(_game, _user_id), do: mock_player_talents()
+
+  defp get_active_projects(nil), do: mock_active_projects()
+
+  defp get_active_projects(%{available_projects: projects} = game) when is_list(projects) do
+    Enum.map(projects, fn project_id ->
+      project_id_atom = convert_to_atom(project_id)
+
+      case Shinkanki.Card.get_project(project_id_atom) do
+        nil ->
+          nil
+
+        project ->
+          progress_data = Map.get(game.project_progress || %{}, project_id, %{})
+          progress = Map.get(progress_data, :progress, 0)
+          is_completed = Enum.member?(game.completed_projects || [], project_id)
+
+          %{
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            cost: project.cost || 0,
+            progress: progress,
+            required_progress: project.required_progress || 0,
+            effect: project.effect || %{},
+            unlock_condition: project.unlock_condition || %{},
+            is_unlocked: true,
+            is_completed: is_completed,
+            contributed_talents: []
+          }
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp get_active_projects(_game), do: mock_active_projects()
+
+  defp convert_to_atom(id) when is_atom(id), do: id
+
+  defp convert_to_atom(id) when is_binary(id) do
+    try do
+      String.to_existing_atom(id)
+    rescue
+      ArgumentError ->
+        # If atom doesn't exist, try to create it (for development)
+        String.to_atom(id)
+    end
+  end
+
+  defp convert_to_atom(id), do: id
 end

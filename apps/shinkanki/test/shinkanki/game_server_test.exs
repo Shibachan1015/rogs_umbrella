@@ -23,7 +23,8 @@ defmodule Shinkanki.GameServerTest do
 
       # 4. Update stats manually
       updated_state = Shinkanki.update_stats(room_id, forest: 10)
-      assert updated_state.forest == 60 # Initial 50 + 10
+      # Initial 50 + 10
+      assert updated_state.forest == 60
 
       # 5. Verify PubSub notification for update
       assert_receive {:game_state_updated, ^updated_state}
@@ -31,7 +32,8 @@ defmodule Shinkanki.GameServerTest do
       # 6. Advance turn
       turn_state = Shinkanki.next_turn(room_id)
       assert turn_state.turn == 2
-      assert turn_state.currency == 90 # 100 * 0.9
+      # 100 * 0.9
+      assert turn_state.currency == 90
 
       # 7. Verify PubSub notification for turn
       assert_receive {:game_state_updated, ^turn_state}

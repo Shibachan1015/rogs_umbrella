@@ -623,18 +623,31 @@ defmodule ShinkankiWebWeb.GameComponents do
     >
       <!-- Header -->
       <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-sumi/30">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-1">
           <div class="text-2xl">
             {if @is_completed, do: "✨", else: if(@is_unlocked, do: "🏗️", else: "🔒")}
           </div>
-          <h3 class="text-lg font-bold text-sumi writing-mode-vertical">
+          <h3 class="text-base sm:text-lg font-bold text-sumi writing-mode-vertical flex-1">
             {@title}
           </h3>
         </div>
-        <div class="text-xs uppercase tracking-[0.3em] text-sumi/50">
+        <div class="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-sumi/50">
           プロジェクト
         </div>
       </div>
+      
+    <!-- Status Badge -->
+      <%= if @is_completed do %>
+        <div class="absolute top-2 right-2 bg-kin text-washi text-[10px] px-2 py-1 rounded-full font-bold shadow-md">
+          完成
+        </div>
+      <% else %>
+        <%= if @is_unlocked do %>
+          <div class="absolute top-2 right-2 bg-matsu/20 text-matsu text-[10px] px-2 py-1 rounded-full font-bold border border-matsu/30">
+            進行中
+          </div>
+        <% end %>
+      <% end %>
       
     <!-- Description -->
       <div class="mb-3">
@@ -669,22 +682,33 @@ defmodule ShinkankiWebWeb.GameComponents do
       <%= if @is_unlocked && not @is_completed do %>
         <div class="mb-3">
           <div class="flex justify-between items-center mb-1">
-            <span class="text-xs text-sumi/70">進捗</span>
-            <span class="text-xs font-semibold text-sumi">
+            <span class="text-xs text-sumi/70 font-semibold">進捗状況</span>
+            <span class="text-xs font-bold text-matsu">
               {@progress} / {@cost}
             </span>
           </div>
-          <div class="w-full h-3 bg-sumi/10 rounded-full overflow-hidden border border-sumi/20">
+          <div class="w-full h-4 bg-sumi/10 rounded-full overflow-hidden border-2 border-sumi/20 relative">
             <div
-              class="h-full bg-matsu transition-all duration-500"
+              class="h-full bg-gradient-to-r from-matsu/80 to-matsu transition-all duration-700 ease-out relative"
               style={"width: #{@progress_percentage}%"}
               role="progressbar"
               aria-valuenow={@progress}
               aria-valuemin="0"
               aria-valuemax={@cost}
             >
+              <div class="absolute inset-0 bg-matsu/20 animate-pulse"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-[10px] font-bold text-sumi/90 z-10">
+                {@progress_percentage}%
+              </span>
             </div>
           </div>
+          <%= if @progress_percentage >= 100 do %>
+            <div class="mt-2 text-center">
+              <span class="text-xs font-bold text-kin animate-pulse">✨ 完成間近！ ✨</span>
+            </div>
+          <% end %>
         </div>
       <% end %>
       
@@ -803,21 +827,42 @@ defmodule ShinkankiWebWeb.GameComponents do
 
             <div class="mt-4">
               <h3 class="text-sm font-bold text-sumi mb-2">捧げる才能カードを選択</h3>
-              <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto scrollbar-thin">
-                <%= for talent <- @available_talents do %>
-                  <% is_used = talent[:is_used] || talent["is_used"] || false %>
-                  <.talent_card
-                    title={talent[:name] || talent["name"] || "才能"}
-                    description={talent[:description] || talent["description"]}
-                    compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
-                    is_used={is_used}
-                    class="w-full"
-                    phx-click={if not is_used, do: "contribute_talent", else: nil}
-                    phx-value-talent-id={talent[:id] || talent["id"]}
-                    phx-value-project-id={@project[:id] || @project["id"]}
-                  />
-                <% end %>
-              </div>
+              <%= if length(@available_talents) == 0 do %>
+                <div class="text-center py-6 text-sumi/50 text-sm bg-sumi/5 rounded border border-sumi/20">
+                  <p>利用可能な才能カードがありません</p>
+                </div>
+              <% else %>
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto scrollbar-thin p-2 bg-washi-dark rounded border border-sumi/20">
+                  <%= for talent <- @available_talents do %>
+                    <% is_used = talent[:is_used] || talent["is_used"] || false %>
+                    <div
+                      class={[
+                        "relative transition-all duration-300",
+                        if(is_used,
+                          do: "opacity-40 cursor-not-allowed",
+                          else: "cursor-pointer hover:scale-110 hover:z-10"
+                        )
+                      ]}
+                      phx-click={if not is_used, do: "contribute_talent", else: nil}
+                      phx-value-talent-id={talent[:id] || talent["id"]}
+                      phx-value-project-id={@project[:id] || @project["id"]}
+                    >
+                      <.talent_card
+                        title={talent[:name] || talent["name"] || "才能"}
+                        description={talent[:description] || talent["description"]}
+                        compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
+                        is_used={is_used}
+                        class="w-full"
+                      />
+                      <%= if is_used do %>
+                        <div class="absolute inset-0 flex items-center justify-center bg-sumi/20 rounded">
+                          <span class="text-[10px] font-bold text-sumi/60">使用済</span>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
             </div>
 
             <div class="mt-4 flex gap-2">

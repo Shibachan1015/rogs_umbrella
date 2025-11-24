@@ -445,6 +445,44 @@ defmodule ShinkankiWebWeb.GameLive do
               />
             </div>
           <% else %>
+            <!-- Active Projects Display -->
+            <%= if length(@active_projects) > 0 && @game_status == :playing do %>
+              <div class="w-full max-w-5xl mb-4 sm:mb-6">
+                <div class="text-center mb-3">
+                  <h2 class="text-lg sm:text-xl font-bold text-sumi mb-1">共創プロジェクト</h2>
+                  <p class="text-xs sm:text-sm text-sumi/60">才能カードを捧げて進捗を進めましょう</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-2 sm:px-4">
+                  <%= for project <- @active_projects do %>
+                    <div
+                      class="cursor-pointer hover:scale-105 transition-transform"
+                      phx-click="open_project_contribute"
+                      phx-value-project-id={project[:id] || project["id"]}
+                    >
+                      <.project_card
+                        title={project[:name] || project["name"] || "プロジェクト"}
+                        description={project[:description] || project["description"] || ""}
+                        cost={
+                          project[:required_progress] || project["required_progress"] ||
+                            project[:cost] || 0
+                        }
+                        progress={project[:progress] || project["progress"] || 0}
+                        effect={project[:effect] || project["effect"] || %{}}
+                        unlock_condition={
+                          project[:unlock_condition] || project["unlock_condition"] || %{}
+                        }
+                        is_unlocked={project[:is_unlocked] || project["is_unlocked"] || true}
+                        is_completed={project[:is_completed] || project["is_completed"] || false}
+                        contributed_talents={
+                          project[:contributed_talents] || project["contributed_talents"] || []
+                        }
+                        class="h-full"
+                      />
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
             <div
               class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
               role="region"

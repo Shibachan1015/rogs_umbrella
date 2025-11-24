@@ -7,6 +7,7 @@
 @source "../../lib/shinkanki_web_web";
 
 @theme {
+  /* Miyabi Base Colors */
   --color-washi: #fcfaf2;
   --color-washi-dark: #efece4;
   --color-sumi: #1c1c1c;
@@ -16,6 +17,97 @@
   --color-kin: #c7b370;
   --color-sakura: #eec4ce;
   --color-kohaku: #bf783a;
+
+  /* Material Design 3 inspired - Surface Colors */
+  --color-surface: #fcfaf2;
+  --color-surface-variant: #efece4;
+  --color-surface-container: #f5f3eb;
+  --color-surface-container-high: #ede9df;
+  --color-surface-container-highest: #e5e1d7;
+
+  /* Material Design 3 inspired - State Colors */
+  --color-on-surface: #1c1c1c;
+  --color-on-surface-variant: #444444;
+  --color-outline: rgba(28, 28, 28, 0.12);
+  --color-outline-variant: rgba(28, 28, 28, 0.08);
+
+  /* Material Design 3 inspired - Primary Colors (Shu-based) */
+  --color-primary: #d3381c;
+  --color-on-primary: #fcfaf2;
+  --color-primary-container: rgba(211, 56, 28, 0.12);
+  --color-on-primary-container: #8b1f0e;
+
+  /* Material Design 3 inspired - Secondary Colors (Matsu-based) */
+  --color-secondary: #4a593d;
+  --color-on-secondary: #fcfaf2;
+  --color-secondary-container: rgba(74, 89, 61, 0.12);
+  --color-on-secondary-container: #2d3524;
+
+  /* Material Design 3 inspired - Tertiary Colors (Sakura-based) */
+  --color-tertiary: #eec4ce;
+  --color-on-tertiary: #1c1c1c;
+  --color-tertiary-container: rgba(238, 196, 206, 0.2);
+  --color-on-tertiary-container: #8b5a6a;
+
+  /* Material Design 3 inspired - Error Colors */
+  --color-error: #ba1a1a;
+  --color-on-error: #fcfaf2;
+  --color-error-container: rgba(186, 26, 26, 0.12);
+  --color-on-error-container: #93000a;
+
+  /* Material Design 3 inspired - Elevation Shadows */
+  --elevation-0: none;
+  --elevation-1: 0px 1px 2px 0px rgba(28, 28, 28, 0.08), 0px 1px 3px 0px rgba(28, 28, 28, 0.12);
+  --elevation-2: 0px 2px 4px 0px rgba(28, 28, 28, 0.08), 0px 1px 4px 0px rgba(28, 28, 28, 0.12);
+  --elevation-3: 0px 4px 8px 0px rgba(28, 28, 28, 0.08), 0px 2px 4px 0px rgba(28, 28, 28, 0.12);
+  --elevation-4: 0px 8px 16px 0px rgba(28, 28, 28, 0.08), 0px 4px 8px 0px rgba(28, 28, 28, 0.12);
+  --elevation-8: 0px 16px 24px 0px rgba(28, 28, 28, 0.08), 0px 8px 16px 0px rgba(28, 28, 28, 0.12);
+  --elevation-12: 0px 24px 32px 0px rgba(28, 28, 28, 0.08), 0px 12px 16px 0px rgba(28, 28, 28, 0.12);
+  --elevation-16: 0px 32px 48px 0px rgba(28, 28, 28, 0.08), 0px 16px 24px 0px rgba(28, 28, 28, 0.12);
+  --elevation-24: 0px 48px 64px 0px rgba(28, 28, 28, 0.08), 0px 24px 32px 0px rgba(28, 28, 28, 0.12);
+
+  /* Material Design 3 inspired - Typography Scale */
+  --font-display-large: 3.5625rem; /* 57px */
+  --font-display-medium: 2.8125rem; /* 45px */
+  --font-display-small: 2.25rem; /* 36px */
+  --font-headline-large: 2rem; /* 32px */
+  --font-headline-medium: 1.75rem; /* 28px */
+  --font-headline-small: 1.5rem; /* 24px */
+  --font-title-large: 1.375rem; /* 22px */
+  --font-title-medium: 1rem; /* 16px */
+  --font-title-small: 0.875rem; /* 14px */
+  --font-body-large: 1rem; /* 16px */
+  --font-body-medium: 0.875rem; /* 14px */
+  --font-body-small: 0.75rem; /* 12px */
+  --font-label-large: 0.875rem; /* 14px */
+  --font-label-medium: 0.75rem; /* 12px */
+  --font-label-small: 0.6875rem; /* 11px */
+
+  /* Material Design 3 inspired - Motion */
+  --motion-duration-short1: 50ms;
+  --motion-duration-short2: 100ms;
+  --motion-duration-short3: 150ms;
+  --motion-duration-short4: 200ms;
+  --motion-duration-medium1: 250ms;
+  --motion-duration-medium2: 300ms;
+  --motion-duration-medium3: 350ms;
+  --motion-duration-medium4: 400ms;
+  --motion-duration-long1: 450ms;
+  --motion-duration-long2: 500ms;
+  --motion-duration-long3: 550ms;
+  --motion-duration-long4: 600ms;
+  --motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-decelerated: cubic-bezier(0, 0, 0.2, 1);
+  --motion-easing-accelerated: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Material Design 3 inspired - Shape */
+  --shape-corner-none: 0;
+  --shape-corner-extra-small: 4px;
+  --shape-corner-small: 8px;
+  --shape-corner-medium: 12px;
+  --shape-corner-large: 16px;
+  --shape-corner-extra-large: 28px;
 }
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
@@ -380,5 +472,377 @@ html {
 .animate-slide-in-up {
   animation: slide-in-up 0.6s ease-out;
 }
+
+/* ============================================
+   Material Design 3 inspired enhancements
+   ============================================ */
+
+/* Elevation System */
+.elevation-0 { box-shadow: var(--elevation-0); }
+.elevation-1 { box-shadow: var(--elevation-1); }
+.elevation-2 { box-shadow: var(--elevation-2); }
+.elevation-3 { box-shadow: var(--elevation-3); }
+.elevation-4 { box-shadow: var(--elevation-4); }
+.elevation-8 { box-shadow: var(--elevation-8); }
+.elevation-12 { box-shadow: var(--elevation-12); }
+.elevation-16 { box-shadow: var(--elevation-16); }
+.elevation-24 { box-shadow: var(--elevation-24); }
+
+/* Surface Colors */
+.surface { background-color: var(--color-surface); }
+.surface-variant { background-color: var(--color-surface-variant); }
+.surface-container { background-color: var(--color-surface-container); }
+.surface-container-high { background-color: var(--color-surface-container-high); }
+.surface-container-highest { background-color: var(--color-surface-container-highest); }
+
+/* State Layer (for interactive elements) */
+.state-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+.state-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity var(--motion-duration-short2) var(--motion-easing-standard);
+  pointer-events: none;
+}
+
+.state-layer:hover::before {
+  opacity: 0.08;
+}
+
+.state-layer:focus::before {
+  opacity: 0.12;
+}
+
+.state-layer:active::before {
+  opacity: 0.16;
+}
+
+/* Ripple Effect (Material Design) */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.6s, opacity 0.6s;
+}
+
+.ripple:active::after {
+  transform: scale(4);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* Material Design 3 Typography Classes */
+.text-display-large {
+  font-size: var(--font-display-large);
+  font-weight: 400;
+  line-height: 4rem;
+  letter-spacing: -0.015625rem;
+}
+
+.text-display-medium {
+  font-size: var(--font-display-medium);
+  font-weight: 400;
+  line-height: 3.25rem;
+  letter-spacing: 0;
+}
+
+.text-display-small {
+  font-size: var(--font-display-small);
+  font-weight: 400;
+  line-height: 2.75rem;
+  letter-spacing: 0;
+}
+
+.text-headline-large {
+  font-size: var(--font-headline-large);
+  font-weight: 400;
+  line-height: 2.5rem;
+  letter-spacing: 0;
+}
+
+.text-headline-medium {
+  font-size: var(--font-headline-medium);
+  font-weight: 400;
+  line-height: 2.25rem;
+  letter-spacing: 0;
+}
+
+.text-headline-small {
+  font-size: var(--font-headline-small);
+  font-weight: 400;
+  line-height: 2rem;
+  letter-spacing: 0;
+}
+
+.text-title-large {
+  font-size: var(--font-title-large);
+  font-weight: 500;
+  line-height: 1.75rem;
+  letter-spacing: 0;
+}
+
+.text-title-medium {
+  font-size: var(--font-title-medium);
+  font-weight: 500;
+  line-height: 1.5rem;
+  letter-spacing: 0.009375rem;
+}
+
+.text-title-small {
+  font-size: var(--font-title-small);
+  font-weight: 500;
+  line-height: 1.25rem;
+  letter-spacing: 0.00625rem;
+}
+
+.text-body-large {
+  font-size: var(--font-body-large);
+  font-weight: 400;
+  line-height: 1.5rem;
+  letter-spacing: 0.03125rem;
+}
+
+.text-body-medium {
+  font-size: var(--font-body-medium);
+  font-weight: 400;
+  line-height: 1.25rem;
+  letter-spacing: 0.015625rem;
+}
+
+.text-body-small {
+  font-size: var(--font-body-small);
+  font-weight: 400;
+  line-height: 1rem;
+  letter-spacing: 0.025rem;
+}
+
+.text-label-large {
+  font-size: var(--font-label-large);
+  font-weight: 500;
+  line-height: 1.25rem;
+  letter-spacing: 0.00625rem;
+}
+
+.text-label-medium {
+  font-size: var(--font-label-medium);
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0.03125rem;
+}
+
+.text-label-small {
+  font-size: var(--font-label-small);
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0.03125rem;
+}
+
+/* Material Design 3 Button Styles */
+.btn-material {
+  position: relative;
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--shape-corner-large);
+  font-size: var(--font-label-large);
+  font-weight: 500;
+  letter-spacing: 0.00625rem;
+  text-transform: none;
+  transition: all var(--motion-duration-short4) var(--motion-easing-standard);
+  overflow: hidden;
+}
+
+.btn-material::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity var(--motion-duration-short2) var(--motion-easing-standard);
+}
+
+.btn-material:hover::before {
+  opacity: 0.08;
+}
+
+.btn-material:focus::before {
+  opacity: 0.12;
+}
+
+.btn-material:active::before {
+  opacity: 0.16;
+}
+
+/* Material Design 3 Card Styles */
+.card-material {
+  background-color: var(--color-surface);
+  border-radius: var(--shape-corner-large);
+  padding: 1rem;
+  transition: all var(--motion-duration-short4) var(--motion-easing-standard);
+}
+
+.card-material.elevation-1 {
+  box-shadow: var(--elevation-1);
+}
+
+.card-material.elevation-2 {
+  box-shadow: var(--elevation-2);
+}
+
+.card-material.elevation-3 {
+  box-shadow: var(--elevation-3);
+}
+
+.card-material:hover {
+  box-shadow: var(--elevation-4);
+  transform: translateY(-2px);
+}
+
+/* Material Design 3 Focus Styles */
+.focus-ring {
+  outline: none;
+  position: relative;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--color-primary);
+  opacity: 0.5;
+}
+
+/* Material Design 3 Divider */
+.divider {
+  height: 1px;
+  background-color: var(--color-outline);
+  margin: 0.5rem 0;
+}
+
+.divider-vertical {
+  width: 1px;
+  height: 100%;
+  background-color: var(--color-outline);
+  margin: 0 0.5rem;
+}
+
+/* Material Design 3 Chip Styles */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--shape-corner-small);
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  font-size: var(--font-label-medium);
+  font-weight: 500;
+  transition: all var(--motion-duration-short2) var(--motion-easing-standard);
+}
+
+.chip:hover {
+  background-color: var(--color-surface-container-highest);
+}
+
+.chip.selected {
+  background-color: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
+}
+
+/* Material Design 3 Badge */
+.badge-material {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: var(--shape-corner-extra-large);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-label-small);
+  font-weight: 500;
+}
+
+/* Material Design 3 Progress Indicator */
+.progress-material {
+  width: 100%;
+  height: 4px;
+  background-color: var(--color-surface-container-high);
+  border-radius: var(--shape-corner-extra-small);
+  overflow: hidden;
+}
+
+.progress-material-bar {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: inherit;
+  transition: width var(--motion-duration-medium2) var(--motion-easing-standard);
+}
+
+/* Material Design 3 Snackbar/Toast */
+.snackbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--shape-corner-small);
+  background-color: var(--color-surface-container-highest);
+  color: var(--color-on-surface);
+  box-shadow: var(--elevation-3);
+  min-width: 21.25rem;
+  max-width: 33.75rem;
+}
+
+/* Material Design 3 Motion Utilities */
+.motion-short1 { transition-duration: var(--motion-duration-short1); }
+.motion-short2 { transition-duration: var(--motion-duration-short2); }
+.motion-short3 { transition-duration: var(--motion-duration-short3); }
+.motion-short4 { transition-duration: var(--motion-duration-short4); }
+.motion-medium1 { transition-duration: var(--motion-duration-medium1); }
+.motion-medium2 { transition-duration: var(--motion-duration-medium2); }
+.motion-medium3 { transition-duration: var(--motion-duration-medium3); }
+.motion-medium4 { transition-duration: var(--motion-duration-medium4); }
+.motion-long1 { transition-duration: var(--motion-duration-long1); }
+.motion-long2 { transition-duration: var(--motion-duration-long2); }
+.motion-long3 { transition-duration: var(--motion-duration-long3); }
+.motion-long4 { transition-duration: var(--motion-duration-long4); }
+
+.easing-emphasized { transition-timing-function: var(--motion-easing-emphasized); }
+.easing-standard { transition-timing-function: var(--motion-easing-standard); }
+.easing-decelerated { transition-timing-function: var(--motion-easing-decelerated); }
+.easing-accelerated { transition-timing-function: var(--motion-easing-accelerated); }
 
 /* This file is for your main application CSS */

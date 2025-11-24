@@ -26,6 +26,34 @@ defmodule RogsComm.Messages do
     |> Enum.reverse()
   end
 
+  @doc """
+  Lists messages before a specific message ID (for pagination).
+  Returns messages older than the given message_id.
+  """
+  def list_messages_before(room_id, message_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    include_deleted = Keyword.get(opts, :include_deleted, false)
+
+    # Get the message to find its inserted_at timestamp
+    case Repo.get(Message, message_id) do
+      nil ->
+        []
+
+      message when message.room_id == room_id ->
+        Message
+        |> where([m], m.room_id == ^room_id)
+        |> where([m], m.inserted_at < ^message.inserted_at)
+        |> maybe_filter_deleted(include_deleted)
+        |> order_by([m], desc: m.inserted_at)
+        |> limit(^limit)
+        |> Repo.all()
+        |> Enum.reverse()
+
+      _ ->
+        []
+    end
+  end
+
   defp maybe_filter_deleted(query, true), do: query
 
   defp maybe_filter_deleted(query, false) do
@@ -86,5 +114,25 @@ defmodule RogsComm.Messages do
   """
   def change_message(%Message{} = message, attrs \\ %{}) do
     Message.changeset(message, attrs)
+  end
+
+  @doc """
+  Searches messages in a room by content.
+  Returns messages matching the search query.
+  """
+  def search_messages(room_id, query, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    include_deleted = Keyword.get(opts, :include_deleted, false)
+
+    search_pattern = "%#{query}%"
+
+    Message
+    |> where([m], m.room_id == ^room_id)
+    |> where([m], ilike(m.content, ^search_pattern))
+    |> maybe_filter_deleted(include_deleted)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> Repo.all()
+    |> Enum.reverse()
   end
 end

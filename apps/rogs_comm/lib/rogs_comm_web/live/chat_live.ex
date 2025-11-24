@@ -39,6 +39,7 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:name_form, to_form(%{"display_name" => display_name}))
           |> assign(:presences, %{})
           |> assign(:typing_users, %{})
+          |> assign(:has_older_messages, true)
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -204,6 +205,27 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+  end
+
+  def handle_event("load_older_messages", %{"message_id" => message_id}, socket) do
+    # Load older messages directly from the context
+    room_id = socket.assigns.room_id
+    older_messages = Messages.list_messages_before(room_id, message_id, limit: 50)
+
+    socket =
+      if length(older_messages) > 0 do
+        socket
+        |> stream(:messages, older_messages, at: 0)
+        |> assign(:has_older_messages, length(older_messages) == 50)
+      else
+        socket
+        |> assign(:has_older_messages, false)
+      end
+
+    {:noreply, socket}
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, assign(socket, :has_older_messages, false)}
   end
 
   @impl true
@@ -400,6 +422,18 @@ defmodule RogsCommWeb.ChatLive do
           </div>
 
           <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
+            <div
+              :if={@has_older_messages && Enum.count(@streams.messages) > 0}
+              class="text-center py-2"
+            >
+              <button
+                phx-click="load_older_messages"
+                phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
+                class="text-sm text-blue-600 hover:text-blue-800 px-4 py-2 rounded border border-blue-300 hover:bg-blue-50"
+              >
+                古いメッセージを読み込む
+              </button>
+            </div>
             <div
               :for={{id, message} <- @streams.messages}
               id={id}

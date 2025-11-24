@@ -8,6 +8,7 @@ defmodule RogsCommWeb.ChatChannel do
   alias RogsComm.Messages
   alias RogsComm.Rooms
   alias RogsCommWeb.Presence
+  alias RogsCommWeb.RateLimiter
 
   @impl true
   def join("room:" <> room_id, _payload, socket) do
@@ -74,47 +75,55 @@ defmodule RogsCommWeb.ChatChannel do
 
   @impl true
   def handle_in("new_message", %{"content" => content}, socket) when is_binary(content) do
-    room_id = socket.assigns.room_id
     user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
-    user_email = socket.assigns[:user_email] || "anonymous"
 
-    params = %{
-      content: content,
-      room_id: room_id,
-      user_id: user_id,
-      user_email: user_email
-    }
+    # Rate limit check: 10 messages per 5 seconds per user
+    case RateLimiter.check(user_id, limit: 10, window_seconds: 5) do
+      {:ok, :allowed} ->
+        room_id = socket.assigns.room_id
+        user_email = socket.assigns[:user_email] || "anonymous"
 
-    trimmed_content = String.trim(content)
+        params = %{
+          content: content,
+          room_id: room_id,
+          user_id: user_id,
+          user_email: user_email
+        }
 
-    if trimmed_content == "" do
-      {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
-    else
-      params = Map.put(params, :content, trimmed_content)
+        trimmed_content = String.trim(content)
 
-      case Messages.create_message(params) do
-        {:ok, message} ->
-          payload = %{
-            id: message.id,
-            content: message.content,
-            user_id: message.user_id,
-            user_email: message.user_email,
-            inserted_at: message.inserted_at
-          }
+        if trimmed_content == "" do
+          {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
+        else
+          params = Map.put(params, :content, trimmed_content)
 
-          broadcast(socket, "new_message", payload)
-          {:noreply, socket}
+          case Messages.create_message(params) do
+            {:ok, message} ->
+              payload = %{
+                id: message.id,
+                content: message.content,
+                user_id: message.user_id,
+                user_email: message.user_email,
+                inserted_at: message.inserted_at
+              }
 
-        {:error, changeset} ->
-          reason =
-            case changeset.errors do
-              [{:content, {msg, _}}] -> "message #{msg}"
-              [{:content, msg}] when is_binary(msg) -> "message #{msg}"
-              _ -> "failed to create message"
-            end
+              broadcast(socket, "new_message", payload)
+              {:noreply, socket}
 
-          {:reply, {:error, %{reason: reason}}, socket}
-      end
+            {:error, changeset} ->
+              reason =
+                case changeset.errors do
+                  [{:content, {msg, _}}] -> "message #{msg}"
+                  [{:content, msg}] when is_binary(msg) -> "message #{msg}"
+                  _ -> "failed to create message"
+                end
+
+              {:reply, {:error, %{reason: reason}}, socket}
+          end
+        end
+
+      {:error, :rate_limited} ->
+        {:reply, {:error, %{reason: "rate limit exceeded. please wait a moment"}}, socket}
     end
   end
 
@@ -221,5 +230,23 @@ defmodule RogsCommWeb.ChatChannel do
 
     broadcast_from(socket, "user_stopped_typing", payload)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_in("load_older_messages", %{"message_id" => message_id}, socket) do
+    room_id = socket.assigns.room_id
+    older_messages = Messages.list_messages_before(room_id, message_id, limit: 50)
+
+    payload = %{
+      messages: older_messages,
+      has_more: length(older_messages) == 50
+    }
+
+    push(socket, "older_messages_loaded", payload)
+    {:noreply, socket}
+  end
+
+  def handle_in("load_older_messages", _params, socket) do
+    {:reply, {:error, %{reason: "message_id is required"}}, socket}
   end
 end

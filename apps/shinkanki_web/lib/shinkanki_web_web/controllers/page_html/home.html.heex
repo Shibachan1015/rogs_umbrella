@@ -67,7 +67,8 @@
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-fade-in" style="animation-delay: 0.2s;">
           <.link
             navigate={~p"/game"}
-            class="group px-10 py-5 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg tracking-wider hover:bg-shu/90 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform"
+            class="group btn-material state-layer ripple px-10 py-5 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg tracking-wider hover:bg-shu/90 elevation-4 hover:elevation-8 hover:scale-105 transform"
+            style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);"
           >
             <span class="flex items-center gap-2">
               ゲームを開始
@@ -78,7 +79,8 @@
           </.link>
           <.link
             href="#features"
-            class="px-10 py-5 bg-washi text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-sumi/5 transition-all duration-300 shadow-md hover:shadow-lg"
+            class="btn-material state-layer px-10 py-5 bg-washi text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-sumi/5 elevation-2 hover:elevation-4"
+            style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);"
           >
             詳細を見る
           </.link>
@@ -86,7 +88,8 @@
 
         <!-- Game Parameters Preview -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto animate-fade-in" style="animation-delay: 0.4s;">
-          <div class="group bg-matsu/10 border-2 border-matsu/30 rounded-xl p-6 hover:border-matsu/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+          <div class="group card-material state-layer bg-matsu/10 border-2 border-matsu/30 rounded-xl p-6 hover:border-matsu/50 elevation-2 hover:elevation-4 hover:scale-105"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <div class="text-4xl font-bold text-matsu mb-2">F</div>
             <div class="text-sm font-semibold text-sumi mb-1">森</div>
             <div class="text-xs text-sumi/60">Forest</div>
@@ -128,9 +131,10 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <!-- Feature 1 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">🤝</div>
           <h3 class="text-xl font-bold text-sumi mb-3">協力型プレイ</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -139,7 +143,8 @@
         </div>
 
         <!-- Feature 2 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">🎴</div>
           <h3 class="text-xl font-bold text-sumi mb-3">戦略的なカードプレイ</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -148,7 +153,8 @@
         </div>
 
         <!-- Feature 3 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">🌿</div>
           <h3 class="text-xl font-bold text-sumi mb-3">バランスの取れた成長</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -157,7 +163,8 @@
         </div>
 
         <!-- Feature 4 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">⚡</div>
           <h3 class="text-xl font-bold text-sumi mb-3">空環マネーの管理</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -166,7 +173,8 @@
         </div>
 
         <!-- Feature 5 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">🎭</div>
           <h3 class="text-xl font-bold text-sumi mb-3">4つの役割</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -175,7 +183,8 @@
         </div>
 
         <!-- Feature 6 -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+        <div class="card-material state-layer bg-washi border-2 border-sumi/20 rounded-xl p-8 elevation-3 hover:elevation-8 hover:-translate-y-2"
+             style="transition: all var(--motion-duration-medium2) var(--motion-easing-emphasized);">
           <div class="text-5xl mb-4">🏛️</div>
           <h3 class="text-xl font-bold text-sumi mb-3">共創プロジェクト</h3>
           <p class="text-sumi/80 leading-relaxed">
@@ -202,7 +211,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             1
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">役割を選択</h3>
             <p class="text-sumi/80 leading-relaxed">
               4つの役割から1つを選択します。それぞれの役割には異なる専門性があり、ゲームの戦略に影響を与えます。
@@ -215,7 +225,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             2
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">イベントフェーズ</h3>
             <p class="text-sumi/80 leading-relaxed">
               各ターンの最初にイベントカードがめくられます。イベントの効果を確認し、チームで相談して対応を決めます。
@@ -228,7 +239,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             3
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">相談フェーズ</h3>
             <p class="text-sumi/80 leading-relaxed">
               チャット機能を使って、他のプレイヤーと戦略を相談します。協力して最適な判断を下しましょう。
@@ -241,7 +253,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             4
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">アクションフェーズ</h3>
             <p class="text-sumi/80 leading-relaxed">
               手札からアクションカードを選択し、才能カードを組み合わせて使用します。効果的にパラメータを改善しましょう。
@@ -254,7 +267,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             5
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">減衰フェーズ</h3>
             <p class="text-sumi/80 leading-relaxed">
               空環マネーが10%減衰します。効率的に使用し、無駄を避けることが重要です。
@@ -267,7 +281,8 @@
           <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
             6
           </div>
-          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+          <div class="card-material state-layer bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 elevation-2 hover:elevation-4"
+               style="transition: all var(--motion-duration-medium2) var(--motion-easing-standard);">
             <h3 class="text-xl font-bold text-sumi mb-3">目標達成</h3>
             <p class="text-sumi/80 leading-relaxed">
               20ターン以内にLife Index（F+K+S）を40以上にすることが目標です。チーム全体で協力して成功を目指しましょう。

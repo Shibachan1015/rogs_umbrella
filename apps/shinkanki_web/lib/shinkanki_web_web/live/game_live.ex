@@ -90,6 +90,11 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:show_role_selection, false)
       |> assign(:selected_role, nil)
       |> assign(:player_role, nil)
+      |> assign(:players, get_players(game_state))
+      |> assign(:show_demurrage, false)
+      |> assign(:previous_currency, 0)
+      |> assign(:show_card_detail, false)
+      |> assign(:detail_card, nil)
       |> assign(:can_start, Shinkanki.can_start?(room_id))
 
     socket =
@@ -156,11 +161,28 @@ defmodule ShinkankiWebWeb.GameLive do
             >
               {@game_state.room}
             </div>
-            <div
-              class="text-xs text-sumi/60"
-              aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
-            >
-              Turn {@game_state.turn} / {@game_state.max_turns}
+            <!-- Turn Progress -->
+            <div class="w-full">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs text-sumi/60" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
+                  Turn {@game_state.turn} / {@game_state.max_turns}
+                </span>
+                <span class="text-xs font-bold text-shu">
+                  {rem(@game_state.max_turns - @game_state.turn, @game_state.max_turns + 1)} ターン残り
+                </span>
+              </div>
+              <div class="w-full h-2 bg-sumi/10 rounded-full overflow-hidden border border-sumi/20">
+                <div
+                  class="h-full bg-shu transition-all duration-500"
+                  style={"width: #{trunc(@game_state.turn / @game_state.max_turns * 100)}%"}
+                  role="progressbar"
+                  aria-valuenow={@game_state.turn}
+                  aria-valuemin="1"
+                  aria-valuemax={@game_state.max_turns}
+                  aria-label={"ターン進行: #{@game_state.turn}/#{@game_state.max_turns}"}
+                >
+                </div>
+              </div>
             </div>
             
     <!-- Phase Indicator -->
@@ -210,6 +232,22 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             <% end %>
+          </div>
+
+          <!-- Players Info -->
+          <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
+            <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
+            <div class="space-y-2">
+              <.player_info_card
+                :for={player <- @players}
+                player_id={player[:id] || player["id"]}
+                player_name={player[:name] || player["name"] || "プレイヤー"}
+                role={player[:role] || player["role"]}
+                is_current_player={(player[:id] || player["id"]) == @user_id}
+                is_ready={player[:is_ready] || player["is_ready"] || false}
+                class="w-full"
+              />
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b-2 border-sumi text-xs">
@@ -689,6 +727,20 @@ defmodule ShinkankiWebWeb.GameLive do
       id="event-modal"
     />
 
+    <!-- Card Detail Modal -->
+    <.card_detail_modal
+      show={@show_card_detail}
+      card={@detail_card}
+      current_currency={@game_state.currency}
+      current_params={%{
+        forest: @game_state.forest,
+        culture: @game_state.culture,
+        social: @game_state.social,
+        currency: @game_state.currency
+      }}
+      id="card-detail-modal"
+    />
+
     <!-- Ending Screen -->
     <.ending_screen
       show={@show_ending}
@@ -766,8 +818,38 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("select_card", %{"card-id" => card_id}, socket) do
-    selected = if socket.assigns.selected_card_id == card_id, do: nil, else: card_id
-    {:noreply, assign(socket, :selected_card_id, selected)}
+    # Show card detail modal
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_card_detail, true)
+       |> assign(:detail_card, card)
+       |> assign(:selected_card_id, card_id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("show_card_detail", %{"card-id" => card_id}, socket) do
+    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+
+    if card do
+      {:noreply,
+       socket
+       |> assign(:show_card_detail, true)
+       |> assign(:detail_card, card)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_card_detail", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_card_detail, false)
+     |> assign(:detail_card, nil)}
   end
 
   def handle_event("use_card", %{"card-id" => card_id}, socket) do
@@ -1079,6 +1161,24 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:selected_role, nil)}
   end
 
+  def handle_event("close_demurrage", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_demurrage, false)
+     |> assign(:previous_currency, 0)}
+  end
+
+  def handle_event("show_demurrage", _params, socket) do
+    # Show demurrage display (typically called when entering demurrage phase)
+    previous = socket.assigns.game_state.currency
+    current = trunc(previous * 0.9)  # 10% decay
+
+    {:noreply,
+     socket
+     |> assign(:show_demurrage, true)
+     |> assign(:previous_currency, previous)}
+  end
+
   def handle_event("execute_action", %{"action" => action}, socket) do
     # TODO: Implement actual action logic when backend is ready
     toast_id = "toast-#{System.unique_integer([:positive])}"
@@ -1363,6 +1463,74 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_role_name(:community_light), do: "コミュニティの灯火"
   defp get_role_name(:akasha_engineer), do: "空環エンジニア"
   defp get_role_name(_), do: "不明"
+
+  defp mock_players do
+    [
+      %{
+        id: "player-1",
+        name: "プレイヤー1",
+        role: :forest_guardian,
+        is_ready: true
+      },
+      %{
+        id: "player-2",
+        name: "プレイヤー2",
+        role: :culture_keeper,
+        is_ready: false
+      },
+      %{
+        id: "player-3",
+        name: "プレイヤー3",
+        role: :community_light,
+        is_ready: true
+      }
+    ]
+  end
+
+  defp mock_game_history do
+    [
+      %{
+        turn: 8,
+        time: "14:30",
+        message: "プレイヤー1が「植林」カードを使用しました。F +5"
+      },
+      %{
+        turn: 8,
+        time: "14:28",
+        message: "イベント「神々の加護」が発生しました。F +2, K +2, S +1"
+      },
+      %{
+        turn: 7,
+        time: "14:25",
+        message: "減衰フェーズ: 空環ポイントが10%減衰しました"
+      },
+      %{
+        turn: 7,
+        time: "14:20",
+        message: "プレイヤー2が「祭事」カードを使用しました。K +5, S +3"
+      },
+      %{
+        turn: 6,
+        time: "14:15",
+        message: "プロジェクト「森の祝祭」に才能カードが捧げられました"
+      }
+    ]
+  end
+
+  defp get_players(nil), do: mock_players()
+
+  defp get_players(%{players: players} = _game) when is_map(players) do
+    Enum.map(players, fn {user_id, player} ->
+      %{
+        id: user_id,
+        name: player.name || "Player",
+        role: player.role,
+        is_ready: player.is_ready || false
+      }
+    end)
+  end
+
+  defp get_players(_game), do: mock_players()
 
   # Helper functions to connect to Shinkanki context
   defp generate_room_id do

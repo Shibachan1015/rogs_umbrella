@@ -512,7 +512,10 @@ defmodule RogsCommWeb.ChatLive do
                 古いメッセージを読み込む
               </button>
             </div>
-            <div :if={@search_mode && Enum.count(@streams.messages) == 0} class="text-center py-8 text-gray-500">
+            <div
+              :if={@search_mode && Enum.count(@streams.messages) == 0}
+              class="text-center py-8 text-gray-500"
+            >
               検索結果が見つかりませんでした
             </div>
             <div

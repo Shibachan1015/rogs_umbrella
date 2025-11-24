@@ -93,6 +93,23 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// Navbar scroll effect
+document.addEventListener("DOMContentLoaded", () => {
+  const navbar = document.getElementById("navbar")
+  if (navbar) {
+    let lastScroll = 0
+    window.addEventListener("scroll", () => {
+      const currentScroll = window.pageYOffset
+      if (currentScroll > 50) {
+        navbar.classList.add("scrolled")
+      } else {
+        navbar.classList.remove("scrolled")
+      }
+      lastScroll = currentScroll
+    })
+  }
+})
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

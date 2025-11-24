@@ -701,7 +701,7 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("select_card", %{"card-id" => card_id}, socket) do
     # Show card detail modal
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
-    
+
     if card do
       {:noreply,
        socket
@@ -715,7 +715,7 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_event("show_card_detail", %{"card-id" => card_id}, socket) do
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
-    
+
     if card do
       {:noreply,
        socket

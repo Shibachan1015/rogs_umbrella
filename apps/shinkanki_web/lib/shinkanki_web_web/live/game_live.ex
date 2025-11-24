@@ -556,14 +556,10 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             <% end %>
-            <div
-              class="relative w-full max-w-[600px] sm:max-w-[700px] md:max-w-[800px] aspect-square bg-washi rounded-full border-2 sm:border-4 border-sumi flex items-center justify-center shadow-xl"
-              role="region"
-              aria-label="Life Index表示"
-            >
+            <div class="life-index-orb" role="region" aria-label="Life Index表示">
               <!-- Life Index Circle -->
               <div
-                class="absolute inset-0 m-auto w-[75%] max-w-[600px] aspect-square rounded-full border-2 border-sumi/20 flex items-center justify-center life-index-ring"
+                class="life-index-core life-index-ring"
                 aria-label={"Life Index: #{life_index(@game_state)}"}
                 role="meter"
                 aria-valuenow={life_index(@game_state)}
@@ -618,13 +614,15 @@ defmodule ShinkankiWebWeb.GameLive do
 
     <!-- Gauges -->
               <div
-                class="absolute top-2 sm:top-4 md:top-10 left-1/2 -translate-x-1/2 flex flex-col items-center drop-shadow-sm"
+                class="absolute top-2 sm:top-4 md:top-12 left-1/2 -translate-x-1/2 gauge-stack"
                 role="group"
                 aria-label="Forest (F) ゲージ"
               >
-                <span class="text-matsu font-bold text-xs sm:text-sm md:text-xl">Forest (F)</span>
+                <span class="text-matsu font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                  Forest (F)
+                </span>
                 <div
-                  class="w-20 sm:w-24 md:w-40 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  class="gauge-track"
                   role="progressbar"
                   aria-valuenow={@game_state.forest}
                   aria-valuemin="0"
@@ -633,25 +631,27 @@ defmodule ShinkankiWebWeb.GameLive do
                 >
                   <div
                     id="forest-gauge-bar"
-                    class="h-full bg-matsu transition-all duration-700 ease-out"
+                    class="gauge-fill bg-matsu"
                     style={"width: #{gauge_width(@game_state.forest)}%"}
                     phx-update="ignore"
                   >
                   </div>
-                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                  <span class="gauge-value">
                     {@game_state.forest}
                   </span>
                 </div>
               </div>
 
               <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-2 sm:left-4 md:left-20 flex flex-col items-center drop-shadow-sm"
+                class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-4 sm:left-10 md:left-20 gauge-stack"
                 role="group"
                 aria-label="Culture (K) ゲージ"
               >
-                <span class="text-sakura font-bold text-xs sm:text-sm md:text-xl">Culture (K)</span>
+                <span class="text-sakura font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                  Culture (K)
+                </span>
                 <div
-                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  class="gauge-track"
                   role="progressbar"
                   aria-valuenow={@game_state.culture}
                   aria-valuemin="0"
@@ -660,25 +660,27 @@ defmodule ShinkankiWebWeb.GameLive do
                 >
                   <div
                     id="culture-gauge-bar"
-                    class="h-full bg-sakura transition-all duration-700 ease-out"
+                    class="gauge-fill bg-sakura"
                     style={"width: #{gauge_width(@game_state.culture)}%"}
                     phx-update="ignore"
                   >
                   </div>
-                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                  <span class="gauge-value">
                     {@game_state.culture}
                   </span>
                 </div>
               </div>
 
               <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-2 sm:right-4 md:right-20 flex flex-col items-center drop-shadow-sm"
+                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-4 sm:right-10 md:right-20 gauge-stack"
                 role="group"
                 aria-label="Social (S) ゲージ"
               >
-                <span class="text-kohaku font-bold text-xs sm:text-sm md:text-xl">Social (S)</span>
+                <span class="text-kohaku font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                  Social (S)
+                </span>
                 <div
-                  class="w-16 sm:w-20 md:w-32 h-2 sm:h-3 md:h-4 bg-sumi/10 rounded-full overflow-hidden mt-1 border border-sumi relative"
+                  class="gauge-track"
                   role="progressbar"
                   aria-valuenow={@game_state.social}
                   aria-valuemin="0"
@@ -687,12 +689,12 @@ defmodule ShinkankiWebWeb.GameLive do
                 >
                   <div
                     id="social-gauge-bar"
-                    class="h-full bg-kohaku transition-all duration-700 ease-out"
+                    class="gauge-fill bg-kohaku"
                     style={"width: #{gauge_width(@game_state.social)}%"}
                     phx-update="ignore"
                   >
                   </div>
-                  <span class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-semibold text-sumi/80">
+                  <span class="gauge-value">
                     {@game_state.social}
                   </span>
                 </div>

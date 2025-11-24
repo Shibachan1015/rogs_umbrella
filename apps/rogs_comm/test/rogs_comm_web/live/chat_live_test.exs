@@ -218,6 +218,38 @@ defmodule RogsCommWeb.ChatLiveTest do
     end
   end
 
+  describe "WebRTC audio panel" do
+    test "connects and toggles audio controls", %{conn: conn} do
+      room = room_fixture()
+
+      {:ok, view, _html} = live(conn, ~p"/rooms/#{room.id}/chat")
+
+      assert render(view) =~ "音声チャネル"
+
+      view
+      |> element("button[phx-click='start_audio']")
+      |> render_click()
+
+      assert render(view) =~ "初期化しています"
+
+      Process.sleep(500)
+
+      assert render(view) =~ "接続されました"
+
+      view
+      |> element("button[phx-click='toggle_mic']")
+      |> render_click()
+
+      assert render(view) =~ "マイク: ミュート"
+
+      view
+      |> element("button[phx-click='stop_audio']")
+      |> render_click()
+
+      assert render(view) =~ "切断しました"
+    end
+  end
+
   describe "Real-time updates" do
     test "receives new message broadcast", %{conn: conn} do
       room = room_fixture()
@@ -226,6 +258,7 @@ defmodule RogsCommWeb.ChatLiveTest do
 
       # Broadcast a new message
       topic = "room:#{room.id}"
+
       payload = %{
         id: Ecto.UUID.generate(),
         content: "Broadcasted message",
@@ -254,6 +287,7 @@ defmodule RogsCommWeb.ChatLiveTest do
 
       # Broadcast edit event
       topic = "room:#{room.id}"
+
       payload = %{
         id: updated_message.id,
         content: updated_message.content,

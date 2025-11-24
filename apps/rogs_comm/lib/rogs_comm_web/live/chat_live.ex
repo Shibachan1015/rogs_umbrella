@@ -37,9 +37,12 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:rooms, Rooms.list_rooms())
           |> assign(:form, to_form(%{"content" => ""}))
           |> assign(:name_form, to_form(%{"display_name" => display_name}))
+          |> assign(:search_form, to_form(%{"query" => ""}))
           |> assign(:presences, %{})
           |> assign(:typing_users, %{})
           |> assign(:has_older_messages, true)
+          |> assign(:search_mode, false)
+          |> assign(:search_results, [])
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
@@ -228,6 +231,46 @@ defmodule RogsCommWeb.ChatLive do
       {:noreply, assign(socket, :has_older_messages, false)}
   end
 
+  def handle_event("search", %{"query" => query}, socket) do
+    trimmed_query = String.trim(query)
+
+    if trimmed_query == "" do
+      # Clear search and return to normal view
+      room_id = socket.assigns.room_id
+      messages = Messages.list_messages(room_id, limit: 50)
+
+      {:noreply,
+       socket
+       |> assign(:search_mode, false)
+       |> assign(:search_results, [])
+       |> assign(:search_form, to_form(%{"query" => ""}))
+       |> stream(:messages, messages, reset: true)}
+    else
+      # Perform search
+      room_id = socket.assigns.room_id
+      results = Messages.search_messages(room_id, trimmed_query, limit: 50)
+
+      {:noreply,
+       socket
+       |> assign(:search_mode, true)
+       |> assign(:search_results, results)
+       |> assign(:search_form, to_form(%{"query" => trimmed_query}))
+       |> stream(:messages, results, reset: true)}
+    end
+  end
+
+  def handle_event("clear_search", _params, socket) do
+    room_id = socket.assigns.room_id
+    messages = Messages.list_messages(room_id, limit: 50)
+
+    {:noreply,
+     socket
+     |> assign(:search_mode, false)
+     |> assign(:search_results, [])
+     |> assign(:search_form, to_form(%{"query" => ""}))
+     |> stream(:messages, messages, reset: true)}
+  end
+
   @impl true
   def handle_info(
         %Phoenix.Socket.Broadcast{topic: topic, event: "new_message", payload: payload},
@@ -401,6 +444,34 @@ defmodule RogsCommWeb.ChatLive do
 
           <div>
             <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
+              メッセージ検索
+            </h2>
+            <.form
+              for={@search_form}
+              phx-submit="search"
+              phx-change="search"
+              id="search-form"
+              class="mt-2 space-y-2"
+            >
+              <.input
+                field={@search_form[:query]}
+                type="text"
+                placeholder="検索..."
+                autocomplete="off"
+              />
+              <button
+                :if={@search_mode}
+                type="button"
+                phx-click="clear_search"
+                class="w-full rounded-md bg-gray-500 px-3 py-2 text-sm text-white hover:bg-gray-600"
+              >
+                検索をクリア
+              </button>
+            </.form>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
               Online ({Enum.count(@presences)})
             </h2>
             <div class="mt-3 space-y-2">
@@ -417,13 +488,20 @@ defmodule RogsCommWeb.ChatLive do
 
         <div class="flex flex-1 flex-col">
           <div class="bg-white shadow-sm border-b px-4 py-3">
-            <h1 class="text-xl font-semibold text-gray-900">{@room.name}</h1>
-            <p class="text-sm text-gray-500">{@room.topic}</p>
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-xl font-semibold text-gray-900">{@room.name}</h1>
+                <p class="text-sm text-gray-500">{@room.topic}</p>
+              </div>
+              <div :if={@search_mode} class="text-sm text-blue-600">
+                検索モード: {length(@search_results)}件見つかりました
+              </div>
+            </div>
           </div>
 
           <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
             <div
-              :if={@has_older_messages && Enum.count(@streams.messages) > 0}
+              :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
               class="text-center py-2"
             >
               <button
@@ -433,6 +511,9 @@ defmodule RogsCommWeb.ChatLive do
               >
                 古いメッセージを読み込む
               </button>
+            </div>
+            <div :if={@search_mode && Enum.count(@streams.messages) == 0} class="text-center py-8 text-gray-500">
+              検索結果が見つかりませんでした
             </div>
             <div
               :for={{id, message} <- @streams.messages}

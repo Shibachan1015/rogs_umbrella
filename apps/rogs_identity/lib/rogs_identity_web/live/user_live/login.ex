@@ -7,31 +7,42 @@ defmodule RogsIdentityWeb.UserLive.Login do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Log in</p>
-            <:subtitle>
-              <%= if @current_scope do %>
-                You need to reauthenticate to perform sensitive actions on your account.
-              <% else %>
-                Don't have an account? <.link
-                  navigate={~p"/users/register"}
-                  class="font-semibold text-brand hover:underline"
-                  phx-no-format
-                >Sign up</.link> for an account now.
-              <% end %>
-            </:subtitle>
-          </.header>
+      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
+            Log in
+          </h1>
+          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+            <%= if @current_scope do %>
+              You need to reauthenticate to perform sensitive actions on your account.
+            <% else %>
+              Don't have an account? <.link
+                navigate={~p"/users/register"}
+                style="color: var(--md-primary); text-decoration: none; font-weight: 500;"
+                phx-no-format
+              >Sign up</.link> for an account now.
+            <% end %>
+          </p>
         </div>
 
-        <div :if={local_mail_adapter?()} class="alert alert-info">
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>You are running the local mail adapter.</p>
-            <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
-            </p>
+        <div
+          :if={local_mail_adapter?()}
+          class="mdc-card"
+          style="background-color: #e3f2fd; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
+        >
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <span class="material-icons" style="color: #1976d2; font-size: 24px;">info</span>
+            <div style="flex: 1;">
+              <p style="margin: 0 0 4px 0; font-size: 14px; color: #1565c0;">
+                You are running the local mail adapter.
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #1565c0;">
+                To see sent emails, visit <.link
+                  href="/dev/mailbox"
+                  style="color: #1976d2; text-decoration: underline;"
+                >the mailbox page</.link>.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -41,6 +52,7 @@ defmodule RogsIdentityWeb.UserLive.Login do
           id="login_form_magic"
           action={~p"/users/log-in"}
           phx-submit="submit_magic"
+          style="margin-bottom: 24px;"
         >
           <.input
             readonly={!!@current_scope}
@@ -51,12 +63,18 @@ defmodule RogsIdentityWeb.UserLive.Login do
             required
             phx-mounted={JS.focus()}
           />
-          <.button class="btn btn-primary w-full">
+          <.button variant="primary" style="width: 100%; margin-top: 8px;">
             Log in with email <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
-        <div class="divider">or</div>
+        <div class="mdc-divider" style="margin: 24px 0;">
+          <div style="text-align: center; margin: -10px 0;">
+            <span style="background-color: var(--md-surface); padding: 0 16px; color: var(--md-text-secondary); font-size: 14px;">
+              or
+            </span>
+          </div>
+        </div>
 
         <.form
           :let={f}
@@ -80,16 +98,24 @@ defmodule RogsIdentityWeb.UserLive.Login do
             label="Password"
             autocomplete="current-password"
           />
-          <.button class="btn btn-primary w-full" name={@form[:remember_me].name} value="true">
+          <.button
+            variant="primary"
+            style="width: 100%; margin-top: 8px;"
+            name={@form[:remember_me].name}
+            value="true"
+          >
             Log in and stay logged in <span aria-hidden="true">→</span>
           </.button>
-          <.button class="btn btn-primary btn-soft w-full mt-2">
+          <.button style="width: 100%; margin-top: 8px;">
             Log in only this time
           </.button>
         </.form>
 
-        <div class="text-center mt-4">
-          <.link navigate={~p"/users/forgot-password"} class="text-sm font-semibold">
+        <div style="text-align: center; margin-top: 24px;">
+          <.link
+            navigate={~p"/users/forgot-password"}
+            style="color: var(--md-primary); text-decoration: none; font-size: 14px; font-weight: 500;"
+          >
             Forgot your password?
           </.link>
         </div>

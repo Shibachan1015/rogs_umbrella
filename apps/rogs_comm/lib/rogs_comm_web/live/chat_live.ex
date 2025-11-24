@@ -210,7 +210,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       Logger.warning("ChatLive: Message not found for edit",
-        user_id: user_id,
+        user_id: socket.assigns[:current_user_id],
         message_id: message_id
       )
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
@@ -264,7 +264,7 @@ defmodule RogsCommWeb.ChatLive do
   rescue
     Ecto.NoResultsError ->
       Logger.warning("ChatLive: Message not found for delete",
-        user_id: user_id,
+        user_id: socket.assigns[:current_user_id],
         message_id: message_id
       )
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}

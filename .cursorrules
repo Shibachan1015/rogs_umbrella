@@ -36,7 +36,7 @@ Always be aware of which directory (Worktree) you are currently in:
 
 ### Your Responsibilities:
 - **UI Components**: All visual components, layouts, and user interfaces
-- **Design System**: "Miyabi" theme implementation (和紙、墨、朱、松、金、桜、琥珀)
+- **Design System**: Apply the **Torii Resonance Design System (TRDS)** — a modernized Miyabiテーマ (see `docs/torii_resonance_design_system.md`)
 - **Styling**: CSS/Tailwind CSS implementation in `app.css` files
 - **User Experience**: Interactions, animations, responsive design
 - **Visual Feedback**: Loading states, error messages, success notifications

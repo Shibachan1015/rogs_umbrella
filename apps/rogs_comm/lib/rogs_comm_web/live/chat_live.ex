@@ -488,8 +488,15 @@ defmodule RogsCommWeb.ChatLive do
         <section class="torii-hero my-6 md:my-10" aria-labelledby="chat-hero-title">
           <div class="torii-lines" aria-hidden="true"></div>
           <div class="relative z-10 text-center md:text-left max-w-4xl mx-auto space-y-4">
-            <p class="text-sm uppercase tracking-[0.5em] text-[var(--color-landing-text-secondary)]">Humans are one of the Myriad Gods</p>
-            <h1 id="chat-hero-title" class="text-3xl md:text-5xl font-bold text-[var(--color-landing-pale)]">コミュニケーションの杜</h1>
+            <p class="text-sm uppercase tracking-[0.5em] text-[var(--color-landing-text-secondary)]">
+              Humans are one of the Myriad Gods
+            </p>
+            <h1
+              id="chat-hero-title"
+              class="text-3xl md:text-5xl font-bold text-[var(--color-landing-pale)]"
+            >
+              コミュニケーションの杜
+            </h1>
             <p class="text-base md:text-lg text-[var(--color-landing-text-secondary)] leading-relaxed">
               神環記の相談フェーズを支えるリアルタイムチャット。和紙のようなやわらかさと朱のアクセントで、プレイヤーの声を丁寧に繋ぎます。
             </p>
@@ -503,8 +510,12 @@ defmodule RogsCommWeb.ChatLive do
             </div>
             <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]">
               <span class="state-pill bg-washi text-sumi border-sumi/30">Room: {@room.name}</span>
-              <span class="state-pill bg-washi text-sumi border-sumi/30">Online: {Enum.count(@presences)}</span>
-              <span class="state-pill bg-washi text-sumi border-sumi/30">Search {if @search_mode, do: "ON", else: "OFF"}</span>
+              <span class="state-pill bg-washi text-sumi border-sumi/30">
+                Online: {Enum.count(@presences)}
+              </span>
+              <span class="state-pill bg-washi text-sumi border-sumi/30">
+                Search {if @search_mode, do: "ON", else: "OFF"}
+              </span>
             </div>
           </div>
         </section>
@@ -534,7 +545,8 @@ defmodule RogsCommWeb.ChatLive do
                       "block rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                       "focus-ring border border-transparent",
                       room.id == @room_id && "bg-shu/80 text-washi border border-shu shadow-lg",
-                      room.id != @room_id && "bg-[rgba(255,255,255,0.02)] hover:border-[var(--color-landing-gold)] hover:text-[var(--color-landing-gold)]"
+                      room.id != @room_id &&
+                        "bg-[rgba(255,255,255,0.02)] hover:border-[var(--color-landing-gold)] hover:text-[var(--color-landing-gold)]"
                     ]}
                   >
                     <span class="font-semibold">{room.name}</span>
@@ -600,7 +612,9 @@ defmodule RogsCommWeb.ChatLive do
               </div>
 
               <div class="concept-card text-[var(--color-landing-pale)]">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3">Online ({Enum.count(@presences)})</h3>
+                <h3 class="text-sm uppercase tracking-[0.4em] mb-3">
+                  Online ({Enum.count(@presences)})
+                </h3>
                 <div class="space-y-2" role="list" aria-label="オンラインユーザー">
                   <div
                     :for={{user_id, meta} <- list_presences(@presences)}
@@ -609,7 +623,8 @@ defmodule RogsCommWeb.ChatLive do
                   >
                     <span>{meta.user_email || "匿名"}</span>
                     <span class="flex items-center gap-1 text-xs uppercase tracking-[0.2em]">
-                      <span class="h-2 w-2 rounded-full bg-matsu inline-block" aria-hidden="true"></span>
+                      <span class="h-2 w-2 rounded-full bg-matsu inline-block" aria-hidden="true">
+                      </span>
                       Online
                     </span>
                   </div>
@@ -626,7 +641,10 @@ defmodule RogsCommWeb.ChatLive do
                   <p class="text-sm text-sumi-light mt-1">{@room.topic}</p>
                 </div>
                 <div class="space-y-2 text-right">
-                  <div :if={@search_mode} class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu">
+                  <div
+                    :if={@search_mode}
+                    class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu"
+                  >
                     検索モード: {length(@search_results)}件
                   </div>
                   <div class="text-xs text-sumi-light">メッセージ数: {Enum.count(@streams.messages)}</div>
@@ -673,7 +691,9 @@ defmodule RogsCommWeb.ChatLive do
                 >
                   <div class="flex items-center justify-between mb-2">
                     <div class="text-sm text-sumi-light">
-                      <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">{message.user_email}</span>
+                      <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">
+                        {message.user_email}
+                      </span>
                       <span class="ml-2">
                         {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
                       </span>
@@ -704,14 +724,14 @@ defmodule RogsCommWeb.ChatLive do
                     </div>
                   </div>
                   <p
-                    class="text-sumi text-base leading-relaxed"
                     :if={!@search_mode}
+                    class="text-sumi text-base leading-relaxed"
                   >
                     {message.content}
                   </p>
                   <p
-                    class="text-sumi text-base leading-relaxed"
                     :if={@search_mode}
+                    class="text-sumi text-base leading-relaxed"
                     phx-no-format
                   >
                     {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
@@ -729,7 +749,12 @@ defmodule RogsCommWeb.ChatLive do
               </div>
 
               <div class="bg-washi-dark border-t-2 border-sumi px-2 md:px-4 py-3 shadow-lg">
-                <.form for={@form} id="chat-form" phx-submit="submit" aria-label="メッセージ送信フォーム">
+                <.form
+                  for={@form}
+                  id="chat-form"
+                  phx-submit="submit"
+                  aria-label="メッセージ送信フォーム"
+                >
                   <div class="flex flex-col sm:flex-row gap-2">
                     <.input
                       field={@form[:content]}

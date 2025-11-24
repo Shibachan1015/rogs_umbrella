@@ -9,169 +9,159 @@ defmodule RogsIdentityWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mdc-card" style="max-width: 600px; margin: 48px auto;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
-            Account Settings
-          </h1>
-          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
-            Manage your account email address and password settings
+      <div class="auth-card stack">
+        <div>
+          <h1 class="auth-title text-left">Account Settings</h1>
+          <p class="auth-subtitle">
+            Tune your identity, contact email, credentials, and active sessions.
           </p>
         </div>
 
-        <div
-          :if={!@email_confirmed}
-          class="mdc-card"
-          style="background-color: #fff3cd; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
-        >
-          <div style="display: flex; align-items: start; gap: 12px;">
-            <span class="material-icons" style="color: #f57c00; font-size: 24px;">warning</span>
-            <div style="flex: 1;">
-              <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500; color: #e65100;">
-                Email not confirmed
-              </p>
-              <p style="margin: 0 0 8px 0; font-size: 14px; color: #e65100;">
-                Please confirm your email address to access all features.
-              </p>
-              <button
-                phx-click="resend_confirmation"
-                phx-disable-with="Sending..."
-                class="mdc-button mdc-button--raised mdc-ripple"
-                style="height: 32px; padding: 0 12px; font-size: 12px;"
-              >
-                Resend confirmation email
-              </button>
-            </div>
+        <div :if={!@email_confirmed} class="info-callout info-callout--warning">
+          <.icon name="hero-exclamation-triangle-mini" class="size-5 shrink-0" />
+          <div>
+            <strong>Email not confirmed</strong>
+            <p class="text-sm text-[var(--color-landing-text-secondary)] mb-2">
+              Please confirm your address to unlock the full experience.
+            </p>
+            <button
+              phx-click="resend_confirmation"
+              phx-disable-with="Sending..."
+              class="cta-button cta-outline inline"
+            >
+              Resend confirmation email
+            </button>
           </div>
         </div>
 
-        <div
-          :if={@email_confirmed}
-          class="mdc-card"
-          style="background-color: #d4edda; padding: 16px; margin-bottom: 24px; border-radius: 4px;"
-        >
-          <div style="display: flex; align-items: start; gap: 12px;">
-            <span class="material-icons" style="color: #388e3c; font-size: 24px;">check_circle</span>
-            <div style="flex: 1;">
-              <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500; color: #2e7d32;">
-                Email confirmed
-              </p>
-              <p style="margin: 0; font-size: 14px; color: #2e7d32;">
-                Your email address has been confirmed.
-              </p>
-            </div>
+        <div :if={@email_confirmed} class="info-callout info-callout--success">
+          <.icon name="hero-check-circle" class="size-5 shrink-0" />
+          <div>
+            <strong>Email confirmed</strong>
+            <p class="text-sm text-[var(--color-landing-text-secondary)]">
+              You have access to all secure interactions.
+            </p>
           </div>
         </div>
 
-        <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
-          <.input
-            field={@name_form[:name]}
-            type="text"
-            label="Display Name"
-            placeholder="Optional"
-            autocomplete="name"
-          />
-          <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
-        </.form>
-
-        <div class="mdc-divider" style="margin: 24px 0;" />
-
-        <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-          <.input
-            field={@email_form[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            required
-          />
-          <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
-        </.form>
-
-        <div class="mdc-divider" style="margin: 24px 0;" />
-
-        <.form
-          for={@password_form}
-          id="password_form"
-          action={~p"/users/update-password"}
-          method="post"
-          phx-change="validate_password"
-          phx-submit="update_password"
-          phx-trigger-action={@trigger_submit}
-        >
-          <input
-            name={@password_form[:email].name}
-            type="hidden"
-            id="hidden_user_email"
-            autocomplete="username"
-            value={@current_email}
-          />
-          <.input
-            field={@password_form[:password]}
-            type="password"
-            label="New password"
-            autocomplete="new-password"
-            required
-          />
-          <.input
-            field={@password_form[:password_confirmation]}
-            type="password"
-            label="Confirm new password"
-            autocomplete="new-password"
-          />
-          <.button variant="primary" phx-disable-with="Saving...">
-            Save Password
-          </.button>
-        </.form>
-
-        <div class="mdc-divider" style="margin: 24px 0;" />
-
-        <div style="margin-top: 24px;">
-          <h3 style="font-size: 18px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
-            Active Sessions
-          </h3>
-          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0 0 16px 0;">
-            Manage your active sessions. You can sign out from other devices here.
+        <section class="stack">
+          <h2 class="section-title">Display name</h2>
+          <p class="section-copy">
+            Optional label shown across chat and game surfaces.
           </p>
+          <.form for={@name_form} id="name_form" phx-submit="update_name" phx-change="validate_name">
+            <.input
+              field={@name_form[:name]}
+              type="text"
+              label="Display Name"
+              placeholder="Optional"
+              autocomplete="name"
+            />
+            <.button variant="primary" phx-disable-with="Saving...">Save Name</.button>
+          </.form>
+        </section>
 
-          <div
-            :if={@sessions == []}
-            style="text-align: center; padding: 32px 0; color: var(--md-text-secondary);"
+        <div class="torii-divider" aria-hidden="true"></div>
+
+        <section class="stack">
+          <h2 class="section-title">Contact email</h2>
+          <p class="section-copy">
+            This address receives verification, login, and recovery notices.
+          </p>
+          <.form
+            for={@email_form}
+            id="email_form"
+            phx-submit="update_email"
+            phx-change="validate_email"
           >
-            <p>No active sessions found.</p>
+            <.input
+              field={@email_form[:email]}
+              type="email"
+              label="Email"
+              autocomplete="username"
+              required
+            />
+            <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
+          </.form>
+        </section>
+
+        <div class="torii-divider" aria-hidden="true"></div>
+
+        <section class="stack">
+          <h2 class="section-title">Password</h2>
+          <p class="section-copy">
+            Set a new password with TRDS-aligned strength expectations.
+          </p>
+          <.form
+            for={@password_form}
+            id="password_form"
+            action={~p"/users/update-password"}
+            method="post"
+            phx-change="validate_password"
+            phx-submit="update_password"
+            phx-trigger-action={@trigger_submit}
+          >
+            <input
+              name={@password_form[:email].name}
+              type="hidden"
+              id="hidden_user_email"
+              autocomplete="username"
+              value={@current_email}
+            />
+            <.input
+              field={@password_form[:password]}
+              type="password"
+              label="New password"
+              autocomplete="new-password"
+              required
+            />
+            <.input
+              field={@password_form[:password_confirmation]}
+              type="password"
+              label="Confirm new password"
+              autocomplete="new-password"
+            />
+            <.button variant="primary" phx-disable-with="Saving...">
+              Save Password
+            </.button>
+          </.form>
+        </section>
+
+        <div class="torii-divider" aria-hidden="true"></div>
+
+        <section class="stack">
+          <h2 class="section-title">Active sessions</h2>
+          <p class="section-copy">
+            Sign out remote devices or verify the current session.
+          </p>
+
+          <div :if={@sessions == []} class="auth-helper">
+            No active sessions found.
           </div>
 
-          <div :if={@sessions != []} style="display: flex; flex-direction: column; gap: 12px;">
+          <div :if={@sessions != []} class="session-list">
             <div
               :for={{session, index} <- Enum.with_index(@sessions)}
-              class="mdc-card"
-              style={
-                if session.is_current do
-                  "padding: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #e3f2fd; border-left: 4px solid var(--md-primary);"
-                else
-                  "padding: 16px; display: flex; align-items: center; justify-content: space-between;"
-                end
-              }
+              class={[
+                "session-card",
+                session.is_current && "session-card--current"
+              ]}
             >
-              <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <span style="font-size: 14px; font-weight: 500; color: var(--md-text-primary);">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem;">
+                  <span style="font-weight:600;">
                     {if session.is_current, do: "Current Session", else: "Session #{index + 1}"}
                   </span>
-                  <span
-                    :if={session.is_current}
-                    style="padding: 2px 8px; font-size: 11px; font-weight: 500; background-color: var(--md-primary); color: white; border-radius: 12px;"
-                  >
-                    Active
-                  </span>
+                  <span :if={session.is_current} class="badge-pill">Active</span>
                 </div>
-                <div style="font-size: 12px; color: var(--md-text-secondary);">
-                  <p style="margin: 0 0 4px 0;">
+                <div class="session-card__meta">
+                  <p>
                     Signed in: {Calendar.strftime(
                       session.authenticated_at || session.inserted_at,
                       "%B %d, %Y at %I:%M %p"
                     )}
                   </p>
-                  <p style="margin: 0; font-size: 11px; opacity: 0.7;">
+                  <p>
                     Last activity: {Calendar.strftime(session.inserted_at, "%B %d, %Y at %I:%M %p")}
                   </p>
                 </div>
@@ -181,28 +171,23 @@ defmodule RogsIdentityWeb.UserLive.Settings do
                 phx-click="delete_session"
                 phx-value-session-id={session.id}
                 phx-disable-with="Deleting..."
-                class="mdc-button mdc-button--outlined mdc-ripple"
-                style="height: 32px; padding: 0 12px; font-size: 12px; color: var(--md-error); border-color: var(--md-error);"
+                class="cta-button cta-outline inline"
               >
                 Sign Out
               </button>
             </div>
           </div>
 
-          <div
-            :if={@sessions != [] and length(@sessions) > 1}
-            style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0, 0, 0, 0.12);"
-          >
+          <div :if={@sessions != [] and length(@sessions) > 1} style="margin-top: 1rem;">
             <button
               phx-click="delete_all_other_sessions"
               phx-disable-with="Signing out..."
-              class="mdc-button mdc-button--outlined mdc-ripple"
-              style="width: 100%; color: var(--md-error); border-color: var(--md-error);"
+              class="cta-button cta-outline"
             >
-              Sign Out from All Other Devices
+              Sign out from all other devices
             </button>
           </div>
-        </div>
+        </section>
       </div>
     </Layouts.app>
     """

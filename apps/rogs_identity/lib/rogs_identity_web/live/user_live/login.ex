@@ -14,22 +14,26 @@ defmodule RogsIdentityWeb.UserLive.Login do
             <%= if @current_scope do %>
               You need to reauthenticate to continue this secure action.
             <% else %>
-              Don't have an account?
-              <.link navigate={~p"/users/register"} class="link-muted" phx-no-format>
+              Don't have an account? <.link
+                navigate={~p"/users/register"}
+                class="link-muted"
+                phx-no-format
+              >
                 Sign up
-              </.link>
-              to join the Torii network.
+              </.link> to join the Torii network.
             <% end %>
           </p>
         </div>
 
         <div :if={local_mail_adapter?()} class="info-callout">
-          <.icon name="hero-information-circle" class="size-5 shrink-0 text-[var(--color-landing-gold)]" />
+          <.icon
+            name="hero-information-circle"
+            class="size-5 shrink-0 text-[var(--color-landing-gold)]"
+          />
           <div>
             <strong>Local mail adapter active.</strong>
             <p class="text-sm text-[var(--color-landing-text-secondary)]">
-              Review outgoing messages via the
-              <.link href="/dev/mailbox" class="link-muted">
+              Review outgoing messages via the <.link href="/dev/mailbox" class="link-muted">
                 dev mailbox
               </.link>.
             </p>

@@ -37,6 +37,40 @@
     </script>
   </head>
   <body class="landing-body antialiased">
+    <header class="identity-nav">
+      <div class="identity-brand">
+        <img src={~p"/images/logo.svg"} width="36" height="36" alt="Rogs Identity logo" />
+        <div>
+          <div>TORII IDENTITY</div>
+          <small style="letter-spacing: 0.3em; color: var(--color-landing-text-secondary);">
+            Auth Gateway
+          </small>
+        </div>
+      </div>
+      <div class="identity-nav__links">
+        <%= if assigns[:current_scope] && assigns[:current_scope].user do %>
+          <span class="identity-email">
+            {assigns.current_scope.user.email}
+          </span>
+          <.link href={~p"/users/profile"} class="identity-nav__link">
+            Profile
+          </.link>
+          <.link href={~p"/users/settings"} class="identity-nav__link identity-nav__cta">
+            Settings
+          </.link>
+          <.link href={~p"/users/log-out"} method="delete" class="identity-nav__link">
+            Log out
+          </.link>
+        <% else %>
+          <.link href={~p"/users/register"} class="identity-nav__link">
+            Register
+          </.link>
+          <.link href={~p"/users/log-in"} class="identity-nav__link identity-nav__cta">
+            Log in
+          </.link>
+        <% end %>
+      </div>
+    </header>
     {@inner_content}
   </body>
 </html>

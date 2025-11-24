@@ -168,7 +168,7 @@ defmodule ShinkankiWebWeb.GameLive do
               <.phase_indicator current_phase={@current_phase} />
             </div>
             
-     <!-- Game Start Button (Waiting State) -->
+    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
               <div class="pt-4 border-t border-sumi/30 space-y-3">
                 <!-- Player List -->
@@ -191,7 +191,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
                 
-                <!-- Start Button -->
+    <!-- Start Button -->
                 <div class="pt-2 border-t border-sumi/20">
                   <%= if @can_start do %>
                     <button

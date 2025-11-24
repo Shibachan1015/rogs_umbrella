@@ -45,5 +45,35 @@ defmodule RogsCommWeb.RoomIndexLiveTest do
              |> render_click()
              |> follow_redirect(conn, ~p"/rooms/#{room.id}/chat")
     end
+
+    test "filters rooms by query", %{conn: conn} do
+      forest_room = room_fixture(%{name: "Forest Council"})
+      city_room = room_fixture(%{name: "City Assembly"})
+
+      {:ok, view, _html} = live(conn, ~p"/rooms")
+
+      view
+      |> form("#filters-form", filters: %{query: "Forest"})
+      |> render_change()
+
+      html = render(view)
+      assert html =~ forest_room.name
+      refute html =~ city_room.name
+    end
+
+    test "shows private rooms when toggled", %{conn: conn} do
+      _public_room = room_fixture(%{name: "Public Hall", is_private: false})
+      private_room = room_fixture(%{name: "Secret Grove", is_private: true})
+
+      {:ok, view, _html} = live(conn, ~p"/rooms")
+
+      refute render(view) =~ private_room.name
+
+      view
+      |> form("#filters-form", filters: %{query: "", show_private: "true"})
+      |> render_change()
+
+      assert render(view) =~ private_room.name
+    end
   end
 end

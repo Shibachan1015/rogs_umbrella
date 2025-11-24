@@ -25,6 +25,7 @@ defmodule RogsCommWeb.ChatLive do
     case Rooms.fetch_room(room_id) do
       nil ->
         Logger.warning("ChatLive: Attempted to access non-existent room", room_id: room_id)
+
         {:ok,
          socket
          |> put_flash(:error, "Room not found")
@@ -189,6 +190,7 @@ defmodule RogsCommWeb.ChatLive do
             message_room_id: message.room_id,
             current_room_id: room_id
           )
+
           {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
 
         message when message.user_id != user_id ->
@@ -197,6 +199,7 @@ defmodule RogsCommWeb.ChatLive do
             message_id: message_id,
             message_owner_id: message.user_id
           )
+
           {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
 
         _ ->
@@ -204,6 +207,7 @@ defmodule RogsCommWeb.ChatLive do
             user_id: user_id,
             message_id: message_id
           )
+
           {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
       end
     end
@@ -213,6 +217,7 @@ defmodule RogsCommWeb.ChatLive do
         user_id: user_id,
         message_id: message_id
       )
+
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
@@ -234,6 +239,7 @@ defmodule RogsCommWeb.ChatLive do
               room_id: room_id,
               errors: inspect(changeset.errors)
             )
+
             {:noreply, put_flash(socket, :error, "メッセージの削除に失敗しました")}
         end
 
@@ -244,6 +250,7 @@ defmodule RogsCommWeb.ChatLive do
           message_room_id: message.room_id,
           current_room_id: room_id
         )
+
         {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
 
       message when message.user_id != user_id ->
@@ -252,6 +259,7 @@ defmodule RogsCommWeb.ChatLive do
           message_id: message_id,
           message_owner_id: message.user_id
         )
+
         {:noreply, put_flash(socket, :error, "自分のメッセージのみ削除できます")}
 
       _ ->
@@ -259,6 +267,7 @@ defmodule RogsCommWeb.ChatLive do
           user_id: user_id,
           message_id: message_id
         )
+
         {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
     end
   rescue
@@ -267,6 +276,7 @@ defmodule RogsCommWeb.ChatLive do
         user_id: user_id,
         message_id: message_id
       )
+
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
@@ -450,18 +460,34 @@ defmodule RogsCommWeb.ChatLive do
     end)
   end
 
+  defp highlight_search_term(content, query) when is_binary(content) and is_binary(query) do
+    if String.trim(query) == "" do
+      content
+    else
+      # Escape special regex characters in query
+      escaped_query = Regex.escape(query)
+      pattern = ~r/#{escaped_query}/iu
+
+      Regex.replace(pattern, content, fn match ->
+        ~s(<mark class="bg-yellow-200 px-1 rounded">#{match}</mark>)
+      end)
+    end
+  end
+
+  defp highlight_search_term(content, _query), do: content
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
       <div
         id="chat-root"
-        class="flex h-screen"
+        class="flex h-screen flex-col md:flex-row"
         data-room-id={@room_id}
         data-display-name={@display_name}
         phx-hook="TypingHook"
       >
-        <aside class="w-64 border-r bg-base-200 px-4 py-6 space-y-6">
+        <aside class="w-full md:w-64 border-r bg-base-200 px-4 py-6 space-y-6 overflow-y-auto">
           <div>
             <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-widest">
               Rooms
@@ -559,7 +585,7 @@ defmodule RogsCommWeb.ChatLive do
             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="messages" phx-update="stream">
+          <div class="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4" id="messages" phx-update="stream">
             <div
               :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
               class="text-center py-2"
@@ -613,26 +639,38 @@ defmodule RogsCommWeb.ChatLive do
                   </button>
                 </div>
               </div>
-              <p class="text-gray-800 text-base">{message.content}</p>
+              <p
+                class="text-gray-800 text-base"
+                :if={!@search_mode}
+              >
+                {message.content}
+              </p>
+              <p
+                class="text-gray-800 text-base"
+                :if={@search_mode}
+                phx-no-format
+              >
+                {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
+              </p>
             </div>
             <div :if={map_size(@typing_users) > 0} class="text-sm text-gray-500 italic mt-2">
               {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
             </div>
           </div>
 
-          <div class="bg-white border-t px-4 py-3">
+          <div class="bg-white border-t px-2 md:px-4 py-3">
             <.form for={@form} id="chat-form" phx-submit="submit">
               <div class="flex space-x-2">
                 <.input
                   field={@form[:content]}
                   type="text"
                   placeholder="メッセージを入力..."
-                  class="flex-1"
+                  class="flex-1 text-sm md:text-base"
                   autocomplete="off"
                 />
                 <button
                   type="submit"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  class="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base whitespace-nowrap"
                 >
                   送信
                 </button>

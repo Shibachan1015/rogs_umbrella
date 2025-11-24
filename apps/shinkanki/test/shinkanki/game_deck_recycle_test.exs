@@ -85,6 +85,7 @@ defmodule Shinkanki.GameDeckRecycleTest do
 
       # Play cards to exhaust deck and build discard pile
       hand = Map.get(game.hands, "p1", [])
+
       if length(hand) >= 2 do
         card1 = Enum.at(hand, 0)
         card2 = Enum.at(hand, 1)
@@ -101,6 +102,7 @@ defmodule Shinkanki.GameDeckRecycleTest do
 
     test "reshuffled deck contains all cards from discard pile" do
       discard_cards = [:shokurin, :saiji, :koueki]
+
       game = %Game{
         Game.new("room")
         | deck: [],
@@ -116,7 +118,8 @@ defmodule Shinkanki.GameDeckRecycleTest do
       # (cards moved from discard to deck)
       total_cards = length(game.deck) + length(game.discard_pile)
       # Some cards may be in hands, so total should be at least the original discard size
-      assert total_cards >= 0 # At minimum, cards were moved
+      # At minimum, cards were moved
+      assert total_cards >= 0
     end
   end
 end

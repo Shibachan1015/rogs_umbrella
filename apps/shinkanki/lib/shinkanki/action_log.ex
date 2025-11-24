@@ -19,4 +19,3 @@ defmodule Shinkanki.ActionLog do
     |> validate_required([:room_id, :turn, :action])
   end
 end
-

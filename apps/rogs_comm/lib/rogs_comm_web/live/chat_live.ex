@@ -12,6 +12,8 @@ defmodule RogsCommWeb.ChatLive do
 
   use RogsCommWeb, :live_view
 
+  require Logger
+
   alias RogsComm.Messages
   alias RogsComm.Rooms
   alias RogsCommWeb.Presence
@@ -22,6 +24,7 @@ defmodule RogsCommWeb.ChatLive do
   def mount(%{"room_id" => room_id}, _session, socket) do
     case Rooms.fetch_room(room_id) do
       nil ->
+        Logger.warning("ChatLive: Attempted to access non-existent room", room_id: room_id)
         {:ok,
          socket
          |> put_flash(:error, "Room not found")
@@ -114,6 +117,12 @@ defmodule RogsCommWeb.ChatLive do
               _ -> "メッセージの送信に失敗しました"
             end
 
+          Logger.error("ChatLive: Failed to create message",
+            user_id: user_id,
+            room_id: room_id,
+            errors: inspect(changeset.errors)
+          )
+
           {:noreply, put_flash(socket, :error, error_message)}
       end
     end
@@ -163,21 +172,47 @@ defmodule RogsCommWeb.ChatLive do
                   _ -> "メッセージの編集に失敗しました"
                 end
 
+              Logger.error("ChatLive: Failed to edit message",
+                user_id: user_id,
+                message_id: message_id,
+                room_id: room_id,
+                errors: inspect(changeset.errors)
+              )
+
               {:noreply, put_flash(socket, :error, error_message)}
           end
 
         message when message.room_id != room_id ->
+          Logger.warning("ChatLive: Attempted to edit message from different room",
+            user_id: user_id,
+            message_id: message_id,
+            message_room_id: message.room_id,
+            current_room_id: room_id
+          )
           {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
 
         message when message.user_id != user_id ->
+          Logger.warning("ChatLive: Attempted to edit another user's message",
+            user_id: user_id,
+            message_id: message_id,
+            message_owner_id: message.user_id
+          )
           {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
 
         _ ->
+          Logger.warning("ChatLive: Attempted to edit unknown message",
+            user_id: user_id,
+            message_id: message_id
+          )
           {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
       end
     end
   rescue
     Ecto.NoResultsError ->
+      Logger.warning("ChatLive: Message not found for edit",
+        user_id: user_id,
+        message_id: message_id
+      )
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
@@ -192,21 +227,46 @@ defmodule RogsCommWeb.ChatLive do
             RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_deleted", %{id: message_id})
             {:noreply, socket}
 
-          {:error, _changeset} ->
+          {:error, changeset} ->
+            Logger.error("ChatLive: Failed to delete message",
+              user_id: user_id,
+              message_id: message_id,
+              room_id: room_id,
+              errors: inspect(changeset.errors)
+            )
             {:noreply, put_flash(socket, :error, "メッセージの削除に失敗しました")}
         end
 
       message when message.room_id != room_id ->
+        Logger.warning("ChatLive: Attempted to delete message from different room",
+          user_id: user_id,
+          message_id: message_id,
+          message_room_id: message.room_id,
+          current_room_id: room_id
+        )
         {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
 
       message when message.user_id != user_id ->
+        Logger.warning("ChatLive: Attempted to delete another user's message",
+          user_id: user_id,
+          message_id: message_id,
+          message_owner_id: message.user_id
+        )
         {:noreply, put_flash(socket, :error, "自分のメッセージのみ削除できます")}
 
       _ ->
+        Logger.warning("ChatLive: Attempted to delete unknown message",
+          user_id: user_id,
+          message_id: message_id
+        )
         {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
     end
   rescue
     Ecto.NoResultsError ->
+      Logger.warning("ChatLive: Message not found for delete",
+        user_id: user_id,
+        message_id: message_id
+      )
       {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 

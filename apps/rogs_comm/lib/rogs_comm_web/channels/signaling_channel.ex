@@ -5,6 +5,8 @@ defmodule RogsCommWeb.SignalingChannel do
 
   use RogsCommWeb, :channel
 
+  require Logger
+
   alias Ecto.UUID
   alias RogsComm.Rooms
   alias RogsComm.Signaling
@@ -26,7 +28,9 @@ defmodule RogsCommWeb.SignalingChannel do
 
       {:ok, %{room_id: room.id}, socket}
     else
-      _ -> {:error, %{reason: "room not found"}}
+      _ ->
+        Logger.warning("SignalingChannel: Attempted to join non-existent room", room_id: room_id)
+        {:error, %{reason: "room not found"}}
     end
   end
 
@@ -65,14 +69,30 @@ defmodule RogsCommWeb.SignalingChannel do
                 {:noreply, socket}
 
               _ ->
+                Logger.warning("SignalingChannel: Invalid target user",
+                  user_id: user_id,
+                  room_id: socket.assigns.room_id,
+                  target_user_id: to_user_id
+                )
                 {:reply, {:error, %{reason: "invalid target user"}}, socket}
             end
 
           {:error, reason} ->
+            Logger.error("SignalingChannel: Failed to normalize payload",
+              user_id: user_id,
+              room_id: socket.assigns.room_id,
+              event: event,
+              reason: reason
+            )
             {:reply, {:error, %{reason: reason}}, socket}
         end
 
       {:error, :rate_limited} ->
+        Logger.warning("SignalingChannel: Rate limit exceeded",
+          user_id: user_id,
+          room_id: socket.assigns.room_id,
+          event: event
+        )
         {:reply, {:error, %{reason: "rate limit exceeded"}}, socket}
     end
   end
@@ -82,7 +102,12 @@ defmodule RogsCommWeb.SignalingChannel do
     {:noreply, socket}
   end
 
-  def handle_in(_event, _payload, socket) do
+  def handle_in(event, _payload, socket) do
+    Logger.warning("SignalingChannel: Unsupported event",
+      user_id: socket.assigns.user_id,
+      room_id: socket.assigns.room_id,
+      event: event
+    )
     {:reply, {:error, %{reason: "unsupported signaling event"}}, socket}
   end
 

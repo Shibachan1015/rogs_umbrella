@@ -21,6 +21,8 @@ defmodule RogsCommWeb.ChatLive do
   on_mount {RogsCommWeb.UserAuthHooks, :assign_current_user}
 
   @rtc_connect_delay 400
+  @rtc_max_retries 3
+  @rtc_retry_delay 2000
 
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
@@ -360,7 +362,8 @@ defmodule RogsCommWeb.ChatLive do
           state
           | connecting?: true,
             status_message: "音声チャネルを初期化しています...",
-            error: nil
+            error: nil,
+            retry_count: 0
         })
         |> push_event("rtc:start", %{room_id: socket.assigns.room_id})
 
@@ -383,7 +386,8 @@ defmodule RogsCommWeb.ChatLive do
           | connected?: false,
             connecting?: false,
             status_message: "音声チャネルを切断しました",
-            error: nil
+            error: nil,
+            retry_count: 0
         })
         |> push_event("rtc:stop", %{room_id: socket.assigns.room_id})
 
@@ -533,8 +537,76 @@ defmodule RogsCommWeb.ChatLive do
          | connecting?: false,
            connected?: true,
            status_message: "音声チャネルが接続されました",
-           error: nil
+           error: nil,
+           retry_count: 0
        })}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:rtc_error, reason}, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? do
+      retry_count = Map.get(state, :retry_count, 0)
+
+      if retry_count < @rtc_max_retries do
+        Logger.warning("ChatLive: WebRTC connection failed, retrying",
+          room_id: socket.assigns.room_id,
+          reason: reason,
+          retry_count: retry_count + 1
+        )
+
+        # Schedule retry
+        Process.send_after(self(), :rtc_retry, @rtc_retry_delay)
+
+        {:noreply,
+         assign(socket, :rtc_state, %{
+           state
+           | connecting?: true,
+             status_message: "接続に失敗しました。再試行中... (#{retry_count + 1}/#{@rtc_max_retries})",
+             error: reason,
+             retry_count: retry_count + 1
+         })}
+      else
+        Logger.error("ChatLive: WebRTC connection failed after max retries",
+          room_id: socket.assigns.room_id,
+          reason: reason,
+          retry_count: retry_count
+        )
+
+        {:noreply,
+         assign(socket, :rtc_state, %{
+           state
+           | connecting?: false,
+             connected?: false,
+             status_message: "接続に失敗しました。しばらくしてから再試行してください。",
+             error: reason,
+             retry_count: 0
+         })}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:rtc_retry, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? and not state.connected? do
+      socket =
+        socket
+        |> assign(:rtc_state, %{
+          state
+          | status_message: "音声チャネルを再試行しています...",
+            error: nil
+        })
+        |> push_event("rtc:start", %{room_id: socket.assigns.room_id})
+
+      Process.send_after(self(), :rtc_connected, @rtc_connect_delay)
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -574,7 +646,8 @@ defmodule RogsCommWeb.ChatLive do
       mic_muted?: false,
       speakers_muted?: false,
       status_message: "未接続",
-      error: nil
+      error: nil,
+      retry_count: 0
     }
   end
 

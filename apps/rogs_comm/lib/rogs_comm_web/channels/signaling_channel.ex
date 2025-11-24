@@ -48,13 +48,24 @@ defmodule RogsCommWeb.SignalingChannel do
             from_user_id = socket.assigns.user_id
             to_user_id = Map.get(normalized, "to")
 
-            Signaling.create_session(%{
-              room_id: room_id,
-              from_user_id: from_user_id,
-              to_user_id: to_user_id,
-              event_type: event,
-              payload: normalized
-            })
+            case Signaling.create_session(%{
+                   room_id: room_id,
+                   from_user_id: from_user_id,
+                   to_user_id: to_user_id,
+                   event_type: event,
+                   payload: normalized
+                 }) do
+              {:ok, _session} ->
+                :ok
+
+              {:error, changeset} ->
+                Logger.warning("SignalingChannel: Failed to log signaling session",
+                  user_id: user_id,
+                  room_id: room_id,
+                  event: event,
+                  errors: inspect(changeset.errors)
+                )
+            end
 
             # If 'to' is specified, validate that the target user is in the room
             case to_user_id do

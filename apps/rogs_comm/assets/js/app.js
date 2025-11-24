@@ -29,12 +29,20 @@ import WebRTCHook from "./webrtc_hook"
 import TypingHook from "./typing_hook"
 import ChatScrollHook from "./chat_scroll_hook"
 import ChatStateHook from "./chat_state_hook"
+import CopyLinkHook from "./copy_link_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 ChatRealtime.connect(csrfToken)
 
-const hooks = {...colocatedHooks, WebRTCHook, TypingHook, ChatScrollHook, ChatStateHook}
+const hooks = {
+  ...colocatedHooks,
+  WebRTCHook,
+  TypingHook,
+  ChatScrollHook,
+  ChatStateHook,
+  CopyLinkHook,
+}
 
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

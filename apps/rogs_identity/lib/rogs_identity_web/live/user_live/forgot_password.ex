@@ -7,23 +7,25 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Forgot your password?</p>
-            <:subtitle>
-              We'll send password reset instructions to your email
-            </:subtitle>
-          </.header>
+      <div class="mdc-card" style="max-width: 400px; margin: 48px auto;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 8px 0; color: var(--md-text-primary);">
+            Forgot your password?
+          </h1>
+          <p style="font-size: 14px; color: var(--md-text-secondary); margin: 0;">
+            We'll send password reset instructions to your email
+          </p>
         </div>
 
-        <div :if={local_mail_adapter?()} class="alert alert-info">
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>You are running the local mail adapter.</p>
-            <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
-            </p>
+        <div :if={local_mail_adapter?()} class="mdc-card" style="background-color: #e3f2fd; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <span class="material-icons" style="color: #1976d2; font-size: 24px;">info</span>
+            <div style="flex: 1;">
+              <p style="margin: 0 0 4px 0; font-size: 14px; color: #1565c0;">You are running the local mail adapter.</p>
+              <p style="margin: 0; font-size: 14px; color: #1565c0;">
+                To see sent emails, visit <.link href="/dev/mailbox" style="color: #1976d2; text-decoration: underline;">the mailbox page</.link>.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -41,13 +43,13 @@ defmodule RogsIdentityWeb.UserLive.ForgotPassword do
             required
             phx-mounted={JS.focus()}
           />
-          <.button class="btn btn-primary w-full">
+          <.button variant="primary" style="width: 100%; margin-top: 8px;">
             Send reset instructions <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
-        <div class="text-center">
-          <.link navigate={~p"/users/log-in"} class="text-sm font-semibold">
+        <div style="text-align: center; margin-top: 24px;">
+          <.link navigate={~p"/users/log-in"} style="color: var(--md-primary); text-decoration: none; font-size: 14px; font-weight: 500;">
             Back to log in
           </.link>
         </div>

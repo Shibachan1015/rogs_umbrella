@@ -35,35 +35,59 @@ defmodule RogsIdentityWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+    <header class="mdc-top-app-bar">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <a
+          href="/"
+          style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: white;"
+        >
+          <img src={~p"/images/logo.svg"} width="36" style="filter: brightness(0) invert(1);" />
+          <span style="font-size: 20px; font-weight: 500;">RogsIdentity</span>
         </a>
       </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <%= if @current_scope && @current_scope.user do %>
+          <span style="font-size: 14px; opacity: 0.87;">{@current_scope.user.email}</span>
+          <.link
+            href={~p"/users/settings"}
+            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
+            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+            onmouseout="this.style.backgroundColor='transparent'"
+          >
+            Settings
+          </.link>
+          <.link
+            href={~p"/users/log-out"}
+            method="delete"
+            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
+            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+            onmouseout="this.style.backgroundColor='transparent'"
+          >
+            Log out
+          </.link>
+        <% else %>
+          <.link
+            href={~p"/users/register"}
+            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
+            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+            onmouseout="this.style.backgroundColor='transparent'"
+          >
+            Register
+          </.link>
+          <.link
+            href={~p"/users/log-in"}
+            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
+            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+            onmouseout="this.style.backgroundColor='transparent'"
+          >
+            Log in
+          </.link>
+        <% end %>
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main style="padding: 24px; background-color: var(--md-background); min-height: calc(100vh - 64px);">
+      <div style="max-width: 600px; margin: 0 auto;">
         {render_slot(@inner_block)}
       </div>
     </main>

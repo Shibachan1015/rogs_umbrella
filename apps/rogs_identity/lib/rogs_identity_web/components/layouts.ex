@@ -35,61 +35,44 @@ defmodule RogsIdentityWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="mdc-top-app-bar">
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <a
-          href="/"
-          style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: white;"
-        >
-          <img src={~p"/images/logo.svg"} width="36" style="filter: brightness(0) invert(1);" />
-          <span style="font-size: 20px; font-weight: 500;">RogsIdentity</span>
-        </a>
+    <header class="identity-nav">
+      <div class="identity-brand">
+        <img src={~p"/images/logo.svg"} width="36" height="36" alt="Rogs Identity logo" />
+        <div>
+          <div>TORII IDENTITY</div>
+          <small style="letter-spacing: 0.3em; color: var(--color-landing-text-secondary);">
+            Auth Gateway
+          </small>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 16px;">
+
+      <div class="identity-nav__links">
         <%= if @current_scope && @current_scope.user do %>
-          <span style="font-size: 14px; opacity: 0.87;">{@current_scope.user.email}</span>
-          <.link
-            href={~p"/users/settings"}
-            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
-            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
-            onmouseout="this.style.backgroundColor='transparent'"
-          >
+          <span class="identity-email">
+            {@current_scope.user.email}
+          </span>
+          <.link href={~p"/users/settings"} class="identity-nav__link identity-nav__cta">
             Settings
           </.link>
-          <.link
-            href={~p"/users/log-out"}
-            method="delete"
-            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
-            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
-            onmouseout="this.style.backgroundColor='transparent'"
-          >
+          <.link href={~p"/users/log-out"} method="delete" class="identity-nav__link">
             Log out
           </.link>
         <% else %>
-          <.link
-            href={~p"/users/register"}
-            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
-            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
-            onmouseout="this.style.backgroundColor='transparent'"
-          >
+          <.link href={~p"/users/register"} class="identity-nav__link">
             Register
           </.link>
-          <.link
-            href={~p"/users/log-in"}
-            style="color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; transition: background-color 0.2s;"
-            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
-            onmouseout="this.style.backgroundColor='transparent'"
-          >
+          <.link href={~p"/users/log-in"} class="identity-nav__link identity-nav__cta">
             Log in
           </.link>
         <% end %>
       </div>
     </header>
 
-    <main style="padding: 24px; background-color: var(--md-background); min-height: calc(100vh - 64px);">
-      <div style="max-width: 600px; margin: 0 auto;">
+    <main class="auth-shell">
+      <div class="torii-lines" aria-hidden="true"></div>
+      <section class="auth-panel">
         {render_slot(@inner_block)}
-      </div>
+      </section>
     </main>
 
     <.flash_group flash={@flash} />

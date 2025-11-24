@@ -160,6 +160,7 @@ defmodule ShinkankiWebWeb.GameLive do
             >
               {@game_state.room}
             </div>
+            <div class="hud-panel-divider" aria-hidden="true"></div>
             <!-- Turn Progress -->
             <div class="w-full space-y-3">
               <% remaining_turns = max(0, @game_state.max_turns - @game_state.turn)
@@ -255,6 +256,23 @@ defmodule ShinkankiWebWeb.GameLive do
                 <% end %>
               <% end %>
             </div>
+            <% demurrage_value = @game_state.demurrage || 0 %>
+            <div class="hud-info-grid mt-4 text-left">
+              <div class="hud-info-card">
+                <span class="hud-info-card-label">AKASHA</span>
+                <span class="hud-info-card-value">{@game_state.currency || 0}</span>
+                <span class="hud-info-card-subtle">空環ポイント</span>
+              </div>
+              <div class="hud-info-card">
+                <span class="hud-info-card-label">DEMURRAGE</span>
+                <span class="hud-info-card-value">{demurrage_value}</span>
+                <span class="hud-info-card-subtle">減衰量</span>
+                <span class="hud-info-card-diff">
+                  <%= if demurrage_value >= 0, do: "+", else: "-" %>{abs(demurrage_value)}
+                </span>
+              </div>
+            </div>
+          </div>
 
         <div class="flex-1 overflow-y-auto px-3 sm:px-4 space-y-4 pb-6">
           <!-- Phase Indicator -->
@@ -360,21 +378,6 @@ defmodule ShinkankiWebWeb.GameLive do
                 is_current_turn={is_current_player_turn(@game_state, player[:id] || player["id"])}
                 class="w-full"
               />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
-            <div class="hud-stat-card">
-              <div class="hud-section-title mb-1 tracking-[0.2em]">Currency</div>
-              <div class="text-base sm:text-lg font-semibold text-kin">{@game_state.currency}</div>
-            </div>
-            <div class="hud-stat-card">
-              <div class="hud-section-title mb-1 tracking-[0.2em]">
-                Demurrage
-              </div>
-              <div class="text-base sm:text-lg font-semibold text-[var(--color-landing-pale)]">
-                {@game_state.demurrage}
-              </div>
             </div>
           </div>
 
@@ -521,15 +524,27 @@ defmodule ShinkankiWebWeb.GameLive do
           <% else %>
             <!-- Active Projects Display -->
             <%= if length(@active_projects) > 0 && @game_status == :playing do %>
-              <div class="w-full max-w-5xl mb-4 sm:mb-6">
-                <div class="text-center mb-3">
-                  <h2 class="text-lg sm:text-xl font-bold text-sumi mb-1">共創プロジェクト</h2>
-                  <p class="text-xs sm:text-sm text-sumi/60">才能カードを捧げて進捗を進めましょう</p>
+              <section class="project-stage" aria-label="共創プロジェクト">
+                <div class="project-stage-header">
+                  <div>
+                    <p class="stage-label">共創プロジェクト</p>
+                    <p class="stage-subtitle">才能を捧げ、森と文化とつながりを再構築</p>
+                  </div>
+                  <div class="project-metrics">
+                    <div class="project-metric">
+                      <span class="metric-label">ACTIVE</span>
+                      <span class="metric-value">{length(@active_projects)}</span>
+                    </div>
+                    <div class="project-metric">
+                      <span class="metric-label">AKASHA φ</span>
+                      <span class="metric-value">{@game_state.currency}</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-2 sm:px-4">
+                <div class="project-grid">
                   <%= for project <- @active_projects do %>
                     <div
-                      class="cursor-pointer hover:scale-105 transition-transform"
+                      class="cursor-pointer transition-transform"
                       phx-click="open_project_contribute"
                       phx-value-project-id={project[:id] || project["id"]}
                     >
@@ -555,7 +570,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     </div>
                   <% end %>
                 </div>
-              </div>
+              </section>
             <% end %>
             <div class="life-index-orb" role="region" aria-label="Life Index表示">
               <!-- Life Index Circle -->
@@ -703,20 +718,26 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
 
     <!-- Actions (Stamps) -->
-            <div
-              class="absolute bottom-2 sm:bottom-4 md:bottom-8 right-2 sm:right-4 md:right-8 flex gap-1 sm:gap-2 md:gap-4 flex-wrap justify-end max-w-[50%]"
-              role="toolbar"
-              aria-label="アクションボタン"
-            >
-              <.hanko_btn
-                :for={button <- @action_buttons}
-                label={button.label}
-                color={button.color}
-                class="shadow-lg hover:-translate-y-1 transition w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
-                aria-label={button.label <> "を実行"}
-                phx-click="execute_action"
-                phx-value-action={button.action || button.label}
-              />
+            <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
+            <div class="action-ribbon" role="toolbar" aria-label="アクションボタン">
+              <div class="action-ribbon-label">
+                AKASHA ACTIONS
+                <span>残り {remaining_turns} Turn</span>
+              </div>
+              <p class="action-ribbon-subtext">
+                神印で流れを刻み、空環ポイントを循環させましょう。
+              </p>
+              <div class="action-ribbon-buttons">
+                <.hanko_btn
+                  :for={button <- @action_buttons}
+                  label={button.label}
+                  color={button.color}
+                  class="action-hanko"
+                  aria-label={button.label <> "を実行"}
+                  phx-click="execute_action"
+                  phx-value-action={button.action || button.label}
+                />
+              </div>
             </div>
           <% end %>
           </div>

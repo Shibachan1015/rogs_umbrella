@@ -9,6 +9,10 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
+## Torii Resonance Design System
+
+ShinkankiWeb のUIは Torii Resonance Design System (TRDS) に準拠しています。色やレイアウト、コンポーネントの統一ルールは [`../../docs/torii_resonance_design_system.md`](../../docs/torii_resonance_design_system.md) を参照してください。
+
 ## Learn more
 
 * Official website: https://www.phoenixframework.org/

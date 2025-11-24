@@ -5,7 +5,7 @@ defmodule RogsCommWeb.RoomController do
 
   def create(conn, %{"room" => room_params}) do
     case Rooms.create_room(room_params) do
-      {:ok, room} ->
+      {:ok, _room} ->
         conn
         |> put_flash(:info, "ルームを作成しました")
         |> redirect(to: ~p"/rooms")

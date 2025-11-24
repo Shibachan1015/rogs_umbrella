@@ -222,6 +222,7 @@ defmodule RogsCommWeb.ChatChannel do
     end
   rescue
     Ecto.NoResultsError ->
+      user_id = socket.assigns.user_id
       Logger.warning("ChatChannel: Message not found for edit",
         user_id: socket.assigns.user_id,
         message_id: message_id
@@ -277,6 +278,7 @@ defmodule RogsCommWeb.ChatChannel do
     end
   rescue
     Ecto.NoResultsError ->
+      user_id = socket.assigns.user_id
       Logger.warning("ChatChannel: Message not found for delete",
         user_id: socket.assigns.user_id,
         message_id: message_id

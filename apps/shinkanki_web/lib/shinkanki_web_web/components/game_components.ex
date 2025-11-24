@@ -23,16 +23,18 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "relative w-24 h-36 bg-washi border-2 border-sumi shadow-md flex flex-col items-center p-2 transition-all duration-300 select-none",
+        "relative w-24 h-36 bg-washi border-2 border-sumi flex flex-col items-center p-2 transition-all select-none state-layer",
+        "elevation-2",
         if(@disabled,
           do: "cursor-not-allowed opacity-50",
           else:
-            "cursor-pointer hover:-translate-y-2 hover:shadow-xl hover:border-shu/50 active:scale-95"
+            "cursor-pointer hover:-translate-y-2 hover:elevation-4 hover:border-shu/50 active:scale-95 active:elevation-1"
         ),
         "before:content-[''] before:absolute before:top-1 before:w-2 before:h-2 before:bg-sumi/10 before:rounded-full",
-        "focus:outline-none focus:ring-2 focus:ring-shu/50 focus:ring-offset-2",
+        "focus-ring",
         @class
       ]}
+      style={if @disabled, do: "", else: "transition: all var(--motion-duration-short4) var(--motion-easing-standard);"}
       role="button"
       tabindex={if @disabled, do: "-1", else: "0"}
       aria-label={"カード: #{@title}, コスト: #{@cost}"}
@@ -75,15 +77,16 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <button
       class={[
-        "rounded-full border-4 border-double flex items-center justify-center transition-all duration-200 shadow-sm",
-        "hover:shadow-md hover:scale-110",
-        "active:scale-90 active:shadow-inner",
-        "focus:outline-none focus:ring-2 focus:ring-offset-2",
-        @color == "shu" && "border-shu text-shu bg-washi hover:bg-shu/5 focus:ring-shu/50",
-        @color == "sumi" && "border-sumi text-sumi bg-washi hover:bg-sumi/5 focus:ring-sumi/50",
-        @color == "matsu" && "border-matsu text-matsu bg-washi hover:bg-matsu/5 focus:ring-matsu/50",
+        "rounded-full border-4 border-double flex items-center justify-center state-layer ripple",
+        "elevation-1 hover:elevation-2 active:elevation-0",
+        "hover:scale-110 active:scale-95",
+        "focus-ring",
+        @color == "shu" && "border-shu text-shu bg-washi",
+        @color == "sumi" && "border-sumi text-sumi bg-washi",
+        @color == "matsu" && "border-matsu text-matsu bg-washi",
         @class
       ]}
+      style="transition: all var(--motion-duration-short4) var(--motion-easing-standard);"
       aria-label={@label}
       {@rest}
     >

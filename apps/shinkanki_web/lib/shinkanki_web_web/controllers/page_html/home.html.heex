@@ -1,137 +1,423 @@
 <Layouts.flash_group flash={@flash} />
 
 <div class="min-h-screen bg-washi">
-  <!-- Hero Section -->
-  <div class="relative overflow-hidden">
-    <!-- Background Pattern -->
-    <div class="absolute inset-0 opacity-5">
-      <div class="absolute inset-0" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(28, 28, 28, 0.03) 10px, rgba(28, 28, 28, 0.03) 20px);"></div>
-    </div>
-
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
-      <div class="text-center">
-        <!-- Title -->
-        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-sumi mb-6 writing-mode-vertical">
-          <span class="inline-block">神</span>
-          <span class="inline-block">環</span>
-          <span class="inline-block">記</span>
-        </h1>
-        <p class="text-lg sm:text-xl md:text-2xl text-sumi/80 mb-2">Record of the Gods</p>
-        <p class="text-sm sm:text-base text-sumi/60 mb-8">八百万の神々となって、世界を立て直す協力型シミュレーション</p>
-
-        <!-- CTA Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+  <!-- Navigation Bar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-washi/95 backdrop-blur-sm border-b-2 border-sumi/20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="text-2xl font-bold text-shu writing-mode-vertical tracking-widest">神環記</div>
+          <span class="text-xs text-sumi/60 hidden sm:inline">Record of the Gods</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <.link
+            href="#features"
+            class="text-sm text-sumi/80 hover:text-sumi transition-colors hidden md:inline"
+          >
+            特徴
+          </.link>
+          <.link
+            href="#how-to-play"
+            class="text-sm text-sumi/80 hover:text-sumi transition-colors hidden md:inline"
+          >
+            遊び方
+          </.link>
           <.link
             navigate={~p"/game"}
-            class="px-8 py-4 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg hover:bg-shu/90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+            class="px-4 py-2 bg-shu text-washi rounded-lg text-sm font-semibold hover:bg-shu/90 transition-all duration-300 shadow-md hover:shadow-lg"
           >
             ゲームを開始
           </.link>
-          <.link
-            href="#about"
-            class="px-8 py-4 bg-washi text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-sumi/5 transition-all duration-300"
-          >
-            ゲームについて
-          </.link>
-        </div>
-
-        <!-- Game Stats Preview -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mt-12">
-          <div class="bg-matsu/10 border-2 border-matsu/30 rounded-lg p-4">
-            <div class="text-2xl font-bold text-matsu mb-1">F</div>
-            <div class="text-xs text-sumi/70">森 (Forest)</div>
-          </div>
-          <div class="bg-sakura/10 border-2 border-sakura/30 rounded-lg p-4">
-            <div class="text-2xl font-bold text-sakura mb-1">K</div>
-            <div class="text-xs text-sumi/70">文化 (Culture)</div>
-          </div>
-          <div class="bg-kohaku/10 border-2 border-kohaku/30 rounded-lg p-4">
-            <div class="text-2xl font-bold text-kohaku mb-1">S</div>
-            <div class="text-xs text-sumi/70">社会 (Social)</div>
-          </div>
-          <div class="bg-kin/10 border-2 border-kin/30 rounded-lg p-4">
-            <div class="text-2xl font-bold text-kin mb-1">P</div>
-            <div class="text-xs text-sumi/70">空環 (Akasha)</div>
-          </div>
         </div>
       </div>
+</div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <!-- Decorative circles -->
+      <div class="absolute top-20 left-10 w-72 h-72 bg-matsu/5 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-20 right-10 w-96 h-96 bg-sakura/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-kin/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+      
+      <!-- Subtle pattern overlay -->
+      <div class="absolute inset-0 opacity-[0.02]" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(28, 28, 28, 0.1) 20px, rgba(28, 28, 28, 0.1) 40px);"></div>
     </div>
-  </div>
 
-  <!-- About Section -->
-  <div id="about" class="bg-washi-dark py-16 sm:py-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-bold text-sumi mb-4 writing-mode-vertical">ゲームについて</h2>
-        <p class="text-lg text-sumi/70">神環記は、協力型のボードゲームシミュレーションです</p>
-      </div>
-
-      <div class="space-y-8">
-        <!-- Concept -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-bold text-sumi mb-3">コンセプト</h3>
-          <p class="text-sumi/80 leading-relaxed">
-            「人間もまた八百万の神の一柱である」というテーマのもと、プレイヤーは神格を通じてそれを思い出します。
-            森（F）、文化（K）、コミュニティ（S）を育て、空環マネー（P）を使って20年間で世界を立て直す協力型シミュレーションです。
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
+      <div class="text-center">
+        <!-- Main Title with Animation -->
+        <div class="mb-8 animate-fade-in">
+          <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-sumi mb-4 leading-tight">
+            <span class="inline-block writing-mode-vertical text-shu mr-2">神</span>
+            <span class="inline-block writing-mode-vertical text-matsu mr-2">環</span>
+            <span class="inline-block writing-mode-vertical text-sakura">記</span>
+          </h1>
+          <p class="text-xl sm:text-2xl md:text-3xl text-sumi/90 font-serif mb-3 tracking-wide">
+            Record of the Gods
+          </p>
+          <p class="text-base sm:text-lg md:text-xl text-sumi/70 max-w-2xl mx-auto leading-relaxed">
+            八百万の神々となって、世界を立て直す協力型シミュレーション
           </p>
         </div>
 
-        <!-- How to Play -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-bold text-sumi mb-3">遊び方</h3>
-          <ol class="list-decimal list-inside space-y-2 text-sumi/80">
-            <li>役割を選択（森の守り手、文化の継承者、コミュニティの灯火、空環エンジニア）</li>
-            <li>各ターンでイベントカードをめくり、効果を適用</li>
-            <li>アクションカードを使用して、パラメータを改善</li>
-            <li>才能カードを活用して、アクションを強化</li>
-            <li>共創プロジェクトに才能を捧げて、大きな恩恵を得る</li>
-            <li>20ターン以内にLife Indexを40以上にすることが目標</li>
-          </ol>
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-fade-in" style="animation-delay: 0.2s;">
+          <.link
+            navigate={~p"/game"}
+            class="group px-10 py-5 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg tracking-wider hover:bg-shu/90 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform"
+          >
+            <span class="flex items-center gap-2">
+              ゲームを開始
+              <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </span>
+          </.link>
+          <.link
+            href="#features"
+            class="px-10 py-5 bg-washi text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-sumi/5 transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            詳細を見る
+          </.link>
         </div>
 
-        <!-- Roles -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
-          <h3 class="text-xl font-bold text-sumi mb-4">プレイヤー役割</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 bg-matsu/5 border border-matsu/30 rounded">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-2xl">🌲</span>
-                <h4 class="font-bold text-matsu">森の守り手</h4>
-              </div>
-              <p class="text-sm text-sumi/70">F (Forest) の保護と育成を担当</p>
-            </div>
-            <div class="p-4 bg-sakura/5 border border-sakura/30 rounded">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-2xl">🌸</span>
-                <h4 class="font-bold text-sakura">文化の継承者</h4>
-              </div>
-              <p class="text-sm text-sumi/70">K (Culture) の継承と発展を担当</p>
-            </div>
-            <div class="p-4 bg-kohaku/5 border border-kohaku/30 rounded">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-2xl">🕯️</span>
-                <h4 class="font-bold text-kohaku">コミュニティの灯火</h4>
-              </div>
-              <p class="text-sm text-sumi/70">S (Social) の結束と強化を担当</p>
-            </div>
-            <div class="p-4 bg-kin/5 border border-kin/30 rounded">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-2xl">⚡</span>
-                <h4 class="font-bold text-kin">空環エンジニア</h4>
-              </div>
-              <p class="text-sm text-sumi/70">P (Akasha) の循環と技術を担当</p>
-            </div>
+        <!-- Game Parameters Preview -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto animate-fade-in" style="animation-delay: 0.4s;">
+          <div class="group bg-matsu/10 border-2 border-matsu/30 rounded-xl p-6 hover:border-matsu/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <div class="text-4xl font-bold text-matsu mb-2">F</div>
+            <div class="text-sm font-semibold text-sumi mb-1">森</div>
+            <div class="text-xs text-sumi/60">Forest</div>
+          </div>
+          <div class="group bg-sakura/10 border-2 border-sakura/30 rounded-xl p-6 hover:border-sakura/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <div class="text-4xl font-bold text-sakura mb-2">K</div>
+            <div class="text-sm font-semibold text-sumi mb-1">文化</div>
+            <div class="text-xs text-sumi/60">Culture</div>
+          </div>
+          <div class="group bg-kohaku/10 border-2 border-kohaku/30 rounded-xl p-6 hover:border-kohaku/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <div class="text-4xl font-bold text-kohaku mb-2">S</div>
+            <div class="text-sm font-semibold text-sumi mb-1">社会</div>
+            <div class="text-xs text-sumi/60">Social</div>
+          </div>
+          <div class="group bg-kin/10 border-2 border-kin/30 rounded-xl p-6 hover:border-kin/50 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <div class="text-4xl font-bold text-kin mb-2">P</div>
+            <div class="text-sm font-semibold text-sumi mb-1">空環</div>
+            <div class="text-xs text-sumi/60">Akasha</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Scroll Indicator -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+      <svg class="w-6 h-6 text-sumi/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 sm:py-32 bg-washi-dark">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl sm:text-5xl font-bold text-sumi mb-4">ゲームの特徴</h2>
+        <p class="text-lg text-sumi/70 max-w-2xl mx-auto">
+          協力と戦略が鍵となる、新しいボードゲーム体験
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">🤝</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">協力型プレイ</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            プレイヤー同士が協力して、20ターン以内にLife Indexを40以上にすることを目指します。個人の勝利ではなく、チーム全体の成功が重要です。
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">🎴</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">戦略的なカードプレイ</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            アクションカード、才能カード、プロジェクトカードを組み合わせて、最適な戦略を立てます。各カードには独自の効果があり、使い方次第で結果が大きく変わります。
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">🌿</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">バランスの取れた成長</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            森（F）、文化（K）、社会（S）の3つのパラメータをバランスよく育てることが重要です。偏った成長は失敗につながる可能性があります。
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">⚡</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">空環マネーの管理</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            空環マネー（P）は各ターンで10%減衰します。効率的に使用し、無駄を避けることが成功の鍵となります。
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">🎭</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">4つの役割</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            森の守り手、文化の継承者、コミュニティの灯火、空環エンジニアの4つの役割から選択し、それぞれの専門性を活かしてゲームを進めます。
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="bg-washi border-2 border-sumi/20 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+          <div class="text-5xl mb-4">🏛️</div>
+          <h3 class="text-xl font-bold text-sumi mb-3">共創プロジェクト</h3>
+          <p class="text-sumi/80 leading-relaxed">
+            才能カードを捧げて共創プロジェクトを完成させると、大きな恩恵を得られます。チーム全体で協力してプロジェクトを進めましょう。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How to Play Section -->
+  <section id="how-to-play" class="py-20 sm:py-32 bg-washi">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl sm:text-5xl font-bold text-sumi mb-4">遊び方</h2>
+        <p class="text-lg text-sumi/70 max-w-2xl mx-auto">
+          簡単なステップで始められます
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            1
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">役割を選択</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              4つの役割から1つを選択します。それぞれの役割には異なる専門性があり、ゲームの戦略に影響を与えます。
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            2
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">イベントフェーズ</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              各ターンの最初にイベントカードがめくられます。イベントの効果を確認し、チームで相談して対応を決めます。
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            3
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">相談フェーズ</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              チャット機能を使って、他のプレイヤーと戦略を相談します。協力して最適な判断を下しましょう。
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            4
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">アクションフェーズ</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              手札からアクションカードを選択し、才能カードを組み合わせて使用します。効果的にパラメータを改善しましょう。
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            5
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">減衰フェーズ</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              空環マネーが10%減衰します。効率的に使用し、無駄を避けることが重要です。
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="relative">
+          <div class="absolute -top-4 -left-4 w-12 h-12 bg-shu text-washi rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+            6
+          </div>
+          <div class="bg-washi-dark border-2 border-sumi/20 rounded-xl p-8 pt-12 shadow-lg">
+            <h3 class="text-xl font-bold text-sumi mb-3">目標達成</h3>
+            <p class="text-sumi/80 leading-relaxed">
+              20ターン以内にLife Index（F+K+S）を40以上にすることが目標です。チーム全体で協力して成功を目指しましょう。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roles Section -->
+  <section class="py-20 sm:py-32 bg-washi-dark">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl sm:text-5xl font-bold text-sumi mb-4">プレイヤー役割</h2>
+        <p class="text-lg text-sumi/70 max-w-2xl mx-auto">
+          4つの役割から選んで、あなたの専門性を活かしましょう
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Role 1 -->
+        <div class="bg-washi border-2 border-matsu/30 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="text-5xl">🌲</div>
+          <div>
+              <h3 class="text-2xl font-bold text-matsu">森の守り手</h3>
+              <p class="text-sm text-sumi/60">Forest Guardian</p>
+            </div>
+          </div>
+          <p class="text-sumi/80 leading-relaxed mb-4">
+            F (Forest) の保護と育成を担当します。森の力を最大限に引き出し、自然との調和を保ちます。
+          </p>
+          <div class="flex items-center gap-2 text-matsu">
+            <span class="text-sm font-semibold">専門分野:</span>
+            <span class="text-sm">自然保護、生態系の維持</span>
+          </div>
+        </div>
+
+        <!-- Role 2 -->
+        <div class="bg-washi border-2 border-sakura/30 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="text-5xl">🌸</div>
+          <div>
+              <h3 class="text-2xl font-bold text-sakura">文化の継承者</h3>
+              <p class="text-sm text-sumi/60">Culture Keeper</p>
+            </div>
+          </div>
+          <p class="text-sumi/80 leading-relaxed mb-4">
+            K (Culture) の継承と発展を担当します。伝統を守りながら、新しい文化を創造します。
+          </p>
+          <div class="flex items-center gap-2 text-sakura">
+            <span class="text-sm font-semibold">専門分野:</span>
+            <span class="text-sm">文化継承、芸術の発展</span>
+          </div>
+        </div>
+
+        <!-- Role 3 -->
+        <div class="bg-washi border-2 border-kohaku/30 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="text-5xl">🕯️</div>
+          <div>
+              <h3 class="text-2xl font-bold text-kohaku">コミュニティの灯火</h3>
+              <p class="text-sm text-sumi/60">Community Light</p>
+            </div>
+          </div>
+          <p class="text-sumi/80 leading-relaxed mb-4">
+            S (Social) の結束と強化を担当します。人々の絆を深め、コミュニティの力を高めます。
+          </p>
+          <div class="flex items-center gap-2 text-kohaku">
+            <span class="text-sm font-semibold">専門分野:</span>
+            <span class="text-sm">コミュニティ構築、社会連帯</span>
+          </div>
+        </div>
+
+        <!-- Role 4 -->
+        <div class="bg-washi border-2 border-kin/30 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="text-5xl">⚡</div>
+          <div>
+              <h3 class="text-2xl font-bold text-kin">空環エンジニア</h3>
+              <p class="text-sm text-sumi/60">Akasha Engineer</p>
+            </div>
+          </div>
+          <p class="text-sumi/80 leading-relaxed mb-4">
+            P (Akasha) の循環と技術を担当します。空環マネーの効率的な運用と技術革新を推進します。
+          </p>
+          <div class="flex items-center gap-2 text-kin">
+            <span class="text-sm font-semibold">専門分野:</span>
+            <span class="text-sm">技術革新、資源管理</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 sm:py-32 bg-gradient-to-b from-washi to-washi-dark">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-4xl sm:text-5xl font-bold text-sumi mb-6">今すぐ始めましょう</h2>
+      <p class="text-lg text-sumi/70 mb-10 max-w-2xl mx-auto">
+        八百万の神々と共に、世界を立て直す冒険が始まります
+      </p>
+      <.link
+        navigate={~p"/game"}
+        class="inline-block px-12 py-6 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-xl tracking-wider hover:bg-shu/90 transition-all duration-300 shadow-2xl hover:shadow-3xl hover:scale-105 transform"
+      >
+        ゲームを開始する
+      </.link>
+    </div>
+  </section>
 
   <!-- Footer -->
-  <footer class="bg-sumi text-washi py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-sm text-washi/80">神環記 - Record of the Gods</p>
-      <p class="text-xs text-washi/60 mt-2">八百万の神々と共に、世界を立て直そう</p>
+  <footer class="bg-sumi text-washi py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div>
+          <h3 class="text-xl font-bold mb-4">神環記</h3>
+          <p class="text-sm text-washi/70 leading-relaxed">
+            Record of the Gods<br>
+            八百万の神々と共に、世界を立て直す協力型シミュレーション
+          </p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">リンク</h4>
+          <ul class="space-y-2 text-sm text-washi/70">
+            <li>
+              <.link href="#features" class="hover:text-washi transition-colors">特徴</.link>
+            </li>
+            <li>
+              <.link href="#how-to-play" class="hover:text-washi transition-colors">遊び方</.link>
+            </li>
+            <li>
+              <.link navigate={~p"/game"} class="hover:text-washi transition-colors">ゲームを開始</.link>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">ゲームパラメータ</h4>
+          <ul class="space-y-2 text-sm text-washi/70">
+            <li>F (Forest) - 森</li>
+            <li>K (Culture) - 文化</li>
+            <li>S (Social) - 社会</li>
+            <li>P (Akasha) - 空環</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-washi/20 pt-8 text-center text-sm text-washi/60">
+        <p>&copy; 2025 神環記 - Record of the Gods. All rights reserved.</p>
     </div>
+  </div>
   </footer>
 </div>

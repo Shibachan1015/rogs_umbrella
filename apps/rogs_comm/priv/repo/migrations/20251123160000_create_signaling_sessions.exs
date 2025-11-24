@@ -21,4 +21,3 @@ defmodule RogsComm.Repo.Migrations.CreateSignalingSessions do
     create index(:signaling_sessions, [:room_id, :from_user_id, :to_user_id])
   end
 end
-

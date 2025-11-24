@@ -96,4 +96,3 @@ defmodule RogsCommWeb.RateLimiterTest do
     end
   end
 end
-

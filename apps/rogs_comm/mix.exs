@@ -85,6 +85,7 @@ defmodule RogsComm.MixProject do
         "ecto.migrate",
         fn _ ->
           seeds_file = Path.join(__DIR__, "priv/repo/seeds.exs")
+
           if File.exists?(seeds_file) do
             Mix.Task.run("run", [seeds_file])
           else

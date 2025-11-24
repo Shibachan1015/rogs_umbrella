@@ -16,6 +16,7 @@ defmodule RogsCommWeb.PresenceTest do
     test "tracks user presence in a topic" do
       topic = "room:test-room"
       user_id = "user-123"
+
       meta = %{
         user_id: user_id,
         user_email: "test@example.com",
@@ -49,7 +50,11 @@ defmodule RogsCommWeb.PresenceTest do
           self(),
           topic,
           user1_id,
-          %{user_id: user1_id, user_email: "user1@example.com", online_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+          %{
+            user_id: user1_id,
+            user_email: "user1@example.com",
+            online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          }
         )
 
       {:ok, _} =
@@ -57,7 +62,11 @@ defmodule RogsCommWeb.PresenceTest do
           self(),
           topic,
           user2_id,
-          %{user_id: user2_id, user_email: "user2@example.com", online_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+          %{
+            user_id: user2_id,
+            user_email: "user2@example.com",
+            online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          }
         )
 
       Process.sleep(50)
@@ -78,7 +87,11 @@ defmodule RogsCommWeb.PresenceTest do
           self(),
           topic1,
           user_id,
-          %{user_id: user_id, user_email: "test@example.com", online_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+          %{
+            user_id: user_id,
+            user_email: "test@example.com",
+            online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          }
         )
 
       {:ok, _} =
@@ -86,7 +99,11 @@ defmodule RogsCommWeb.PresenceTest do
           self(),
           topic2,
           user_id,
-          %{user_id: user_id, user_email: "test@example.com", online_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+          %{
+            user_id: user_id,
+            user_email: "test@example.com",
+            online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          }
         )
 
       Process.sleep(50)
@@ -112,7 +129,11 @@ defmodule RogsCommWeb.PresenceTest do
               self(),
               topic,
               user_id,
-              %{user_id: user_id, user_email: "test@example.com", online_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+              %{
+                user_id: user_id,
+                user_email: "test@example.com",
+                online_at: DateTime.utc_now() |> DateTime.to_iso8601()
+              }
             )
 
           # Keep process alive for a bit
@@ -176,4 +197,3 @@ defmodule RogsCommWeb.PresenceTest do
     end
   end
 end
-

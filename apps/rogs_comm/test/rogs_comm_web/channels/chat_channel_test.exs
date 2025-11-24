@@ -189,10 +189,11 @@ defmodule RogsCommWeb.ChatChannelTest do
     test "rejects editing other user's message", %{socket: socket, room: room} do
       other_message = message_fixture(%{room_id: room.id, user_id: "other_user_id"})
 
-      ref = push(socket, "edit_message", %{
-        "message_id" => other_message.id,
-        "content" => "Hacked content"
-      })
+      ref =
+        push(socket, "edit_message", %{
+          "message_id" => other_message.id,
+          "content" => "Hacked content"
+        })
 
       assert_reply ref, :error, %{reason: "you can only edit your own messages"}
     end
@@ -201,19 +202,21 @@ defmodule RogsCommWeb.ChatChannelTest do
       other_room = room_fixture()
       other_message = message_fixture(%{room_id: other_room.id, user_id: "user_id"})
 
-      ref = push(socket, "edit_message", %{
-        "message_id" => other_message.id,
-        "content" => "Wrong room"
-      })
+      ref =
+        push(socket, "edit_message", %{
+          "message_id" => other_message.id,
+          "content" => "Wrong room"
+        })
 
       assert_reply ref, :error, %{reason: "message not found in this room"}
     end
 
     test "rejects empty content", %{socket: socket, message: message} do
-      ref = push(socket, "edit_message", %{
-        "message_id" => message.id,
-        "content" => "   "
-      })
+      ref =
+        push(socket, "edit_message", %{
+          "message_id" => message.id,
+          "content" => "   "
+        })
 
       assert_reply ref, :error, %{reason: "message content cannot be empty"}
     end
@@ -221,10 +224,11 @@ defmodule RogsCommWeb.ChatChannelTest do
     test "rejects non-existent message", %{socket: socket} do
       fake_id = Ecto.UUID.generate()
 
-      ref = push(socket, "edit_message", %{
-        "message_id" => fake_id,
-        "content" => "Content"
-      })
+      ref =
+        push(socket, "edit_message", %{
+          "message_id" => fake_id,
+          "content" => "Content"
+        })
 
       assert_reply ref, :error, %{reason: "message not found"}
     end
@@ -411,4 +415,3 @@ defmodule RogsCommWeb.ChatChannelTest do
     end
   end
 end
-

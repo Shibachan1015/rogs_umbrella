@@ -3,9 +3,10 @@
 
 module.exports = {
   content: [
-    "../css/**/*.css",
-    "../js/**/*.js",
-    "../../lib/shinkanki_web_web/**/*.{ex,exs,heex}",
+    "./css/**/*.css",
+    "./js/**/*.js",
+    "../lib/shinkanki_web_web.ex",
+    "../lib/shinkanki_web_web/**/*.{ex,exs,heex}"
   ],
   theme: {
     extend: {

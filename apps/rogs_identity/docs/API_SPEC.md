@@ -52,7 +52,7 @@ Set-Cookie: _rogs_identity_key=...; Path=/; HttpOnly
 HTTP/1.1 401 Unauthorized
 
 {
-  "error": "Invalid email or password"
+  "error": "We couldn't verify those credentials."
 }
 ```
 
@@ -258,7 +258,7 @@ Set-Cookie: _rogs_identity_key=; Path=/; Max-Age=0
 HTTP/1.1 429 Too Many Requests
 
 {
-  "error": "Too many login attempts. Please try again later."
+  "error": "Login attempts are cooling down. Hold for a moment and retry."
 }
 ```
 

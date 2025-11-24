@@ -1311,150 +1311,95 @@ html {
   }
 }
 
-.text-landing-text-secondary {
-  color: var(--color-landing-text-secondary);
+/* --------------------------------------------------
+   Resonance HUD (Game Screen)
+   -------------------------------------------------- */
+.resonance-shell {
+  background: radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(238, 196, 206, 0.08), transparent 40%),
+    var(--color-midnight);
 }
 
-.game-shell {
-  min-height: 100vh;
-  background: radial-gradient(circle at 15% -10%, rgba(212, 175, 55, 0.12), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(238, 196, 206, 0.1), transparent 55%), var(--color-midnight);
-  color: var(--color-landing-text-primary);
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+.resonance-board {
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 32px;
+  background: linear-gradient(135deg, rgba(15, 20, 25, 0.85), rgba(26, 31, 46, 0.85));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
   position: relative;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
-.game-shell::before {
+.resonance-board::after {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.25'/%3E%3C/svg%3E");
-  opacity: 0.08;
   pointer-events: none;
-  z-index: 0;
+  background: radial-gradient(circle at center, rgba(212, 175, 55, 0.1), transparent 55%);
 }
 
-.game-shell > * {
+.hud-panel {
+  background: rgba(15, 20, 25, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   position: relative;
-  z-index: 1;
-}
-
-.game-stage {
-  flex: 1;
-  display: flex;
-  position: relative;
-  gap: 1.5rem;
-  padding: 1rem;
   overflow: hidden;
 }
 
-.game-sidebar {
-  width: min(85vw, 320px);
-  background: rgba(15, 20, 25, 0.9);
-  border-right: 1px solid rgba(212, 175, 55, 0.1);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-  padding: 1.25rem;
-  backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  height: 100%;
-  overflow-y: auto;
-  flex-shrink: 0;
-  z-index: 20;
+.hud-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(212, 175, 55, 0.08), transparent);
+  opacity: 0.4;
+  pointer-events: none;
 }
 
-@media (min-width: 1024px) {
-  .game-sidebar {
-    position: static;
-    width: 320px;
-  }
+.hud-panel-light {
+  background: rgba(252, 250, 242, 0.08);
+  border: 1px solid rgba(252, 250, 242, 0.15);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
 }
 
-.game-sidebar-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(212, 175, 55, 0.08);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-}
-
-.sidebar-card-title {
-  font-size: 0.75rem;
+.hud-section-title {
   text-transform: uppercase;
   letter-spacing: 0.35em;
-  color: var(--color-landing-text-secondary);
-  margin-bottom: 0.75rem;
-}
-
-.sidebar-card-divider {
-  width: 60%;
-  height: 1px;
-  margin: 0.75rem auto;
-  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.4), transparent);
-  opacity: 0.6;
-}
-
-.game-metric-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.metric-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(212, 175, 55, 0.08);
-  border-radius: 1rem;
-  padding: 0.75rem;
-  text-align: center;
-}
-
-.metric-label {
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
   font-size: 0.65rem;
   color: var(--color-landing-text-secondary);
-  margin-bottom: 0.25rem;
 }
 
-.metric-value {
-  font-size: 1.125rem;
-  font-weight: 600;
+.hud-stat-card {
+  background: rgba(26, 31, 46, 0.75);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 14px;
+  padding: 0.85rem;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.25);
 }
 
-.sidebar-chat {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+.hud-chat-card {
+  background: rgba(26, 31, 46, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
 }
 
-.sidebar-chat-log {
-  flex: 1;
-  min-height: 200px;
-  max-height: 320px;
-  padding-top: 0.5rem;
+.hud-chat-input {
+  background: rgba(252, 250, 242, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 12px;
+  color: var(--color-landing-text-primary);
 }
 
-.sidebar-chat-form {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(212, 175, 55, 0.08);
+.hud-chat-input:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
 }
 
-.game-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  padding: 1.5rem;
-  overflow: hidden;
+.resonance-hand {
+  background: rgba(15, 20, 25, 0.92);
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);
 }
-
-.turn-progress-track {
-  background: rgba(255, 255, 255, 0.05);
-}
->>>>>>> origin/main

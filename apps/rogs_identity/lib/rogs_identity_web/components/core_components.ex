@@ -50,11 +50,13 @@ defmodule RogsIdentityWeb.CoreComponents do
     assigns = assign_new(assigns, :id, fn -> "flash-#{assigns.kind}" end)
 
     icon_name =
-      case @kind do
+      case assigns.kind do
         :info -> "hero-information-circle"
         :error -> "hero-exclamation-triangle-mini"
         _ -> "hero-check-circle"
       end
+
+    assigns = assign(assigns, :icon_name, icon_name)
 
     ~H"""
     <div
@@ -69,7 +71,7 @@ defmodule RogsIdentityWeb.CoreComponents do
       ]}
       {@rest}
     >
-      <.icon name={icon_name} class="size-5 text-[var(--color-landing-gold)]" />
+      <.icon name={@icon_name} class="size-5 text-[var(--color-landing-gold)]" />
       <div style="flex: 1; min-width: 0;">
         <p :if={@title} style="font-weight: 600; margin-bottom: 2px;">{@title}</p>
         <p style="margin: 0; font-size: 0.9rem;">{msg}</p>
@@ -261,6 +263,7 @@ defmodule RogsIdentityWeb.CoreComponents do
   def input(assigns) do
     assigns = assign_new(assigns, :id, fn -> assigns[:name] end)
     placeholder = assigns[:rest][:placeholder]
+    assigns = assign(assigns, :computed_placeholder, placeholder)
 
     ~H"""
     <div class="resonance-field">
@@ -272,7 +275,7 @@ defmodule RogsIdentityWeb.CoreComponents do
         name={@name}
         id={@id}
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-        placeholder={placeholder}
+        placeholder={@computed_placeholder}
         class={[
           @class || "resonance-input",
           @errors != [] && (@error_class || "input-error")

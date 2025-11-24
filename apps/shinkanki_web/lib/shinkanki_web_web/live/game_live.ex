@@ -159,12 +159,12 @@ defmodule ShinkankiWebWeb.GameLive do
               Turn {@game_state.turn} / {@game_state.max_turns}
             </div>
             
-     <!-- Phase Indicator -->
+    <!-- Phase Indicator -->
             <div class="pt-2 border-t border-sumi/30">
               <.phase_indicator current_phase={@current_phase} />
             </div>
             
-     <!-- Game Start Button (Waiting State) -->
+    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
               <div class="pt-4 border-t border-sumi/30">
                 <div class="text-center space-y-2">
@@ -672,12 +672,14 @@ defmodule ShinkankiWebWeb.GameLive do
       show={@show_ending}
       game_status={@game_status}
       life_index={life_index(@game_state)}
-      final_stats={%{
-        forest: @game_state.forest,
-        culture: @game_state.culture,
-        social: @game_state.social,
-        currency: @game_state.currency
-      }}
+      final_stats={
+        %{
+          forest: @game_state.forest,
+          culture: @game_state.culture,
+          social: @game_state.social,
+          currency: @game_state.currency
+        }
+      }
       turn={@game_state.turn}
       max_turns={@game_state.max_turns}
       id="ending-screen"
@@ -1090,7 +1092,7 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
     # Update game state when broadcast from GameServer
     new_status = game.status || :waiting
-    
+
     socket =
       socket
       |> assign(:game_state, format_game_state(game))

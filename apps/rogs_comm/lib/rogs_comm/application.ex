@@ -7,6 +7,9 @@ defmodule RogsComm.Application do
 
   @impl true
   def start(_type, _args) do
+    # Initialize rate limiter ETS table
+    RogsCommWeb.RateLimiter.init()
+
     children = [
       RogsCommWeb.Telemetry,
       RogsComm.Repo,

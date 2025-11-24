@@ -3,6 +3,7 @@ defmodule RogsCommWeb.UserAuthHooks do
   LiveView hooks for user authentication.
   """
 
+  import Phoenix.Component
   alias RogsIdentity.Accounts
 
   def on_mount(:assign_current_user, _params, session, socket) do
@@ -17,10 +18,10 @@ defmodule RogsCommWeb.UserAuthHooks do
           case Accounts.get_user_by_session_token(token) do
             {user, _token_inserted_at} ->
               socket
-              |> Phoenix.LiveView.assign(:current_user_id, user.id)
-              |> Phoenix.LiveView.assign(:current_user_email, user.email)
-              |> Phoenix.LiveView.assign(:current_user, user)
-              |> Phoenix.LiveView.assign(:display_name, user.email)
+              |> assign(:current_user_id, user.id)
+              |> assign(:current_user_email, user.email)
+              |> assign(:current_user, user)
+              |> assign(:display_name, user.email)
 
             nil ->
               assign_anonymous_user(socket)
@@ -32,9 +33,9 @@ defmodule RogsCommWeb.UserAuthHooks do
 
   defp assign_anonymous_user(socket) do
     socket
-    |> Phoenix.LiveView.assign(:current_user_id, nil)
-    |> Phoenix.LiveView.assign(:current_user_email, nil)
-    |> Phoenix.LiveView.assign(:current_user, nil)
-    |> Phoenix.LiveView.assign(:display_name, "anonymous")
+    |> assign(:current_user_id, nil)
+    |> assign(:current_user_email, nil)
+    |> assign(:current_user, nil)
+    |> assign(:display_name, "anonymous")
   end
 end

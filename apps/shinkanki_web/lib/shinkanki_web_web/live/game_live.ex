@@ -164,7 +164,10 @@ defmodule ShinkankiWebWeb.GameLive do
             <!-- Turn Progress -->
             <div class="w-full">
               <div class="flex justify-between items-center mb-1">
-                <span class="text-xs text-sumi/60" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
+                <span
+                  class="text-xs text-sumi/60"
+                  aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
+                >
                   Turn {@game_state.turn} / {@game_state.max_turns}
                 </span>
                 <span class="text-xs font-bold text-shu">
@@ -277,8 +280,8 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             <% end %>
           </div>
-
-          <!-- Players Info -->
+          
+    <!-- Players Info -->
           <div class="px-3 sm:px-4 py-3 border-b-2 border-sumi">
             <div class="text-xs uppercase tracking-[0.3em] text-sumi/60 mb-2">プレイヤー</div>
             <div class="space-y-2">
@@ -776,12 +779,14 @@ defmodule ShinkankiWebWeb.GameLive do
       show={@show_card_detail}
       card={@detail_card}
       current_currency={@game_state.currency}
-      current_params={%{
-        forest: @game_state.forest,
-        culture: @game_state.culture,
-        social: @game_state.social,
-        currency: @game_state.currency
-      }}
+      current_params={
+        %{
+          forest: @game_state.forest,
+          culture: @game_state.culture,
+          social: @game_state.social,
+          currency: @game_state.currency
+        }
+      }
       id="card-detail-modal"
     />
 
@@ -1762,15 +1767,19 @@ defmodule ShinkankiWebWeb.GameLive do
 
   defp get_current_player_name(game_state, players) when is_list(players) do
     # Get current player from game state
-    current_player_id = 
+    current_player_id =
       case game_state do
         %{player_order: order, current_player_index: index} when is_list(order) and index >= 0 ->
           Enum.at(order, index)
-        _ -> nil
+
+        _ ->
+          nil
       end
 
     case current_player_id do
-      nil -> nil
+      nil ->
+        nil
+
       id ->
         case Enum.find(players, fn p -> (p[:id] || p["id"]) == id end) do
           nil -> "Player #{String.slice(id, 0, 8)}"
@@ -1786,7 +1795,9 @@ defmodule ShinkankiWebWeb.GameLive do
       %{player_order: order, current_player_index: index} when is_list(order) and index >= 0 ->
         current_player_id = Enum.at(order, index)
         current_player_id == user_id
-      _ -> false
+
+      _ ->
+        false
     end
   end
 end

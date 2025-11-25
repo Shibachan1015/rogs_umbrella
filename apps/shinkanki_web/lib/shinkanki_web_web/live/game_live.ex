@@ -130,28 +130,23 @@ defmodule ShinkankiWebWeb.GameLive do
           aria-label="ゲーム情報とチャット"
           aria-hidden="false"
         >
-          <!-- Mobile toggle button (outside sidebar) -->
           <button
             class="lg:hidden fixed left-0 top-4 z-30 w-10 h-10 bg-shu text-washi rounded-r-lg flex items-center justify-center shadow-md"
-            phx-click={
-              JS.toggle(to: "#sidebar", in: {"translate-x-0", "-translate-x-full"}, time: 300)
-            }
+            phx-click={JS.toggle_class("-translate-x-full", to: "#sidebar")}
             aria-label="サイドバーを開く"
             aria-expanded="false"
             id="sidebar-toggle"
           >
             <.icon name="hero-bars-3" class="w-5 h-5" />
           </button>
-          <!-- Close button inside sidebar -->
           <button
             class="lg:hidden absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30"
-            phx-click={
-              JS.toggle(to: "#sidebar", in: {"translate-x-0", "-translate-x-full"}, time: 300)
-            }
+            phx-click={JS.toggle_class("-translate-x-full", to: "#sidebar")}
             aria-label="サイドバーを閉じる"
           >
             <.icon name="hero-x-mark" class="w-4 h-4" />
           </button>
+
           <div class="hud-panel text-center space-y-4 mb-4">
             <div class="hud-section-title" aria-label="ルーム名">Room</div>
             <div
@@ -161,27 +156,20 @@ defmodule ShinkankiWebWeb.GameLive do
               {@game_state.room}
             </div>
             <div class="hud-panel-divider" aria-hidden="true"></div>
-            <!-- Turn Progress -->
             <div class="w-full space-y-3">
               <% remaining_turns = max(0, @game_state.max_turns - @game_state.turn)
               progress_percentage = trunc(@game_state.turn / @game_state.max_turns * 100)
               is_warning = remaining_turns <= 5
-              is_critical = remaining_turns <= 3 %>
-              <!-- Turn Numbers -->
+              is_critical = remaining_turns <= 3
+              demurrage_value = @game_state.demurrage || 0 %>
               <div class="flex justify-between items-baseline text-[var(--color-landing-text-secondary)]">
-                <span
-                  class="text-xs uppercase tracking-[0.3em]"
-                  aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
-                >
+                <span class="text-xs uppercase tracking-[0.3em]" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
                   Turn {@game_state.turn} / {@game_state.max_turns}
                 </span>
                 <span class="text-[10px]">
                   ({progress_percentage}%)
                 </span>
-                <div class={[
-                  "flex items-baseline gap-1",
-                  if(is_critical, do: "turn-remaining-warning", else: "")
-                ]}>
+                <div class={["flex items-baseline gap-1", if(is_critical, do: "turn-remaining-warning", else: "")]}>
                   <span class={[
                     "text-lg sm:text-xl font-bold font-serif",
                     if(is_critical,
@@ -202,8 +190,6 @@ defmodule ShinkankiWebWeb.GameLive do
                   </span>
                 </div>
               </div>
-
-    <!-- Progress Bar -->
               <div class={[
                 "w-full h-3 rounded-full overflow-hidden border",
                 if(is_critical,
@@ -238,8 +224,6 @@ defmodule ShinkankiWebWeb.GameLive do
                   </div>
                 </div>
               </div>
-
-    <!-- Warning Message -->
               <%= if is_critical do %>
                 <div class="text-center">
                   <span class="text-xs font-semibold text-shu animate-pulse">
@@ -256,7 +240,6 @@ defmodule ShinkankiWebWeb.GameLive do
                 <% end %>
               <% end %>
             </div>
-            <% demurrage_value = @game_state.demurrage || 0 %>
             <div class="hud-info-grid mt-4 text-left">
               <div class="hud-info-card">
                 <span class="hud-info-card-label">AKASHA</span>
@@ -274,80 +257,74 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
           </div>
 
-        <div class="flex-1 overflow-y-auto px-3 sm:px-4 space-y-4 pb-6">
-          <!-- Phase Indicator -->
-          <div class="hud-panel-light">
-            <.phase_indicator current_phase={@current_phase} />
-          </div>
+          <div class="flex-1 overflow-y-auto px-3 sm:px-4 space-y-4 pb-6 sidebar-scroll">
+            <div class="hud-panel-light">
+              <.phase_indicator current_phase={@current_phase} />
+            </div>
 
-    <!-- Discussion Phase Ready Button -->
             <%= if @current_phase == :discussion && @game_status == :playing do %>
-            <div class="hud-panel-light text-center space-y-2">
-              <div class="text-xs text-[var(--color-landing-text-secondary)]">
-                相談フェーズ - 準備ができたらボタンを押してください
-              </div>
-              <%= if get_player_ready_status(@players, @user_id) do %>
-                <div class="text-xs text-matsu font-semibold">
-                  ✓ 準備完了
+              <div class="hud-panel-light text-center space-y-2">
+                <div class="text-xs text-[var(--color-landing-text-secondary)]">
+                  相談フェーズ - 準備ができたらボタンを押してください
                 </div>
-              <% else %>
-                <button
-                  class="cta-button cta-outline w-full justify-center tracking-[0.3em]"
-                  phx-click="execute_action"
-                  phx-value-action="mark_discussion_ready"
-                  aria-label="準備完了"
-                >
-                  準備完了
-                </button>
-              <% end %>
+                <%= if get_player_ready_status(@players, @user_id) do %>
+                  <div class="text-xs text-matsu font-semibold">
+                    ✓ 準備完了
+                  </div>
+                <% else %>
+                  <button
+                    class="cta-button cta-outline w-full justify-center tracking-[0.3em]"
+                    phx-click="execute_action"
+                    phx-value-action="mark_discussion_ready"
+                    aria-label="準備完了"
+                  >
+                    準備完了
+                  </button>
+                <% end %>
               </div>
             <% end %>
 
-    <!-- Current Player Indicator (Action Phase) -->
             <%= if @current_phase == :action && @game_status == :playing do %>
-            <div class="hud-panel-light text-center space-y-2">
-              <div class="hud-section-title">現在のターン</div>
-              <div class="text-sm font-bold text-[var(--color-landing-pale)]">
-                {get_current_player_name(@game_state, @players) || "プレイヤー"}
-              </div>
-              <%= if is_current_player_turn(@game_state, @user_id) do %>
-                <div class="text-xs text-matsu font-semibold">
-                  ← あなたのターンです
+              <div class="hud-panel-light text-center space-y-2">
+                <div class="hud-section-title">現在のターン</div>
+                <div class="text-sm font-bold text-[var(--color-landing-pale)]">
+                  {get_current_player_name(@game_state, @players) || "プレイヤー"}
                 </div>
-              <% end %>
+                <%= if is_current_player_turn(@game_state, @user_id) do %>
+                  <div class="text-xs text-matsu font-semibold">
+                    ← あなたのターンです
+                  </div>
+                <% end %>
               </div>
             <% end %>
 
-    <!-- Game Start Button (Waiting State) -->
             <%= if @game_status == :waiting do %>
-            <div class="hud-panel-light space-y-3">
-                <!-- Player List -->
+              <div class="hud-panel-light space-y-3">
                 <div class="space-y-2">
-                <div class="hud-section-title text-center">
+                  <div class="hud-section-title text-center">
                     参加プレイヤー
                   </div>
                   <div class="space-y-1 max-h-32 overflow-y-auto">
-                    <%= for {player_id, player} <- @game_state.players || %{} do %>
-                    <div class="text-xs text-[var(--color-landing-text-secondary)] px-2 py-1 bg-white/5 rounded border border-white/10">
-                      <span class="font-semibold text-[var(--color-landing-pale)]">
-                        {player.name || "Player"}
-                      </span>
+                    <%= for player <- @players do %>
+                      <% player_id = player[:id] || player["id"] || player.id %>
+                      <div class="text-xs text-[var(--color-landing-text-secondary)] px-2 py-1 bg-white/5 rounded border border-white/10">
+                        <span class="font-semibold text-[var(--color-landing-pale)]">
+                          {player[:name] || player["name"] || player.name || "Player"}
+                        </span>
                         <%= if player_id == @user_id do %>
-                        <span class="text-[var(--color-landing-text-secondary)] ml-1">(あなた)</span>
+                          <span class="text-[var(--color-landing-text-secondary)] ml-1">(あなた)</span>
                         <% end %>
                       </div>
                     <% end %>
                   </div>
-                <div class="text-xs text-[var(--color-landing-text-secondary)] text-center">
-                    {length(Map.keys(@game_state.players || %{}))} / 4 プレイヤー
+                  <div class="text-xs text-[var(--color-landing-text-secondary)] text-center">
+                    {length(@players)} / 4 プレイヤー
                   </div>
                 </div>
-
-    <!-- Start Button -->
-              <div class="pt-2 border-t border-white/10">
+                <div class="pt-2 border-t border-white/10">
                   <%= if @can_start do %>
                     <button
-                    class="cta-button cta-solid w-full justify-center tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
+                      class="cta-button cta-solid w-full justify-center tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
                       phx-click="execute_action"
                       phx-value-action="start_game"
                       aria-label="ゲームを開始"
@@ -355,145 +332,140 @@ defmodule ShinkankiWebWeb.GameLive do
                       ゲームを開始
                     </button>
                   <% else %>
-                  <div class="text-xs text-[var(--color-landing-text-secondary)] text-center py-2">
+                    <div class="text-xs text-[var(--color-landing-text-secondary)] text-center py-2">
                       最小プレイヤー数（1人）に達していません
                     </div>
                   <% end %>
                 </div>
               </div>
             <% end %>
-          </div>
 
-    <!-- Players Info -->
-          <div class="hud-panel-light">
-            <div class="hud-section-title mb-2">プレイヤー</div>
-            <div class="space-y-2">
-              <.player_info_card
-                :for={player <- @players}
-                player_id={player[:id] || player["id"]}
-                player_name={player[:name] || player["name"] || "プレイヤー"}
-                role={player[:role] || player["role"]}
-                is_current_player={(player[:id] || player["id"]) == @user_id}
-                is_ready={player[:is_ready] || player["is_ready"] || false}
-                is_current_turn={is_current_player_turn(@game_state, player[:id] || player["id"])}
-                class="w-full"
-              />
-            </div>
-          </div>
-
-          <div
-            class="hud-panel hud-chat-card p-4 space-y-3 scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
-            id="chat-container"
-            phx-hook="ChatScroll"
-            role="log"
-            aria-label="チャットログ"
-            aria-live="polite"
-            aria-atomic="false"
-          >
-            <div class="hud-section-title">Chat Log</div>
-            <div id="chat-messages" phx-update="stream" class="space-y-3">
-              <div
-                :for={{id, msg} <- @streams.chat_messages}
-                id={id}
-                class="chat-message border border-white/10 rounded-lg bg-white/5 p-3 shadow-sm"
-                phx-mounted={
-                  JS.add_class("new-message", to: "##{id}")
-                  |> JS.remove_class("new-message", time: 2000, to: "##{id}")
-                }
-                role="article"
-                aria-label={"メッセージ from #{msg.user_email || msg.author}"}
-              >
-                <div class="flex justify-between text-[10px] uppercase tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
-                  <span class="font-semibold text-[var(--color-landing-pale)]" aria-label="送信者">
-                    {msg.user_email || msg.author}
-                  </span>
-                  <time
-                    class="text-[var(--color-landing-text-secondary)]"
-                    datetime={if msg.inserted_at, do: DateTime.to_iso8601(msg.inserted_at), else: ""}
-                    aria-label="送信時刻"
-                  >
-                    {format_time(msg.inserted_at || msg.sent_at)}
-                  </time>
-                </div>
-                <p class="text-sm text-[var(--color-landing-text-primary)] mt-2 leading-relaxed">
-                  {msg.content || msg.body}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="hud-panel-light space-y-3"
-            role="region"
-            aria-label="メッセージ送信"
-          >
-            <div class="hud-section-title">Send Message</div>
-            <.form
-              for={@chat_form}
-              id="chat-form"
-              phx-submit="send_chat"
-              phx-change="validate_chat"
-              class="space-y-3"
-              role="form"
-              aria-label="チャットメッセージ送信フォーム"
-            >
-              <.input
-                field={@chat_form[:body]}
-                type="textarea"
-                placeholder="想いを紡ぐ..."
-                class="hud-chat-input min-h-20 text-sm"
-                phx-hook="ChatInput"
-                autofocus
-                aria-label="メッセージ本文"
-                aria-describedby="chat-body-help"
-              />
-              <p id="chat-body-help" class="sr-only">メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。</p>
-
-              <div class="flex items-center gap-2">
-                <.input
-                  field={@chat_form[:author]}
-                  type="text"
-                  class="hud-chat-input text-xs uppercase tracking-[0.3em]"
-                  placeholder="署名"
-                  aria-label="送信者名"
+            <div class="hud-panel-light">
+              <div class="hud-section-title mb-2">プレイヤー</div>
+              <div class="space-y-2">
+                <.player_info_card
+                  :for={player <- @players}
+                  player_id={player[:id] || player["id"]}
+                  player_name={player[:name] || player["name"] || "プレイヤー"}
+                  role={player[:role] || player["role"]}
+                  is_current_player={(player[:id] || player["id"]) == @user_id}
+                  is_ready={player[:is_ready] || player["is_ready"] || false}
+                  is_current_turn={is_current_player_turn(@game_state, player[:id] || player["id"])}
+                  class="w-full"
                 />
-                <button
-                  type="submit"
-                  class="cta-button cta-solid h-10 px-4 flex items-center gap-2 tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
-                  phx-disable-with="送信中..."
-                  aria-label="メッセージを送信"
-                >
-                  <span class="phx-submit-loading:hidden">送信</span>
-                  <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
-                    <svg
-                      class="animate-spin h-3 w-3"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      >
-                      </circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      >
-                      </path>
-                    </svg>
-                    送信中...
-                  </span>
-                </button>
               </div>
-            </.form>
+            </div>
+
+            <div
+              class="hud-panel hud-chat-card p-4 space-y-3 scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
+              id="chat-container"
+              phx-hook="ChatScroll"
+              role="log"
+              aria-label="チャットログ"
+              aria-live="polite"
+              aria-atomic="false"
+            >
+              <div class="hud-section-title">Chat Log</div>
+              <div id="chat-messages" phx-update="stream" class="space-y-3">
+                <div
+                  :for={{id, msg} <- @streams.chat_messages}
+                  id={id}
+                  class="chat-message border border-white/10 rounded-lg bg-white/5 p-3 shadow-sm"
+                  phx-mounted={
+                    JS.add_class("new-message", to: "##{id}")
+                    |> JS.remove_class("new-message", time: 2000, to: "##{id}")
+                  }
+                  role="article"
+                  aria-label={"メッセージ from #{msg.user_email || msg.author}"}
+                >
+                  <div class="flex justify-between text-[10px] uppercase tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
+                    <span class="font-semibold text-[var(--color-landing-pale)]" aria-label="送信者">
+                      {msg.user_email || msg.author}
+                    </span>
+                    <time
+                      class="text-[var(--color-landing-text-secondary)]"
+                      datetime={if msg.inserted_at, do: DateTime.to_iso8601(msg.inserted_at), else: ""}
+                      aria-label="送信時刻"
+                    >
+                      {format_time(msg.inserted_at || msg.sent_at)}
+                    </time>
+                  </div>
+                  <p class="text-sm text-[var(--color-landing-text-primary)] mt-2 leading-relaxed">
+                    {msg.content || msg.body}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="hud-panel-light space-y-3" role="region" aria-label="メッセージ送信">
+              <div class="hud-section-title">Send Message</div>
+              <.form
+                for={@chat_form}
+                id="chat-form"
+                phx-submit="send_chat"
+                phx-change="validate_chat"
+                class="space-y-3"
+                role="form"
+                aria-label="チャットメッセージ送信フォーム"
+              >
+                <.input
+                  field={@chat_form[:body]}
+                  type="textarea"
+                  placeholder="想いを紡ぐ..."
+                  class="hud-chat-input min-h-20 text-sm"
+                  phx-hook="ChatInput"
+                  autofocus
+                  aria-label="メッセージ本文"
+                  aria-describedby="chat-body-help"
+                />
+                <p id="chat-body-help" class="sr-only">
+                  メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。
+                </p>
+                <div class="flex items-center gap-2">
+                  <.input
+                    field={@chat_form[:author]}
+                    type="text"
+                    class="hud-chat-input text-xs uppercase tracking-[0.3em]"
+                    placeholder="署名"
+                    aria-label="送信者名"
+                  />
+                  <button
+                    type="submit"
+                    class="cta-button cta-solid h-10 px-4 flex items-center gap-2 tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
+                    phx-disable-with="送信中..."
+                    aria-label="メッセージを送信"
+                  >
+                    <span class="phx-submit-loading:hidden">送信</span>
+                    <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
+                      <svg
+                        class="animate-spin h-3 w-3"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        >
+                        </circle>
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        >
+                        </path>
+                      </svg>
+                      送信中...
+                    </span>
+                  </button>
+                </div>
+              </.form>
+            </div>
           </div>
-        </div>
         </aside>
 
     <!-- Main Board -->
@@ -1743,7 +1715,7 @@ defmodule ShinkankiWebWeb.GameLive do
       %{
         id: user_id,
         name: player.name || "Player",
-        role: player.role,
+        role: Map.get(player, :role),
         is_ready: player.is_ready || false
       }
     end)

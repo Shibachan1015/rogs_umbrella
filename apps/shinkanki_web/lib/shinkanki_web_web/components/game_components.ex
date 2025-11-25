@@ -1968,7 +1968,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     demurrage_percentage =
       if assigns.previous_currency > 0,
         do: abs(assigns.demurrage_amount) / assigns.previous_currency * 100,
-        else: 0
+        else: 0.0
 
     assigns = assign(assigns, :demurrage_percentage, Float.round(demurrage_percentage, 1))
 

@@ -50,6 +50,8 @@ const ToastAutoRemove = {
   }
 }
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
 // Chat input hook for Enter key handling
 const ChatInput = {
   mounted() {
@@ -72,11 +74,151 @@ const ChatInput = {
   }
 }
 
+const AmbientAudio = {
+  mounted() {
+    const src = this.el.dataset.audioSrc
+    if (!src) return
+
+    this.slider = this.el.querySelector("[data-role='volume-slider']")
+    this.muteBtn = this.el.querySelector("[data-role='mute-toggle']")
+    this.label = this.el.querySelector("[data-role='volume-label']")
+    this.meter = this.el.querySelector("[data-role='volume-meter']")
+    this.panel = this.el.querySelector("[data-role='control-panel']")
+    this.gearToggle = this.el.querySelector("[data-role='gear-toggle']")
+
+    const initialVolume = clamp(parseFloat(this.el.dataset.initialVolume || "0.4"), 0, 1)
+    this.lastVolume = initialVolume
+    this.audio = new Audio(src)
+    this.audio.loop = true
+    this.audio.preload = "auto"
+    this.audio.volume = initialVolume
+
+    const attemptPlay = () => {
+      const playPromise = this.audio.play()
+      if (playPromise) {
+        playPromise
+          .then(() => {
+            this.el.classList.remove("requires-interaction")
+          })
+          .catch(() => {
+            this.el.classList.add("requires-interaction")
+          })
+      }
+    }
+
+    this.audio.addEventListener("canplay", attemptPlay, {once: true})
+    this.interactionHandlers = ["pointerdown", "touchstart", "keydown"].map((eventName) => {
+      const handler = () => {
+        attemptPlay()
+        window.removeEventListener(eventName, handler)
+      }
+      window.addEventListener(eventName, handler)
+      return {eventName, handler}
+    })
+
+    if (this.slider) {
+      this.slider.value = Math.round(initialVolume * 100)
+      this.handleVolumeInput = (event) => {
+        const value = clamp(parseFloat(event.target.value || "0") / 100, 0, 1)
+        this.lastVolume = value > 0 ? value : this.lastVolume
+        this.audio.volume = value
+        if (this.audio.muted && value > 0) {
+          this.audio.muted = false
+        }
+        attemptPlay()
+        this.updateUI()
+      }
+      this.slider.addEventListener("input", this.handleVolumeInput)
+    }
+
+    if (this.muteBtn) {
+      this.handleMuteToggle = () => {
+        if (this.audio.muted || this.audio.volume === 0) {
+          this.audio.muted = false
+          const restored = this.lastVolume > 0 ? this.lastVolume : 0.3
+          this.audio.volume = restored
+          if (this.slider) this.slider.value = Math.round(restored * 100)
+        } else {
+          this.audio.muted = true
+        }
+        attemptPlay()
+        this.updateUI()
+      }
+      this.muteBtn.addEventListener("click", this.handleMuteToggle)
+    }
+
+    if (this.gearToggle) {
+      this.handleGearToggle = (event) => {
+        event.stopPropagation()
+        const willOpen = !this.el.classList.contains("panel-open")
+        this.setPanelState(willOpen)
+      }
+      this.handleOutsideClick = (event) => {
+        if (!this.el.contains(event.target)) {
+          this.setPanelState(false)
+        }
+      }
+      this.gearToggle.addEventListener("click", this.handleGearToggle)
+      document.addEventListener("click", this.handleOutsideClick)
+    }
+
+    this.updateUI()
+  },
+  setPanelState(open) {
+    if (open) {
+      this.el.classList.add("panel-open")
+      this.gearToggle?.setAttribute("aria-expanded", "true")
+    } else {
+      this.el.classList.remove("panel-open")
+      this.gearToggle?.setAttribute("aria-expanded", "false")
+    }
+  },
+  updateUI() {
+    const effectiveVolume = this.audio && this.audio.muted ? 0 : Math.round((this.audio?.volume || 0) * 100)
+    if (this.label) {
+      this.label.textContent = `${effectiveVolume}%`
+    }
+    if (this.meter) {
+      this.meter.style.setProperty("--audio-volume", `${effectiveVolume}%`)
+    }
+    if (this.muteBtn) {
+      const isMuted = this.audio?.muted || effectiveVolume === 0
+      this.muteBtn.setAttribute("aria-pressed", isMuted ? "true" : "false")
+      this.muteBtn.classList.toggle("is-muted", isMuted)
+    }
+    this.el.classList.toggle("is-muted", this.audio?.muted)
+  },
+  destroyed() {
+    if (this.slider && this.handleVolumeInput) {
+      this.slider.removeEventListener("input", this.handleVolumeInput)
+    }
+    if (this.muteBtn && this.handleMuteToggle) {
+      this.muteBtn.removeEventListener("click", this.handleMuteToggle)
+    }
+    if (this.audio) {
+      this.audio.pause()
+      this.audio.src = ""
+      this.audio = null
+    }
+    if (this.interactionHandlers) {
+      this.interactionHandlers.forEach(({eventName, handler}) => {
+        window.removeEventListener(eventName, handler)
+      })
+    }
+    if (this.gearToggle && this.handleGearToggle) {
+      this.gearToggle.removeEventListener("click", this.handleGearToggle)
+    }
+    if (this.handleOutsideClick) {
+      document.removeEventListener("click", this.handleOutsideClick)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {ChatScroll, ToastAutoRemove, ChatInput},
+  hooks: {ChatScroll, ToastAutoRemove, ChatInput, AmbientAudio},
 })
 
 // Show progress bar on live navigation and form submits

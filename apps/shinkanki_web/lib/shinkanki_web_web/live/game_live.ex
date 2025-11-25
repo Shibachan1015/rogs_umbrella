@@ -474,7 +474,7 @@ defmodule ShinkankiWebWeb.GameLive do
           role="main"
           aria-label="ゲームボード"
         >
-          <div class="resonance-board w-full max-w-6xl flex flex-col items-center gap-6 p-4 sm:p-8">
+          <div class="resonance-board w-full max-w-6xl flex flex-col items-center gap-8 p-4 sm:p-8 md:p-10">
           <!-- Phase Indicator (Top of Main Board) -->
           <%= if @game_status == :playing do %>
             <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">

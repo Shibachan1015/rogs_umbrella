@@ -29,6 +29,56 @@
           <a href="#about" class="cta-button cta-outline">世界観を見る</a>
         </div>
       </div>
+      <div
+        class="ambient-audio-shell"
+        id="ambient-audio-control"
+        phx-hook="AmbientAudio"
+        data-audio-src={~p"/audio/whispers-of-the-grove.wav"}
+        data-initial-volume="0.15"
+        aria-label="環境音の音量コントロール"
+      >
+        <button
+          type="button"
+          class="ambient-gear-btn"
+          data-role="gear-toggle"
+          aria-expanded="false"
+          aria-controls="ambient-audio-panel"
+        >
+          <span class="sr-only">Ambient Flow コントロール</span>
+          <span class="ambient-gear-icon" aria-hidden="true"></span>
+        </button>
+        <div class="ambient-panel" id="ambient-audio-panel" data-role="control-panel">
+          <div class="ambient-panel-header">
+            <span class="ambient-panel-title">Ambient Flow</span>
+            <button
+              type="button"
+              class="ambient-mute-toggle"
+              data-role="mute-toggle"
+              aria-pressed="false"
+              aria-label="環境音をミュート"
+            >
+              <span class="ambient-toggle-track">
+                <span class="ambient-toggle-thumb"></span>
+              </span>
+              <span class="ambient-toggle-label">Mute</span>
+            </button>
+          </div>
+          <div class="ambient-meter-row">
+            <div class="ambient-mini-indicator" data-role="volume-meter" aria-hidden="true"></div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value="15"
+              data-role="volume-slider"
+              class="ambient-volume-slider"
+              aria-label="音量"
+            />
+            <span class="ambient-volume-value" data-role="volume-label">15%</span>
+          </div>
+        </div>
+      </div>
       <div class="scroll-indicator" aria-hidden="true"></div>
     </section>
 

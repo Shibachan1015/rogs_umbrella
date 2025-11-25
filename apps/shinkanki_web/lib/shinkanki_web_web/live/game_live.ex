@@ -132,7 +132,7 @@ defmodule ShinkankiWebWeb.GameLive do
         >
           <button
             class="lg:hidden fixed left-0 top-4 z-30 w-10 h-10 bg-shu text-washi rounded-r-lg flex items-center justify-center shadow-md"
-            phx-click={JS.toggle_class("-translate-x-full", to: "#sidebar")}
+            phx-click={JS.toggle_class("translate-x-0 -translate-x-full", to: "#sidebar")}
             aria-label="サイドバーを開く"
             aria-expanded="false"
             id="sidebar-toggle"
@@ -141,7 +141,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </button>
           <button
             class="lg:hidden absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30"
-            phx-click={JS.toggle_class("-translate-x-full", to: "#sidebar")}
+            phx-click={JS.toggle_class("translate-x-0 -translate-x-full", to: "#sidebar")}
             aria-label="サイドバーを閉じる"
           >
             <.icon name="hero-x-mark" class="w-4 h-4" />

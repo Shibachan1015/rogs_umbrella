@@ -1,6 +1,6 @@
 # Torii Resonance Design System (TRDS)
 
-> **Purpose:** Provide a unified, modern aesthetic for 神環記 (Shinkanki) products by blending traditional Miyabi motifs with contemporary, cinematic storytelling. This document is written so that AIエージェント (including this assistant) can consistently apply the system across Phoenix LiveView templates, Tailwind/CSS, and shared components.
+> **Purpose:** Provide a unified, modern aesthetic for 神環記 (Shinkanki) products. TRDS (Torii Resonance Design System) is the canonical replacement for the former Miyabi theme and blends traditional Japanese motifs (washi, sumi, shu) with contemporary, cinematic storytelling. This document is written so that AIエージェント (including this assistant) can consistently apply the system across Phoenix LiveView templates, Tailwind/CSS, and shared components.
 
 ---
 
@@ -11,7 +11,7 @@
 | **Torii Silhouette** | 縦ライン・トランスルーセントな層で「門」を表し、神域へ入る体験を演出。 | 背景に縦グラデ/ライン、絶対配置で透明度 0.05〜0.15 の装飾。 |
 | **Resonant Glow** | 金箔・和紙の反射を想起させる柔らかな光。 | `var(--color-landing-gold)` をグラデ/ボーダーで多用、box-shadow で発光。 |
 | **Aurora Nightfall** | 深い藍〜煤色のグラデによる夜の静謐さ。 | `--color-midnight` / `--color-deep-navy` を背景のベースに。 |
-| **Miyabi Motion** | 緩やかな浮遊・フェードで呼吸感を持たせる。 | `fade-in`, `float`, `scrollPulse` などのアニメーションユーティリティを流用。 |
+| **Resonant Motion** | 緩やかな浮遊・フェードで呼吸感を持たせる。 | `fade-in`, `float`, `scrollPulse` などのアニメーションユーティリティを流用。 |
 
 ---
 

@@ -102,9 +102,9 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
-/* Miyabi Theme Colors */
+/* TRDS (Torii Resonance Design System) Theme Tokens */
 @theme {
-  /* Miyabi Base Colors */
+  /* TRDS Core Colors */
   --color-washi: #fcfaf2;
   --color-washi-dark: #efece4;
   --color-sumi: #1c1c1c;
@@ -159,7 +159,7 @@
   --elevation-3: 0px 4px 8px 0px rgba(28, 28, 28, 0.08), 0px 4px 12px 0px rgba(28, 28, 28, 0.12);
 }
 
-/* Miyabi Theme Utility Classes */
+/* TRDS Utility Classes */
 .bg-washi { background-color: var(--color-washi); }
 .bg-washi-dark { background-color: var(--color-washi-dark); }
 .text-sumi { color: var(--color-sumi); }

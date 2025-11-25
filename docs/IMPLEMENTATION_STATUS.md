@@ -80,7 +80,7 @@
 ### UIについて
 - `ChatLive`と`RoomIndexLive`は開発者向けプロトタイプUIです
 - 最終的なユーザー向けUIは`rogs-ui`/`shinkanki_web`ワークツリーで実装予定
-- Miyabiテーマの適用も`rogs-ui`ワークツリーで行う予定
+- TRDS (Torii Resonance Design System) の適用も`rogs-ui`ワークツリーで行う予定
 
 ### データベース
 - すべてのマイグレーションは実装済み
@@ -99,7 +99,7 @@
 - [x] ドキュメントの更新（READMEにTRDSチャット手順を追記）
 
 ### 他のワークツリーとの連携
-- [ ] `rogs-ui`ワークツリーでのMiyabiテーマ適用
+- [ ] `rogs-ui`ワークツリーでのTRDS適用
 - [ ] `shinkanki_web`ワークツリーでのチャット統合
 - [ ] `rogs_identity`ワークツリーとの最終的な認証連携確認
 

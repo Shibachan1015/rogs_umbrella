@@ -47,7 +47,8 @@ defmodule Shinkanki.GameCardTest do
 
       # Set Culture to 5 to force loss on next Trade
       game2 = %Game{game1 | culture: 5}
-      {:ok, game3} = Game.play_card(game2, :koueki) # K becomes 0
+      # K becomes 0
+      {:ok, game3} = Game.play_card(game2, :koueki)
 
       assert game3.culture == 0
       assert game3.status == :lost

@@ -42,7 +42,9 @@ defmodule Shinkanki.AI do
           nil ->
             # Check if it's a project
             case Card.get_project(card_id) do
-              nil -> nil
+              nil ->
+                nil
+
               project ->
                 if project.id in game.available_projects and game.currency >= project.cost do
                   {project, card_id}
@@ -95,9 +97,9 @@ defmodule Shinkanki.AI do
     # Bonus for cards that help maintain balance (prevent any stat from going too low)
     balance_bonus =
       cond do
-        game.forest < 20 and effect[:forest] && effect[:forest] > 0 -> 5
-        game.culture < 20 and effect[:culture] && effect[:culture] > 0 -> 5
-        game.social < 20 and effect[:social] && effect[:social] > 0 -> 5
+        (game.forest < 20 and effect[:forest]) && effect[:forest] > 0 -> 5
+        (game.culture < 20 and effect[:culture]) && effect[:culture] > 0 -> 5
+        (game.social < 20 and effect[:social]) && effect[:social] > 0 -> 5
         true -> 0
       end
 

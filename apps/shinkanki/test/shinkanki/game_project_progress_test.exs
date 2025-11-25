@@ -24,7 +24,9 @@ defmodule Shinkanki.GameProjectProgressTest do
 
       # Contribute a talent
       talent_id = List.first(player.talents)
-      assert {:ok, new_game} = Game.contribute_talent_to_project(game, "p1", :p_forest_fest, talent_id)
+
+      assert {:ok, new_game} =
+               Game.contribute_talent_to_project(game, "p1", :p_forest_fest, talent_id)
 
       # Check progress increased
       progress_data = Map.get(new_game.project_progress, :p_forest_fest)
@@ -129,11 +131,13 @@ defmodule Shinkanki.GameProjectProgressTest do
       # Distribute contributions between players
       completed_game =
         Enum.reduce(Enum.with_index(talents_to_use), game, fn {talent_id, index}, acc_game ->
-          player_id = case rem(index, 3) do
-            0 -> "p1"
-            1 -> "p2"
-            _ -> "p3"
-          end
+          player_id =
+            case rem(index, 3) do
+              0 -> "p1"
+              1 -> "p2"
+              _ -> "p3"
+            end
+
           case Game.contribute_talent_to_project(acc_game, player_id, :p_forest_fest, talent_id) do
             {:ok, new_game} -> new_game
             _error -> acc_game
@@ -145,9 +149,15 @@ defmodule Shinkanki.GameProjectProgressTest do
 
       # Try to contribute to completed project (use a talent from p1 that wasn't used)
       unused_talent = Enum.find(p1.talents, fn t -> t not in talents_to_use end)
+
       if unused_talent do
         assert {:error, :project_already_completed} =
-                 Game.contribute_talent_to_project(completed_game, "p1", :p_forest_fest, unused_talent)
+                 Game.contribute_talent_to_project(
+                   completed_game,
+                   "p1",
+                   :p_forest_fest,
+                   unused_talent
+                 )
       end
     end
 
@@ -186,6 +196,7 @@ defmodule Shinkanki.GameProjectProgressTest do
 
       # Use talent in an action first
       hand = Map.get(game.hands, "p1", [])
+
       if hand != [] do
         {:ok, game} = Game.play_action(game, "p1", List.first(hand), [talent_id])
 
@@ -213,8 +224,11 @@ defmodule Shinkanki.GameProjectProgressTest do
       p2 = Map.get(game.players, "p2")
 
       # Both players contribute
-      {:ok, game} = Game.contribute_talent_to_project(game, "p1", :p_forest_fest, List.first(p1.talents))
-      {:ok, game} = Game.contribute_talent_to_project(game, "p2", :p_forest_fest, List.first(p2.talents))
+      {:ok, game} =
+        Game.contribute_talent_to_project(game, "p1", :p_forest_fest, List.first(p1.talents))
+
+      {:ok, game} =
+        Game.contribute_talent_to_project(game, "p2", :p_forest_fest, List.first(p2.talents))
 
       # Check contributors
       progress_data = Map.get(game.project_progress, :p_forest_fest)

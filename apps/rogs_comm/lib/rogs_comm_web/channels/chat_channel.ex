@@ -32,6 +32,7 @@ defmodule RogsCommWeb.ChatChannel do
                 room_id: room_id,
                 error: inspect(error)
               )
+
               0
           end
 
@@ -41,6 +42,7 @@ defmodule RogsCommWeb.ChatChannel do
             current_participants: current_participants,
             max_participants: room.max_participants
           )
+
           {:error, %{reason: "room is full"}}
         else
           user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
@@ -146,6 +148,7 @@ defmodule RogsCommWeb.ChatChannel do
           user_id: user_id,
           room_id: socket.assigns.room_id
         )
+
         {:reply, {:error, %{reason: "rate limit exceeded. please wait a moment"}}, socket}
     end
   end
@@ -202,6 +205,7 @@ defmodule RogsCommWeb.ChatChannel do
             message_room_id: message.room_id,
             current_room_id: room_id
           )
+
           {:reply, {:error, %{reason: "message not found in this room"}}, socket}
 
         message when message.user_id != user_id ->
@@ -210,6 +214,7 @@ defmodule RogsCommWeb.ChatChannel do
             message_id: message_id,
             message_owner_id: message.user_id
           )
+
           {:reply, {:error, %{reason: "you can only edit your own messages"}}, socket}
 
         _ ->
@@ -217,16 +222,19 @@ defmodule RogsCommWeb.ChatChannel do
             user_id: user_id,
             message_id: message_id
           )
+
           {:reply, {:error, %{reason: "message not found"}}, socket}
       end
     end
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns.user_id
+
       Logger.warning("ChatChannel: Message not found for edit",
         user_id: user_id,
         message_id: message_id
       )
+
       {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 
@@ -249,6 +257,7 @@ defmodule RogsCommWeb.ChatChannel do
               room_id: room_id,
               errors: inspect(changeset.errors)
             )
+
             {:reply, {:error, %{reason: "failed to delete message"}}, socket}
         end
 
@@ -259,6 +268,7 @@ defmodule RogsCommWeb.ChatChannel do
           message_room_id: message.room_id,
           current_room_id: room_id
         )
+
         {:reply, {:error, %{reason: "message not found in this room"}}, socket}
 
       message when message.user_id != user_id ->
@@ -267,6 +277,7 @@ defmodule RogsCommWeb.ChatChannel do
           message_id: message_id,
           message_owner_id: message.user_id
         )
+
         {:reply, {:error, %{reason: "you can only delete your own messages"}}, socket}
 
       _ ->
@@ -274,15 +285,18 @@ defmodule RogsCommWeb.ChatChannel do
           user_id: user_id,
           message_id: message_id
         )
+
         {:reply, {:error, %{reason: "message not found"}}, socket}
     end
   rescue
     Ecto.NoResultsError ->
       user_id = socket.assigns.user_id
+
       Logger.warning("ChatChannel: Message not found for delete",
         user_id: user_id,
         message_id: message_id
       )
+
       {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 

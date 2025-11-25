@@ -34,11 +34,13 @@ defmodule Shinkanki.AITest do
       {:ok, game} = Game.join(game, "ai_player", "AI Player")
 
       hand = Map.get(game.hands, "ai_player", [])
+
       if hand != [] do
         {:ok, game} = Game.play_action(game, "ai_player", List.first(hand), [])
 
         # Player is now ready (unless turn advanced and reset)
         player = Map.get(game.players, "ai_player")
+
         if player.is_ready do
           assert {:error, :already_ready} = AI.select_action(game, "ai_player")
         else

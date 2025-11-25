@@ -44,6 +44,36 @@ config :rogs_identity, RogsIdentityWeb.Endpoint,
 
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Local
 
+config :rogs_identity, :federated_apps, [
+  %{
+    id: :rogs_identity,
+    name: "Torii Identity Core",
+    description: "Primary credential authority for 神環記.",
+    scopes: ["sessions", "profile"],
+    surface: :dashboard,
+    url: "http://localhost:4001/users/settings",
+    status: :connected
+  },
+  %{
+    id: :shinkanki_web,
+    name: "Shinkanki Web",
+    description: "Game interface & LiveView HUD.",
+    scopes: ["gameplay", "state-sync"],
+    surface: :game,
+    url: "http://localhost:4000",
+    status: :connected
+  },
+  %{
+    id: :rogs_comm,
+    name: "ROGs Comm",
+    description: "Akasha link & chat relay.",
+    scopes: ["chat", "presence"],
+    surface: :chat,
+    url: "http://localhost:4002",
+    status: :connected
+  }
+]
+
 config :rogs_comm, RogsCommWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   url: [host: "localhost"],

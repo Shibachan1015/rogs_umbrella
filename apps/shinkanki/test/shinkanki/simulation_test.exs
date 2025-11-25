@@ -64,7 +64,9 @@ defmodule Shinkanki.SimulationTest do
             card_id = Enum.random(hand)
 
             case Game.play_action(game, "p1", card_id, []) do
-              {:ok, updated_game} -> updated_game
+              {:ok, updated_game} ->
+                updated_game
+
               _ ->
                 # If play_action failed, advance turn manually
                 Game.next_turn(game)

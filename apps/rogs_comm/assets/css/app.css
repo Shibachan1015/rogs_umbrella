@@ -257,6 +257,45 @@
   animation: slide-in-right 0.3s ease-out;
 }
 
+@keyframes pillPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(211, 56, 28, 0.2);
+  }
+
+  60% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(211, 56, 28, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(211, 56, 28, 0);
+  }
+}
+
+@keyframes pillGlow {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(74, 89, 61, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 6px rgba(74, 89, 61, 0.45));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 0 rgba(74, 89, 61, 0));
+  }
+}
+
+.state-pill--pulse {
+  animation: pillPulse 0.7s ease;
+}
+
+.state-pill--glow {
+  animation: pillGlow 0.9s ease;
+}
+
 /* Smooth scroll behavior */
 #messages {
   scroll-behavior: smooth;

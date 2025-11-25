@@ -34,6 +34,47 @@
 
 ---
 
+## 2.1 Quick Reference / クイックガイド
+
+| Use Case | JP Summary | EN Summary |
+| --- | --- | --- |
+| **CSS Tokens** | `apps/shinkanki_web/assets/css/app.css` の `:root` にTRDSトークンが定義されています。新色・新しい影は同ファイルに追記してから各アプリに展開してください。 | Core tokens live in `apps/shinkanki_web/assets/css/app.css` under the `:root` block. Add new colors/shadows there first, then consume them via CSS variables. |
+| **Tailwind Utilities** | `apps/shinkanki_web/assets/tailwind.config.js` で `text-trds-*`, `shadow-trds-*` 等のカスタムクラスを提供。`mix tailwind shinkanki_web` でビルドに反映。 | Custom Tailwind utilities (e.g., `text-trds-primary`, `shadow-trds-gold`) are defined in `apps/shinkanki_web/assets/tailwind.config.js`. Re-run `mix tailwind shinkanki_web` after editing. |
+| **Core Components** | Phoenix共通コンポーネントは `apps/shinkanki_web/lib/shinkanki_web_web/components/core_components.ex` にあり、`variant="trds"` でTRDSスタイル入力やボタンを利用可能。 | Phoenix Core Components gain TRDS variants via `variant="trds"` (buttons, inputs, textarea, select). File: `apps/shinkanki_web/lib/shinkanki_web_web/components/core_components.ex`. |
+| **Docs Entry Points** | 各 README (例: `README.md`, `apps/shinkanki_web/README.md`) から本ドキュメントへリンク済み。新規アプリ追加時も最上部にリンクを置いてください。 | Each README already links to this document; ensure any new app README does the same so AI agents and humans know where to look. |
+
+> **AIエージェント向け:** UIタスクを着手する前に「TRDSトークン」「Tailwindユーティリティ」「CoreComponentsのvariant」という3箇所の同期状態を必ず確認してください。
+
+---
+
+## 2.2 Theme Modes / ダーク・ライト指針
+
+| Theme | 目的 | 実装ルール |
+| --- | --- | --- |
+| **Midnight (Default)** | ゲーム本編・ロビーの基調。静謐な夜の青と金のコントラスト。 | `:root` に定義済み `--color-midnight`, `--color-deep-navy`, `--color-landing-gold` を使用。`body` に `data-theme="midnight"` を付与し、背景グラデは `linear-gradient(135deg,#05070a,#111d2f)` が基準。 |
+| **Dawn (ライトプレビュー)** | 説明ページや設定画面向け。柔らかい薄明かりと紅差し。 | `--color-dawn-sky`, `--color-dawn-rose`, `--color-dawn-ink` などライト専用トークンを `:root[data-theme="dawn"]` に追加。背景は `linear-gradient(160deg,#f6e7d7,#f8f3ec)` + `rgba(16,20,25,0.08)` ボーダー。 |
+
+**実装メモ:**
+```css
+:root[data-theme="dawn"] {
+  --color-midnight: #f8f3ec;
+  --color-deep-navy: #f0e4d5;
+  --color-landing-text-primary: #1b1f26;
+  --color-landing-gold: #b86428;
+  /* dawn固有のサーフェスを必要に応じて追加 */
+}
+body[data-theme="dawn"] .hud-panel {
+  --hud-surface: rgba(255, 255, 255, 0.75);
+  color: #1b1f26;
+}
+```
+
+- `data-theme` の切替は LiveView の assigns (`@theme_mode`) か JS hook で制御。ユーザー設定がなければ Midnight。
+- ライトテーマでも TRDS の縦線・ノイズ構造は継承し、彩度を下げた金属色でアクセントを作る。
+- Tailwind でテーマ切り替えを行う場合は `data-theme` セレクタを `@layer utilities` で参照 (`[data-theme=dawn] .text-trds-primary { ... }`)。
+
+---
+
 ## 3. Component Guidelines
 
 ### 3.1 Layout Containers
@@ -79,9 +120,12 @@
    - LiveComponent / CoreComponent で `class` をリスト連結する際は Phoenix 用 `[@class ...]` 形式 or `Enum.join/` などで string化。
    - CTA・カードなど TRDSコンポーネント化が必要な場合、`landing_components.ex` のような専用モジュールを将来的に検討。
 
-4. **アクセシビリティ**
-   - `aria-label`, `aria-labelledby`, `role` を Hero/Section/Card で適切に設定（例: `<section aria-labelledby="concept-title">`）。
-   - コントラスト: ゴールド (#d4af37) on Midnight (#0f1419) で 4.5:1 を満たす。必要に応じ `opacity` を調整。
+4. **アクセシビリティ (a11y)**
+   - **セマンティクス:** Hero/主要セクションには `<section aria-labelledby="...">`、カードリストには `<ul role="list">` を使い、再利用時も構造を保つ。
+   - **フォーカスリング:** すべてのフォーカス可能要素に `trds-focusable` を適用し、`outline: 2px solid var(--color-landing-gold)` + `outline-offset: 4px` を確保。キーボード操作でのみ表示する場合は `:focus-visible` を利用。
+   - **コントラスト:** テキストは WCAG AA (4.5:1) を下限とし、背景がグラデーションの場合は最暗部で判定。ライトテーマでは `--color-dawn-ink` を本文色とし、白背景上でも 4.5:1 を満たす。
+   - **モーション低減:** `@media (prefers-reduced-motion: reduce)` で `animation-duration: 0s` と `transition-duration: 0s` を設定。LiveViewの自動スクロール等もフラグを確認して条件付きに。
+   - **読み上げ順:** サイドバーや HUD は DOM 順序を視覚順と揃え、LiveView の `phx-update` で並び替える場合は `aria-live="polite"` を設定。
 
 5. **動的コンテンツ**
    - LiveViewで動的にリストレンダリングする場合は `landing-section` などのクラスを wrap して TRDS 見た目を維持。

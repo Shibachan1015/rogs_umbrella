@@ -89,26 +89,33 @@ defmodule ShinkankiWebWeb.CoreComponents do
   """
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   attr :class, :string
-  attr :variant, :string, values: ~w(primary)
+  attr :variant, :string, values: ~w(primary trds), default: "primary"
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variants = %{
+      "primary" => ["btn", "btn-primary"],
+      "trds" =>
+        "inline-flex items-center justify-center gap-2 rounded-trds-lg border border-trds-outline-strong bg-trds-surface-glass px-4 py-2 font-semibold tracking-[0.3em] text-trds-text-primary uppercase transition duration-trds ease-trds trds-focusable hover:-translate-y-0.5 hover:shadow-trds-gold disabled:opacity-50 disabled:cursor-not-allowed",
+      nil => ["btn", "btn-primary", "btn-soft"]
+    }
 
     assigns =
       assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
+        variants
+        |> Map.fetch!(assigns[:variant])
+        |> List.wrap()
       end)
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
       ~H"""
-      <.link class={@class} {@rest}>
+      <.link class={@class |> List.wrap()} {@rest}>
         {render_slot(@inner_block)}
       </.link>
       """
     else
       ~H"""
-      <button class={@class} {@rest}>
+      <button class={@class |> List.wrap()} {@rest}>
         {render_slot(@inner_block)}
       </button>
       """
@@ -161,6 +168,7 @@ defmodule ShinkankiWebWeb.CoreComponents do
   attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
   attr :class, :string, default: nil, doc: "the input class to use over defaults"
   attr :error_class, :string, default: nil, doc: "the input error class to use over defaults"
+  attr :variant, :string, default: "default", values: ~w(default trds)
 
   attr :rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
@@ -194,7 +202,7 @@ defmodule ShinkankiWebWeb.CoreComponents do
             name={@name}
             value="true"
             checked={@checked}
-            class={@class || "checkbox checkbox-sm"}
+            class={checkbox_class(assigns)}
             {@rest}
           />{@label}
         </span>
@@ -212,7 +220,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
         <select
           id={@id}
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+          class={
+            default_input_class(assigns, :select)
+            |> List.wrap()
+            |> maybe_add_error_class(assigns, "select-error")
+          }
           multiple={@multiple}
           {@rest}
         >
@@ -233,10 +245,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
         <textarea
           id={@id}
           name={@name}
-          class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
-          ]}
+          class={
+            default_input_class(assigns, :textarea)
+            |> List.wrap()
+            |> maybe_add_error_class(assigns, "textarea-error")
+          }
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
@@ -256,10 +269,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
           name={@name}
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
-          ]}
+          class={
+            default_input_class(assigns, :text)
+            |> List.wrap()
+            |> maybe_add_error_class(assigns, "input-error")
+          }
           {@rest}
         />
       </label>
@@ -281,6 +295,42 @@ defmodule ShinkankiWebWeb.CoreComponents do
     </p>
     """
   end
+
+  defp checkbox_class(%{class: class}) when not is_nil(class), do: class
+
+  defp checkbox_class(%{variant: "trds"}) do
+    "size-4 rounded-trds-sm border border-trds-outline-soft bg-trds-surface text-trds-text-primary focus:ring-0 focus:outline-none focus:border-trds-outline-strong accent-shu trds-focusable"
+  end
+
+  defp checkbox_class(_assigns), do: "checkbox checkbox-sm"
+
+  defp default_input_class(%{class: class}, _type) when not is_nil(class), do: class
+
+  defp default_input_class(%{variant: "trds"}, type) do
+    base = [
+      "w-full rounded-trds-md border border-trds-outline-soft bg-trds-surface-glass text-trds-text-primary placeholder:text-trds-text-secondary/60 focus:border-trds-outline-strong focus:ring-0 focus:outline-none transition duration-trds ease-trds trds-focusable"
+    ]
+
+    case type do
+      :textarea -> base ++ ["min-h-[6rem]"]
+      :select -> base ++ ["pr-10"]
+      _ -> base
+    end
+  end
+
+  defp default_input_class(_assigns, :textarea), do: "w-full textarea"
+  defp default_input_class(_assigns, :select), do: "w-full select"
+  defp default_input_class(_assigns, _type), do: "w-full input"
+
+  defp maybe_add_error_class(class_list, %{errors: []}, _fallback), do: class_list
+
+  defp maybe_add_error_class(class_list, assigns, fallback) do
+    class_list ++ [default_error_class(assigns, fallback)]
+  end
+
+  defp default_error_class(%{error_class: class}, _fallback) when not is_nil(class), do: class
+  defp default_error_class(%{variant: "trds"}, _fallback), do: "border-shu/70 bg-shu/5 text-shu"
+  defp default_error_class(_assigns, fallback), do: fallback
 
   @doc """
   Renders a header with title.

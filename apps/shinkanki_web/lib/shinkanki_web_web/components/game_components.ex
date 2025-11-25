@@ -686,22 +686,18 @@ defmodule ShinkankiWebWeb.GameComponents do
               {@progress} / {@cost}
             </span>
           </div>
-          <div class="w-full h-4 bg-white/5 rounded-full overflow-hidden border border-white/10 relative">
-            <div
-              class="h-full bg-gradient-to-r from-kin via-kin/80 to-kin/60 transition-all duration-700 ease-out relative"
-              style={"width: #{@progress_percentage}%"}
-              role="progressbar"
-              aria-valuenow={@progress}
-              aria-valuemin="0"
-              aria-valuemax={@cost}
-            >
-              <div class="absolute inset-0 bg-white/10 animate-pulse"></div>
+          <div
+            class="project-progress-track"
+            role="progressbar"
+            aria-valuenow={@progress}
+            aria-valuemin="0"
+            aria-valuemax={@cost}
+          >
+            <div class="project-progress-fill" style={"width: #{@progress_percentage}%"}>
             </div>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span class="text-[10px] font-bold text-[var(--color-landing-text-primary)] z-10">
-                {@progress_percentage}%
-              </span>
-            </div>
+            <span class="project-progress-value">
+              {@progress_percentage}%
+            </span>
           </div>
           <%= if @progress_percentage >= 100 do %>
             <div class="mt-2 text-center">
@@ -1843,7 +1839,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "p-3 rounded-lg border-2 border-double transition-all duration-300 relative",
+        "player-info-card p-3 rounded-lg border-2 border-double transition-all duration-300 relative",
         if(@is_current_player, do: "ring-2 ring-shu/50 shadow-md", else: ""),
         if(@is_current_turn, do: "ring-2 ring-kin/50 animate-pulse", else: ""),
         role_color_classes(@role_data),
@@ -1976,7 +1972,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     demurrage_percentage =
       if assigns.previous_currency > 0,
         do: abs(assigns.demurrage_amount) / assigns.previous_currency * 100,
-        else: 0
+        else: 0.0
 
     assigns = assign(assigns, :demurrage_percentage, Float.round(demurrage_percentage, 1))
 

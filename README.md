@@ -5,6 +5,7 @@ ROGs Umbrellaプロジェクトの認証システムです。
 ## デザインシステム
 
 このリポジトリのUI実装は **Torii Resonance Design System (TRDS)** を基準にしています。色やタイポグラフィ、コンポーネント規約については [`docs/torii_resonance_design_system.md`](docs/torii_resonance_design_system.md) を参照してください。
+Quick Reference / クイックガイド (token / Tailwind / CoreComponents への導線) も同ドキュメントに追記済みです。UIタスクを始める前に必ず確認してください。
 
 ## 概要
 

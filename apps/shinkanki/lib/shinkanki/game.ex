@@ -346,6 +346,7 @@ defmodule Shinkanki.Game do
           game
           |> Map.put(:status, :playing)
           |> add_log("Game started with #{player_count} player(s)")
+          |> execute_phase() # Trigger the first phase (Event)
 
         {:ok, new_game}
     end

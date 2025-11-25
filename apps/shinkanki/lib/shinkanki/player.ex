@@ -11,12 +11,12 @@ defmodule Shinkanki.Player do
           is_ready: boolean()
         }
 
-  defstruct [:id, :name, talents: [], used_talents: [], is_ready: false]
+  defstruct [:id, :name, :role, talents: [], used_talents: [], is_ready: false]
 
   @doc """
   Creates a new player.
   """
-  def new(id, name) do
-    %__MODULE__{id: id, name: name}
+  def new(id, name, role \\ nil) do
+    %__MODULE__{id: id, name: name, role: role}
   end
 end

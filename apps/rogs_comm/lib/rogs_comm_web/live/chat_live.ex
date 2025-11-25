@@ -21,6 +21,8 @@ defmodule RogsCommWeb.ChatLive do
   on_mount {RogsCommWeb.UserAuthHooks, :assign_current_user}
 
   @rtc_connect_delay 400
+  @rtc_max_retries 3
+  @rtc_retry_delay 2000
 
   @impl true
   def mount(%{"room_id" => room_id}, _session, socket) do
@@ -360,7 +362,8 @@ defmodule RogsCommWeb.ChatLive do
           state
           | connecting?: true,
             status_message: "音声チャネルを初期化しています...",
-            error: nil
+            error: nil,
+            retry_count: 0
         })
         |> push_event("rtc:start", %{room_id: socket.assigns.room_id})
 
@@ -383,7 +386,8 @@ defmodule RogsCommWeb.ChatLive do
           | connected?: false,
             connecting?: false,
             status_message: "音声チャネルを切断しました",
-            error: nil
+            error: nil,
+            retry_count: 0
         })
         |> push_event("rtc:stop", %{room_id: socket.assigns.room_id})
 
@@ -533,8 +537,76 @@ defmodule RogsCommWeb.ChatLive do
          | connecting?: false,
            connected?: true,
            status_message: "音声チャネルが接続されました",
-           error: nil
+           error: nil,
+           retry_count: 0
        })}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:rtc_error, reason}, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? do
+      retry_count = Map.get(state, :retry_count, 0)
+
+      if retry_count < @rtc_max_retries do
+        Logger.warning("ChatLive: WebRTC connection failed, retrying",
+          room_id: socket.assigns.room_id,
+          reason: reason,
+          retry_count: retry_count + 1
+        )
+
+        # Schedule retry
+        Process.send_after(self(), :rtc_retry, @rtc_retry_delay)
+
+        {:noreply,
+         assign(socket, :rtc_state, %{
+           state
+           | connecting?: true,
+             status_message: "接続に失敗しました。再試行中... (#{retry_count + 1}/#{@rtc_max_retries})",
+             error: reason,
+             retry_count: retry_count + 1
+         })}
+      else
+        Logger.error("ChatLive: WebRTC connection failed after max retries",
+          room_id: socket.assigns.room_id,
+          reason: reason,
+          retry_count: retry_count
+        )
+
+        {:noreply,
+         assign(socket, :rtc_state, %{
+           state
+           | connecting?: false,
+             connected?: false,
+             status_message: "接続に失敗しました。しばらくしてから再試行してください。",
+             error: reason,
+             retry_count: 0
+         })}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(:rtc_retry, socket) do
+    state = socket.assigns.rtc_state
+
+    if state.connecting? and not state.connected? do
+      socket =
+        socket
+        |> assign(:rtc_state, %{
+          state
+          | status_message: "音声チャネルを再試行しています...",
+            error: nil
+        })
+        |> push_event("rtc:start", %{room_id: socket.assigns.room_id})
+
+      Process.send_after(self(), :rtc_connected, @rtc_connect_delay)
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -574,7 +646,8 @@ defmodule RogsCommWeb.ChatLive do
       mic_muted?: false,
       speakers_muted?: false,
       status_message: "未接続",
-      error: nil
+      error: nil,
+      retry_count: 0
     }
   end
 
@@ -647,6 +720,7 @@ defmodule RogsCommWeb.ChatLive do
         <section class="torii-hero my-6 md:my-10" aria-labelledby="chat-hero-title">
           <div class="torii-lines" aria-hidden="true"></div>
           <div class="relative z-10 text-center md:text-left max-w-4xl mx-auto space-y-4">
+            <% share_link = url(~p"/rooms/#{@room_id}/chat") %>
             <p class="text-sm uppercase tracking-[0.5em] text-[var(--color-landing-text-secondary)]">
               Humans are one of the Myriad Gods
             </p>
@@ -666,6 +740,17 @@ defmodule RogsCommWeb.ChatLive do
               <a href="#chat-panel" class="cta-button cta-outline focus-ring">
                 現在のルームを見る
               </a>
+              <button
+                type="button"
+                id="room-share-button"
+                class="cta-button cta-outline focus-ring flex items-center gap-2 justify-center"
+                phx-hook="CopyLinkHook"
+                data-copy-url={share_link}
+              >
+                <span aria-hidden="true">🔗</span>
+                <span data-copy-label>ルームリンクをコピー</span>
+                <span data-copy-feedback class="sr-only" aria-live="polite"></span>
+              </button>
             </div>
             <div
               class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]"

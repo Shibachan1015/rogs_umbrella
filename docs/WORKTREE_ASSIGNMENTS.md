@@ -133,7 +133,7 @@
    - ログイン画面のTRDS適用
    - 登録画面のTRDS適用
    - パスワードリセット画面のTRDS適用
-   - ファイル: 
+   - ファイル:
      - `apps/rogs_identity/lib/rogs_identity_web/live/user_live/login.ex`
      - `apps/rogs_identity/lib/rogs_identity_web/live/user_live/registration.ex`
      - `apps/rogs_identity/lib/rogs_identity_web/live/user_live/forgot_password.ex`

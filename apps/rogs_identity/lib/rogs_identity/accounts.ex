@@ -389,12 +389,13 @@ defmodule RogsIdentity.Accounts do
     with user when not is_nil(user) <- get_user_by_password_reset_token(token),
          {:ok, query} <- UserToken.verify_password_reset_token_query(token),
          {_user, user_token} <- Repo.one(query),
-         {:ok, user} <- update_user_password(user, attrs) do
+         {:ok, {user, _tokens}} <- update_user_password(user, attrs) do
       # Delete the reset token after successful password reset
       Repo.delete(user_token)
       {:ok, user}
     else
       nil -> {:error, :invalid_token}
+      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
       _ -> {:error, :invalid_token}
     end
   end

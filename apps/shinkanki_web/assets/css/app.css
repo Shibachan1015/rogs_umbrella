@@ -300,9 +300,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS Variables for Miyabi Theme */
+/* Custom CSS Variables for TRDS (Torii Resonance Design System) */
 :root {
-  /* Miyabi Base Colors */
+  /* TRDS Core Colors */
   --color-washi: #fcfaf2;
   --color-washi-dark: #efece4;
   --color-sumi: #1c1c1c;
@@ -562,7 +562,7 @@
   border-width: 0;
 }
 
-/* Validation error styles for Miyabi theme */
+/* Validation error styles for TRDS */
 .textarea-error,
 .input-error {
   border-color: var(--color-shu) !important;

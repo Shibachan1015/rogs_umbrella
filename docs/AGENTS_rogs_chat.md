@@ -120,8 +120,8 @@ The project follows a **Modular Monolith** strategy using Elixir Umbrella to ens
 
 ### C. Game UI (`rogs-ui` Worktree)
 **`shinkanki_web`**
--   [ ] **Design System**: "Miyabi" (Analog Ritual).
-    -   No digital neon. Use Washi textues, Ink (Sumi), and Vermilion (Shu).
+-   [ ] **Design System**: TRDS (Torii Resonance Design System).
+    -   No digital neon. Use Washi textures, Ink (Sumi), Vermilion (Shu), and aurora-inspired lighting.
 -   [ ] **Layout**:
     -   **Sidebar**: Chat & History Log (Scroll style).
     -   **Center**: The Board (L-Meter circle, F/K/S gauges).
@@ -134,7 +134,7 @@ The project follows a **Modular Monolith** strategy using Elixir Umbrella to ens
 
 ---
 
-## 4. Design Specification (Theme: Miyabi)
+## 4. Design Specification (Theme: TRDS)
 
 ### Tailwind Configuration
 Define these colors in `tailwind.config.js`:

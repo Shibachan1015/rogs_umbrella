@@ -655,10 +655,6 @@ defmodule RogsCommWeb.ChatLive do
   defp rtc_status_label(%{connecting?: true}), do: "接続準備中"
   defp rtc_status_label(_state), do: "未接続"
 
-  defp rtc_status_accent(%{connected?: true}), do: "text-matsu"
-  defp rtc_status_accent(%{connecting?: true}), do: "text-kohaku"
-  defp rtc_status_accent(_state), do: "text-sumi"
-
   defp rtc_state_pill(%{connected?: true}), do: "CONNECTED"
   defp rtc_state_pill(%{connecting?: true}), do: "LINKING"
   defp rtc_state_pill(_state), do: "IDLE"
@@ -679,9 +675,6 @@ defmodule RogsCommWeb.ChatLive do
 
   defp search_state_label(true), do: "ON"
   defp search_state_label(_), do: "OFF"
-
-  defp search_state_accent(true), do: "text-shu"
-  defp search_state_accent(_), do: "text-sumi"
 
   defp search_state_screen_text(true), do: "検索モードが有効になりました"
   defp search_state_screen_text(_), do: "検索モードは無効です"
@@ -753,24 +746,25 @@ defmodule RogsCommWeb.ChatLive do
               </button>
             </div>
             <div
-              class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em] text-[var(--color-landing-text-secondary)]"
+              class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start text-xs tracking-[0.2em]"
+              style="color: var(--color-landing-text-secondary);"
               id="chat-state-tracker"
               phx-hook="ChatStateHook"
               data-search-mode={if(@search_mode, do: "on", else: "off")}
               data-rtc-state={rtc_data_state(@rtc_state)}
             >
-              <span class="state-pill bg-washi text-sumi border-sumi/30">Room: {@room.name}</span>
-              <span class="state-pill bg-washi text-sumi border-sumi/30">
+              <span class="trds-pill">Room: {@room.name}</span>
+              <span class="trds-pill">
                 Online: {Enum.count(@presences)}
               </span>
               <span
-                class={["state-pill bg-washi border-sumi/30", search_state_accent(@search_mode)]}
+                class={["trds-pill", if(@search_mode, do: "trds-pill--gold", else: "")]}
                 data-pill="search"
               >
                 Search {search_state_label(@search_mode)}
               </span>
               <span
-                class={["state-pill bg-washi border-sumi/30", rtc_status_accent(@rtc_state)]}
+                class={["trds-pill", if(@rtc_state.connected?, do: "trds-pill--gold", else: "")]}
                 data-pill="audio"
               >
                 Audio: {rtc_state_pill(@rtc_state)}
@@ -787,7 +781,7 @@ defmodule RogsCommWeb.ChatLive do
 
           <div
             id="chat-root"
-            class="hud-panel flex flex-col xl:flex-row gap-6"
+            class="trds-glass-panel flex flex-col xl:flex-row gap-6"
             data-room-id={@room_id}
             data-display-name={@display_name}
             phx-hook="TypingHook"
@@ -795,8 +789,13 @@ defmodule RogsCommWeb.ChatLive do
             aria-label={"チャットルーム #{@room.name}"}
           >
             <aside class="w-full xl:w-72 space-y-5" aria-label="チャット補助パネル">
-              <div class="concept-card text-[var(--color-landing-pale)]">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-4">Rooms</h3>
+              <div class="trds-glass-panel">
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-4"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  Rooms
+                </h3>
                 <nav class="space-y-3" aria-label="ルーム一覧" role="list">
                   <.link
                     :for={room <- @rooms}
@@ -805,10 +804,10 @@ defmodule RogsCommWeb.ChatLive do
                     navigate={~p"/rooms/#{room.id}/chat"}
                     class={[
                       "block rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
-                      "focus-ring border border-transparent",
-                      room.id == @room_id && "bg-shu/80 text-washi border border-shu shadow-lg",
+                      "trds-focusable border border-transparent",
+                      room.id == @room_id && "trds-pill trds-pill--gold",
                       room.id != @room_id &&
-                        "bg-[rgba(255,255,255,0.02)] hover:border-[var(--color-landing-gold)] hover:text-[var(--color-landing-gold)]"
+                        "trds-pill hover:trds-pill--gold"
                     ]}
                   >
                     <span class="font-semibold">{room.name}</span>
@@ -817,8 +816,13 @@ defmodule RogsCommWeb.ChatLive do
                 </nav>
               </div>
 
-              <div class="concept-card text-sumi bg-washi">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3 text-sumi">Display name</h3>
+              <div class="trds-glass-panel">
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  Display name
+                </h3>
                 <.form
                   for={@name_form}
                   phx-submit="set_name"
@@ -831,11 +835,12 @@ defmodule RogsCommWeb.ChatLive do
                     field={@name_form[:display_name]}
                     type="text"
                     placeholder="匿名"
-                    class="bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20"
+                    class="trds-focusable"
+                    style="background: var(--trds-surface-glass); border-color: var(--trds-outline-soft); color: var(--color-landing-text-primary);"
                   />
                   <button
                     type="submit"
-                    class="w-full hanko-button text-sm"
+                    class="w-full cta-button cta-solid trds-focusable text-sm"
                     aria-label="表示名を更新"
                   >
                     更新
@@ -843,8 +848,13 @@ defmodule RogsCommWeb.ChatLive do
                 </.form>
               </div>
 
-              <div class="concept-card text-sumi bg-washi">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3 text-sumi">メッセージ検索</h3>
+              <div class="trds-glass-panel">
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  メッセージ検索
+                </h3>
                 <.form
                   for={@search_form}
                   phx-submit="search"
@@ -859,13 +869,14 @@ defmodule RogsCommWeb.ChatLive do
                     type="text"
                     placeholder="検索..."
                     autocomplete="off"
-                    class="bg-washi border-2 border-sumi text-sumi focus:border-matsu focus:ring-2 focus:ring-matsu/20"
+                    class="trds-focusable"
+                    style="background: var(--trds-surface-glass); border-color: var(--trds-outline-soft); color: var(--color-landing-text-primary);"
                   />
                   <button
                     :if={@search_mode}
                     type="button"
                     phx-click="clear_search"
-                    class="w-full rounded-md bg-sumi-light text-washi px-3 py-2 text-sm hover:bg-sumi transition-colors duration-200"
+                    class="w-full cta-button cta-outline trds-focusable text-sm"
                     aria-label="検索結果をクリア"
                   >
                     検索をクリア
@@ -875,17 +886,24 @@ defmodule RogsCommWeb.ChatLive do
 
               <div
                 id="audio-panel"
-                class="concept-card text-sumi bg-washi space-y-4"
+                class="trds-glass-panel space-y-4"
                 phx-hook="WebRTCHook"
                 data-room-id={@room_id}
                 aria-live="polite"
               >
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em] mb-1 text-sumi">音声チャネル</p>
-                  <p class={["text-lg font-semibold", rtc_status_accent(@rtc_state)]}>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em] mb-1"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    音声チャネル
+                  </p>
+                  <p class="text-lg font-semibold" style="color: var(--color-landing-gold);">
                     {rtc_status_label(@rtc_state)}
                   </p>
-                  <p class="text-sm text-sumi-light mt-1">{@rtc_state.status_message}</p>
+                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">
+                    {@rtc_state.status_message}
+                  </p>
                 </div>
 
                 <div class="flex gap-3">
@@ -894,7 +912,7 @@ defmodule RogsCommWeb.ChatLive do
                     phx-click="start_audio"
                     disabled={@rtc_state.connecting? or @rtc_state.connected?}
                     class={[
-                      "flex-1 hanko-button text-xs uppercase tracking-[0.3em]",
+                      "flex-1 cta-button cta-solid trds-focusable text-xs uppercase tracking-[0.3em]",
                       (@rtc_state.connecting? or @rtc_state.connected?) &&
                         "opacity-60 cursor-not-allowed"
                     ]}
@@ -906,9 +924,7 @@ defmodule RogsCommWeb.ChatLive do
                     phx-click="stop_audio"
                     disabled={not @rtc_state.connected? and not @rtc_state.connecting?}
                     class={[
-                      "flex-1 px-4 py-2 rounded-lg border-2 border-sumi text-sumi font-semibold transition-all focus-ring",
-                      (@rtc_state.connected? or @rtc_state.connecting?) &&
-                        "hover:bg-sumi hover:text-washi",
+                      "flex-1 cta-button cta-outline trds-focusable",
                       (not @rtc_state.connected? and not @rtc_state.connecting?) &&
                         "opacity-60 cursor-not-allowed"
                     ]}
@@ -923,8 +939,8 @@ defmodule RogsCommWeb.ChatLive do
                     phx-click="toggle_mic"
                     disabled={!@rtc_state.connected?}
                     class={[
-                      "flex-1 px-3 py-2 rounded border border-sumi focus-ring transition-all",
-                      @rtc_state.connected? && "hover:border-shu hover:text-shu",
+                      "flex-1 trds-pill trds-focusable transition-all",
+                      @rtc_state.connected? && "hover:trds-pill--gold",
                       !@rtc_state.connected? && "opacity-50 cursor-not-allowed"
                     ]}
                   >
@@ -935,8 +951,8 @@ defmodule RogsCommWeb.ChatLive do
                     phx-click="toggle_speakers"
                     disabled={!@rtc_state.connected?}
                     class={[
-                      "flex-1 px-3 py-2 rounded border border-sumi focus-ring transition-all",
-                      @rtc_state.connected? && "hover:border-matsu hover:text-matsu",
+                      "flex-1 trds-pill trds-focusable transition-all",
+                      @rtc_state.connected? && "hover:trds-pill--gold",
                       !@rtc_state.connected? && "opacity-50 cursor-not-allowed"
                     ]}
                   >
@@ -945,60 +961,98 @@ defmodule RogsCommWeb.ChatLive do
                 </div>
 
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em] mb-2 text-sumi">参加者ステータス</p>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em] mb-2"
+                    style="color: var(--color-landing-text-primary);"
+                  >
+                    参加者ステータス
+                  </p>
                   <ul class="space-y-2" role="list">
                     <li
                       :for={{user_id, meta} <- list_presences(@presences)}
                       role="listitem"
-                      class="flex items-center justify-between bg-washi-dark px-3 py-2 rounded border border-sumi/20 text-sm"
+                      class="trds-pill flex items-center justify-between"
                     >
                       <span>{meta.user_email || "匿名"}</span>
-                      <span class="text-xs text-sumi-light">{rtc_participant_hint(@rtc_state)}</span>
+                      <span class="text-xs" style="color: var(--color-landing-text-secondary);">
+                        {rtc_participant_hint(@rtc_state)}
+                      </span>
                     </li>
-                    <li :if={Enum.empty?(@presences)} class="text-xs text-sumi-light">
+                    <li
+                      :if={Enum.empty?(@presences)}
+                      class="text-xs"
+                      style="color: var(--color-landing-text-secondary);"
+                    >
                       オンラインのプレイヤーはいません
                     </li>
                   </ul>
                 </div>
               </div>
 
-              <div class="concept-card text-[var(--color-landing-pale)]">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3">
+              <div class="trds-glass-panel">
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
                   Online ({Enum.count(@presences)})
                 </h3>
                 <div class="space-y-2" role="list" aria-label="オンラインユーザー">
                   <div
                     :for={{user_id, meta} <- list_presences(@presences)}
                     role="listitem"
-                    class="flex items-center justify-between bg-[rgba(255,255,255,0.05)] px-3 py-2 rounded-md text-sm"
+                    class="trds-pill flex items-center justify-between"
                   >
                     <span>{meta.user_email || "匿名"}</span>
                     <span class="flex items-center gap-1 text-xs uppercase tracking-[0.2em]">
-                      <span class="h-2 w-2 rounded-full bg-matsu inline-block" aria-hidden="true">
+                      <span
+                        class="h-2 w-2 rounded-full inline-block"
+                        style="background-color: var(--color-landing-gold);"
+                        aria-hidden="true"
+                      >
                       </span>
                       Online
                     </span>
                   </div>
-                  <p :if={Enum.empty?(@presences)} class="text-xs opacity-70">現在オンラインのユーザーはいません。</p>
+                  <p
+                    :if={Enum.empty?(@presences)}
+                    class="text-xs opacity-70"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    現在オンラインのユーザーはいません。
+                  </p>
                 </div>
               </div>
             </aside>
 
-            <div class="flex-1 flex flex-col bg-washi rounded-2xl border-2 border-sumi overflow-hidden">
-              <div class="bg-washi-dark border-b-2 border-sumi px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex-1 flex flex-col trds-glass-panel overflow-hidden">
+              <div
+                class="border-b px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                style="border-color: var(--trds-outline-soft);"
+              >
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em] text-sumi-light">現在のルーム</p>
-                  <h3 class="text-2xl font-semibold text-sumi">{@room.name}</h3>
-                  <p class="text-sm text-sumi-light mt-1">{@room.topic}</p>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em]"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    現在のルーム
+                  </p>
+                  <h3 class="text-2xl font-semibold" style="color: var(--color-landing-text-primary);">
+                    {@room.name}
+                  </h3>
+                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">
+                    {@room.topic}
+                  </p>
                 </div>
                 <div class="space-y-2 text-right">
                   <div
                     :if={@search_mode}
-                    class="text-sm text-shu bg-shu/10 px-3 py-1 rounded border border-shu"
+                    class="trds-pill trds-pill--gold text-sm"
                   >
                     検索モード: {length(@search_results)}件
                   </div>
-                  <div class="text-xs text-sumi-light">メッセージ数: {Enum.count(@streams.messages)}</div>
+                  <div class="text-xs" style="color: var(--color-landing-text-secondary);">
+                    メッセージ数: {Enum.count(@streams.messages)}
+                  </div>
                 </div>
               </div>
 
@@ -1018,7 +1072,7 @@ defmodule RogsCommWeb.ChatLive do
                   <button
                     phx-click="load_older_messages"
                     phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
-                    class="text-sm text-matsu hover:text-shu px-4 py-2 rounded border-2 border-matsu hover:border-shu bg-washi hover:bg-washi-dark transition-all duration-200 focus-ring"
+                    class="cta-button cta-outline trds-focusable text-sm"
                     aria-label="古いメッセージを読み込む"
                   >
                     古いメッセージを読み込む
@@ -1026,9 +1080,10 @@ defmodule RogsCommWeb.ChatLive do
                 </div>
                 <div
                   :if={@search_mode && Enum.count(@streams.messages) == 0}
-                  class="text-center py-8 text-sumi-light"
+                  class="text-center py-8 trds-glass-panel"
                   role="status"
                   aria-live="polite"
+                  style="color: var(--color-landing-text-secondary);"
                 >
                   <div class="text-4xl mb-2" aria-hidden="true">🔍</div>
                   <p>検索結果が見つかりませんでした</p>
@@ -1036,19 +1091,26 @@ defmodule RogsCommWeb.ChatLive do
                 <article
                   :for={{id, message} <- @streams.messages}
                   id={id}
-                  class="flex flex-col group ofuda-card hover:shadow-md transition-all duration-200 message-enter"
+                  class="flex flex-col group trds-glass-panel hover:shadow-md transition-all duration-200 message-enter"
                   role="listitem"
                   aria-label={"#{message.user_email} #{message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}"}
                 >
                   <div class="flex items-center justify-between mb-2">
-                    <div class="text-sm text-sumi-light">
-                      <span class="font-semibold text-sumi border-l-2 border-matsu pl-2">
+                    <div class="text-sm" style="color: var(--color-landing-text-secondary);">
+                      <span
+                        class="font-semibold pl-2"
+                        style="color: var(--color-landing-text-primary); border-left: 2px solid var(--trds-outline-strong);"
+                      >
                         {message.user_email}
                       </span>
                       <span class="ml-2">
                         {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
                       </span>
-                      <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs text-kohaku">
+                      <span
+                        :if={Map.get(message, :edited_at)}
+                        class="ml-2 text-xs"
+                        style="color: var(--color-landing-gold);"
+                      >
                         (編集済み)
                       </span>
                     </div>
@@ -1059,7 +1121,7 @@ defmodule RogsCommWeb.ChatLive do
                       <button
                         phx-click="edit_message"
                         phx-value-message_id={message.id}
-                        class="text-xs text-matsu hover:text-shu px-2 py-1 rounded border border-matsu hover:border-shu transition-colors duration-200 focus-ring"
+                        class="trds-pill trds-focusable text-xs hover:trds-pill--gold transition-colors duration-200"
                         aria-label="メッセージを編集"
                       >
                         編集
@@ -1067,7 +1129,7 @@ defmodule RogsCommWeb.ChatLive do
                       <button
                         phx-click="delete_message"
                         phx-value-message_id={message.id}
-                        class="text-xs text-shu hover:bg-shu hover:text-washi px-2 py-1 rounded border border-shu transition-colors duration-200 focus-ring"
+                        class="trds-pill trds-focusable text-xs hover:trds-pill--gold transition-colors duration-200"
                         aria-label="メッセージを削除"
                       >
                         削除
@@ -1076,30 +1138,42 @@ defmodule RogsCommWeb.ChatLive do
                   </div>
                   <p
                     :if={!@search_mode}
-                    class="text-sumi text-base leading-relaxed"
+                    class="text-base leading-relaxed"
+                    style="color: var(--color-landing-text-primary);"
                   >
                     {message.content}
                   </p>
                   <p
                     :if={@search_mode}
-                    class="text-sumi text-base leading-relaxed"
+                    class="text-base leading-relaxed"
                     phx-no-format
+                    style="color: var(--color-landing-text-primary);"
                   >
                     {raw(highlight_search_term(message.content, @search_form.params["query"] || ""))}
                   </p>
                 </article>
                 <div
                   :if={map_size(@typing_users) > 0}
-                  class="text-sm text-sumi-light italic mt-2 bg-sakura/20 px-3 py-2 rounded border border-sakura typing-indicator"
+                  class="trds-pill text-sm italic mt-2 typing-indicator"
                   role="status"
                   aria-live="polite"
+                  style="color: var(--color-landing-text-secondary);"
                 >
-                  <span class="text-sakura typing-indicator" aria-hidden="true">✍️</span>
+                  <span
+                    class="typing-indicator"
+                    aria-hidden="true"
+                    style="color: var(--color-landing-gold);"
+                  >
+                    ✍️
+                  </span>
                   {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
                 </div>
               </div>
 
-              <div class="bg-washi-dark border-t-2 border-sumi px-2 md:px-4 py-3 shadow-lg">
+              <div
+                class="border-t px-2 md:px-4 py-3 shadow-lg"
+                style="border-color: var(--trds-outline-soft);"
+              >
                 <.form
                   for={@form}
                   id="chat-form"
@@ -1111,13 +1185,14 @@ defmodule RogsCommWeb.ChatLive do
                       field={@form[:content]}
                       type="text"
                       placeholder="メッセージを入力..."
-                      class="flex-1 text-sm md:text-base bg-washi border-2 border-sumi text-sumi focus:border-shu focus:ring-2 focus:ring-shu/20 rounded-lg"
+                      class="flex-1 text-sm md:text-base trds-focusable rounded-lg"
+                      style="background: var(--trds-surface-glass); border-color: var(--trds-outline-soft); color: var(--color-landing-text-primary);"
                       autocomplete="off"
                       aria-label="メッセージ入力"
                     />
                     <button
                       type="submit"
-                      class="px-4 md:px-6 py-2 hanko-button text-sm md:text-base whitespace-nowrap focus-ring"
+                      class="px-4 md:px-6 py-2 cta-button cta-solid trds-focusable text-sm md:text-base whitespace-nowrap"
                     >
                       送信
                     </button>

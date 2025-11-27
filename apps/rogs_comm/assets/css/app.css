@@ -1,10 +1,9 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-@import "tailwindcss" source(none);
-@source "../css";
-@source "../js";
-@source "../../lib/rogs_comm_web";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
@@ -351,23 +350,74 @@ textarea:focus {
   }
 }
 
-/* Torii Resonance Design System tokens */
+/* Torii Resonance Design System (TRDS) tokens */
 :root {
+  /* TRDS Core Colors */
+  --color-midnight: #0f1419;
+  --color-deep-navy: #1a1f2e;
+  --color-landing-gold: #d4af37;
+  --color-landing-pale: #f0e6d2;
+  --color-landing-silver: #c0c0c0;
+  --color-landing-text-primary: #e8e8e8;
+  --color-landing-text-secondary: #a0a0a0;
+
+  /* TRDS Typography */
+  --trds-font-sans: "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP",
+    "Helvetica Neue", Arial, sans-serif;
+  --trds-font-serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --trds-font-mono: "Fira Code", "SFMono-Regular", "Roboto Mono", monospace;
+
+  /* TRDS Surface Colors */
+  --trds-surface-dark: rgba(15, 20, 25, 0.92);
+  --trds-surface-ink: rgba(15, 20, 25, 0.7);
+  --trds-surface-glass: rgba(252, 250, 242, 0.06);
+  --trds-surface-light: rgba(252, 250, 242, 0.1);
+
+  /* TRDS Outline Colors */
+  --trds-outline-strong: rgba(212, 175, 55, 0.35);
+  --trds-outline-soft: rgba(255, 255, 255, 0.15);
+  --trds-divider: rgba(255, 255, 255, 0.3);
+
+  /* TRDS Shadows */
+  --trds-glow-gold: 0 30px 80px rgba(212, 175, 55, 0.2);
+  --trds-glow-ink: 0 30px 80px rgba(0, 0, 0, 0.4);
+  --glow-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 25px rgba(212, 175, 55, 0.25);
+
+  /* TRDS Pills */
+  --trds-pill-bg: rgba(255, 255, 255, 0.08);
+  --trds-pill-border: rgba(255, 255, 255, 0.25);
+
+  /* Legacy compatibility */
   --color-landing-bg: #0f1117;
   --color-landing-panel: rgba(18, 20, 28, 0.9);
   --color-landing-lines: rgba(199, 179, 112, 0.2);
-  --color-landing-gold: #c7b370;
-  --color-landing-pale: #f4efe1;
-  --color-landing-text-secondary: rgba(244, 239, 225, 0.8);
   --color-landing-slate: rgba(15, 17, 23, 0.85);
 }
 
-.landing-body {
-  background: radial-gradient(circle at top, rgba(199, 179, 112, 0.08), transparent 55%),
-    var(--color-landing-bg);
+/* Base body styles for TRDS */
+body {
+  background-color: var(--color-midnight);
+  color: var(--color-landing-text-primary);
+  font-family: var(--trds-font-sans);
   min-height: 100vh;
-  color: var(--color-landing-pale);
+}
+
+.landing-body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(212, 175, 55, 0.2), transparent 45%),
+    linear-gradient(135deg, var(--color-midnight), var(--color-deep-navy));
+  color: var(--color-landing-text-primary);
   position: relative;
+  overflow: hidden;
+}
+
+.landing-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.4));
+  opacity: 0.25;
+  pointer-events: none;
 }
 
 .torii-hero {
@@ -375,34 +425,25 @@ textarea:focus {
   overflow: hidden;
   border-radius: 1.5rem;
   padding: 3rem 1.5rem;
-  background: linear-gradient(135deg, rgba(199, 179, 112, 0.2), rgba(15, 17, 23, 0.4));
-  border: 1px solid rgba(199, 179, 112, 0.15);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(15, 20, 25, 0.4));
+  border: 1px solid var(--trds-outline-strong);
+  box-shadow: var(--glow-shadow);
 }
 
 .torii-lines {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-.torii-lines::before,
-.torii-lines::after {
-  content: "";
-  position: absolute;
-  width: 2px;
-  height: 160%;
-  top: -30%;
-  background: linear-gradient(180deg, rgba(199, 179, 112, 0), rgba(199, 179, 112, 0.5));
-  opacity: 0.4;
-}
-
-.torii-lines::before {
-  left: 35%;
-}
-
-.torii-lines::after {
-  right: 35%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 45%,
+      rgba(212, 175, 55, 0.15) 48%,
+      rgba(212, 175, 55, 0.35) 50%,
+      rgba(212, 175, 55, 0.15) 52%,
+      transparent 55%
+    ),
+    linear-gradient(0deg, transparent 70%, rgba(240, 230, 210, 0.05));
 }
 
 .cta-button {
@@ -420,17 +461,17 @@ textarea:focus {
 .cta-button.cta-solid {
   background: var(--color-landing-gold);
   color: #1b1b1f;
-  box-shadow: 0 12px 40px rgba(199, 179, 112, 0.35);
+  box-shadow: 0 12px 40px rgba(212, 175, 55, 0.35);
 }
 
 .cta-button.cta-solid:hover {
   transform: translateY(-3px);
-  box-shadow: 0 20px 50px rgba(199, 179, 112, 0.45);
+  box-shadow: 0 20px 50px rgba(212, 175, 55, 0.45);
 }
 
 .cta-button.cta-outline {
-  border-color: rgba(244, 239, 225, 0.4);
-  color: var(--color-landing-pale);
+  border-color: var(--trds-outline-soft);
+  color: var(--color-landing-text-primary);
 }
 
 .cta-button.cta-outline:hover {
@@ -439,32 +480,81 @@ textarea:focus {
 }
 
 .concept-card {
-  background: rgba(18, 20, 28, 0.85);
-  border: 1px solid rgba(199, 179, 112, 0.15);
+  background: var(--trds-surface-glass);
+  border: 1px solid var(--trds-outline-soft);
   border-radius: 1rem;
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
   transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  backdrop-filter: blur(18px);
 }
 
 .concept-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent, rgba(199, 179, 112, 0.08), transparent);
+  background: linear-gradient(120deg, transparent, rgba(212, 175, 55, 0.08), transparent);
   transform: translateX(-100%);
   transition: transform 0.6s ease-in-out;
 }
 
 .concept-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(199, 179, 112, 0.4);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  border-color: var(--trds-outline-strong);
+  box-shadow: var(--trds-glow-gold);
 }
 
 .concept-card:hover::before {
   transform: translateX(100%);
+}
+
+.trds-glass-panel {
+  border-radius: 1rem;
+  background: var(--trds-surface-glass);
+  border: 1px solid var(--trds-outline-soft);
+  box-shadow: var(--trds-glow-ink);
+  backdrop-filter: blur(18px);
+  position: relative;
+}
+
+.trds-glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 65%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.trds-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--trds-pill-border);
+  background: var(--trds-pill-bg);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--color-landing-text-primary);
+}
+
+.trds-pill--gold {
+  border-color: var(--trds-outline-strong);
+  color: var(--color-landing-gold);
+}
+
+.trds-focusable {
+  position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.trds-focusable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35);
+  transform: translateY(-1px);
 }
 
 .hud-panel {
@@ -490,7 +580,14 @@ textarea:focus {
 .torii-divider {
   width: 100%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(199, 179, 112, 0.4), transparent);
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    rgba(212, 175, 55, 0.45),
+    transparent
+  );
+  opacity: 0.8;
   margin: 1.5rem 0;
 }
 

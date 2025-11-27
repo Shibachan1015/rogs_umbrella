@@ -200,5 +200,20 @@ config :tailwind,
     cd: Path.expand("../apps/shinkanki_web/assets", __DIR__)
   ]
 
+# --- 3.2. アセット設定 (rogs_comm) ---
+config :esbuild,
+  rogs_comm: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../apps/rogs_comm/assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :tailwind,
+  rogs_comm: [
+    args: ~w(--input=css/app.css --output=../priv/static/assets/app.css),
+    cd: Path.expand("../apps/rogs_comm/assets", __DIR__)
+  ]
+
 # --- 3. 環境設定の読み込み ---
 # 注意: import_configは65行目で既に実行されています

@@ -73,6 +73,9 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <div class="user-logged-in">
               <span class="user-icon">👤</span>
               <span class="user-email">{@current_user.email}</span>
+              <.link href={~p"/users/log-out"} method="delete" class="logout-btn">
+                ログアウト
+              </.link>
             </div>
           </div>
         </header>

@@ -75,6 +75,12 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     # チャットフォーム
     chat_form = to_form(%{"body" => "", "author" => user_email}, as: :chat)
 
+    # ルームのアクティビティを更新
+    Rooms.touch_activity(room)
+
+    # ルームホストの確認（DBから）
+    is_room_host = room.host_id == user_id
+
     socket =
       socket
       |> assign(:room, room)
@@ -88,8 +94,13 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       |> assign(:is_ready, get_player_ready(game_state, user_id))
       |> assign(:all_ready, all_players_ready?(game_state))
       |> assign(:is_host, is_host?(game_state, user_id))
+      |> assign(:is_room_host, is_room_host)
       |> assign(:can_start, can_start_game?(game_state))
       |> assign(:chat_form, chat_form)
+      |> assign(:deletion_proposed, room.deletion_proposed_at != nil)
+      |> assign(:deletion_votes, room.deletion_votes || [])
+      |> assign(:has_voted, user_id in (room.deletion_votes || []))
+      |> assign(:is_admin, RogsIdentity.Accounts.admin?(current_user))
 
     socket =
       if connected?(socket) do
@@ -204,6 +215,79 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 <p>ホストがゲーム開始を押すまでお待ちください</p>
               </div>
             <% end %>
+
+            <!-- 削除提案セクション -->
+            <div class="deletion-section">
+              <%= if @deletion_proposed do %>
+                <div class="deletion-proposal-active">
+                  <p class="deletion-warning">⚠️ ルーム削除が提案されています</p>
+                  <p class="deletion-votes-count">
+                    投票: {length(@deletion_votes)}/{div(length(@players), 2) + 1}
+                  </p>
+
+                  <%= if @has_voted do %>
+                    <button type="button" class="vote-btn vote-btn--voted" disabled>
+                      ✓ 投票済み
+                    </button>
+                  <% else %>
+                    <button type="button" class="vote-btn" phx-click="vote_delete">
+                      削除に賛成
+                    </button>
+                  <% end %>
+
+                  <%= if @is_room_host do %>
+                    <button type="button" class="cancel-btn" phx-click="cancel_delete">
+                      提案をキャンセル
+                    </button>
+                  <% end %>
+                </div>
+              <% else %>
+                <%= if @is_room_host do %>
+                  <button
+                    type="button"
+                    class="propose-delete-btn"
+                    phx-click="propose_delete"
+                    data-confirm="本当にルームの削除を提案しますか？過半数の賛成で削除されます。"
+                  >
+                    🗑️ ルーム削除を提案
+                  </button>
+                <% end %>
+              <% end %>
+            </div>
+
+            <!-- 管理者セクション -->
+            <%= if @is_admin do %>
+              <div class="admin-section">
+                <h3 class="admin-title">🛡️ 管理者メニュー</h3>
+
+                <button
+                  type="button"
+                  class="admin-delete-btn"
+                  phx-click="admin_delete_room"
+                  data-confirm="管理者権限でルームを即座に削除します。よろしいですか？"
+                >
+                  🗑️ ルームを強制削除
+                </button>
+
+                <div class="admin-player-actions">
+                  <p class="admin-subtitle">プレイヤーをBAN:</p>
+                  <%= for player <- @players do %>
+                    <%= if player.id != @user_id do %>
+                      <button
+                        type="button"
+                        class="admin-ban-btn"
+                        phx-click="admin_ban_user"
+                        phx-value-user-id={player.id}
+                        phx-value-user-name={player.name}
+                        data-confirm={"#{player.name} をBANしますか？"}
+                      >
+                        🚫 {player.name}
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </aside>
 
           <!-- 右カラム: チャット -->
@@ -305,6 +389,127 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("propose_delete", _params, socket) do
+    room = socket.assigns.room
+    user_id = socket.assigns.user_id
+
+    case Rooms.propose_deletion(room, user_id) do
+      {:ok, updated_room} ->
+        {:noreply,
+         socket
+         |> assign(:room, updated_room)
+         |> assign(:deletion_proposed, true)
+         |> assign(:deletion_votes, updated_room.deletion_votes)
+         |> assign(:has_voted, true)
+         |> put_flash(:info, "削除提案を開始しました")}
+
+      {:error, :not_host} ->
+        {:noreply, put_flash(socket, :error, "ホストのみが削除を提案できます")}
+    end
+  end
+
+  @impl true
+  def handle_event("vote_delete", _params, socket) do
+    room = socket.assigns.room
+    user_id = socket.assigns.user_id
+
+    case Rooms.vote_for_deletion(room, user_id) do
+      {:ok, updated_room} ->
+        # 過半数に達したか確認
+        case Rooms.check_and_delete_if_voted(updated_room) do
+          {:ok, :deleted} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "ルームが削除されました")
+             |> push_navigate(to: ~p"/lobby")}
+
+          {:ok, :waiting, _count, _required} ->
+            {:noreply,
+             socket
+             |> assign(:room, updated_room)
+             |> assign(:deletion_votes, updated_room.deletion_votes)
+             |> assign(:has_voted, true)
+             |> put_flash(:info, "投票しました")}
+        end
+
+      {:error, :already_voted} ->
+        {:noreply, put_flash(socket, :error, "すでに投票済みです")}
+
+      {:error, :proposal_expired} ->
+        {:noreply,
+         socket
+         |> assign(:deletion_proposed, false)
+         |> assign(:deletion_votes, [])
+         |> assign(:has_voted, false)
+         |> put_flash(:info, "投票期限が切れました")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "投票できませんでした")}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    room = socket.assigns.room
+
+    case Rooms.cancel_deletion_proposal(room) do
+      {:ok, updated_room} ->
+        {:noreply,
+         socket
+         |> assign(:room, updated_room)
+         |> assign(:deletion_proposed, false)
+         |> assign(:deletion_votes, [])
+         |> assign(:has_voted, false)
+         |> put_flash(:info, "削除提案をキャンセルしました")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "キャンセルできませんでした")}
+    end
+  end
+
+  @impl true
+  def handle_event("admin_delete_room", _params, socket) do
+    room = socket.assigns.room
+    current_user = socket.assigns.current_user
+
+    case Rooms.admin_delete_room(room, current_user) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "ルームを削除しました（管理者権限）")
+         |> push_navigate(to: ~p"/lobby")}
+
+      {:error, :not_admin} ->
+        {:noreply, put_flash(socket, :error, "管理者権限が必要です")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "削除できませんでした")}
+    end
+  end
+
+  @impl true
+  def handle_event("admin_ban_user", %{"user-id" => user_id, "user-name" => user_name}, socket) do
+    current_user = socket.assigns.current_user
+
+    case RogsIdentity.Accounts.get_user(user_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "ユーザーが見つかりません")}
+
+      target_user ->
+        case RogsIdentity.Accounts.ban_user(current_user, target_user, "管理者によるBAN") do
+          {:ok, _} ->
+            {:noreply, put_flash(socket, :info, "#{user_name} をBANしました")}
+
+          {:error, :not_admin} ->
+            {:noreply, put_flash(socket, :error, "管理者権限が必要です")}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "BANできませんでした")}
+        end
     end
   end
 

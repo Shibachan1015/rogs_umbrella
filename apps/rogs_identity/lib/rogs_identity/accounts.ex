@@ -513,4 +513,98 @@ defmodule RogsIdentity.Accounts do
       end
     end)
   end
+
+  # ============================================================
+  # Admin & Ban Functions
+  # ============================================================
+
+  @doc """
+  ユーザーが管理者か確認
+  """
+  def admin?(%User{is_admin: true}), do: true
+  def admin?(_), do: false
+
+  @doc """
+  ユーザーがBANされているか確認
+  """
+  def banned?(%User{banned_at: nil}), do: false
+  def banned?(%User{banned_at: _}), do: true
+
+  @doc """
+  ユーザーをBANする（管理者のみ）
+  """
+  def ban_user(%User{} = admin, %User{} = target, reason \\ nil) do
+    if admin?(admin) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      target
+      |> Ecto.Changeset.change(
+        banned_at: now,
+        banned_reason: reason,
+        banned_by_id: admin.id
+      )
+      |> Repo.update()
+    else
+      {:error, :not_admin}
+    end
+  end
+
+  @doc """
+  BANを解除する（管理者のみ）
+  """
+  def unban_user(%User{} = admin, %User{} = target) do
+    if admin?(admin) do
+      target
+      |> Ecto.Changeset.change(
+        banned_at: nil,
+        banned_reason: nil,
+        banned_by_id: nil
+      )
+      |> Repo.update()
+    else
+      {:error, :not_admin}
+    end
+  end
+
+  @doc """
+  管理者権限を付与（既存の管理者のみ）
+  """
+  def grant_admin(%User{} = admin, %User{} = target) do
+    if admin?(admin) do
+      target
+      |> Ecto.Changeset.change(is_admin: true)
+      |> Repo.update()
+    else
+      {:error, :not_admin}
+    end
+  end
+
+  @doc """
+  管理者権限を剥奪（既存の管理者のみ）
+  """
+  def revoke_admin(%User{} = admin, %User{} = target) do
+    if admin?(admin) and admin.id != target.id do
+      target
+      |> Ecto.Changeset.change(is_admin: false)
+      |> Repo.update()
+    else
+      {:error, :not_admin}
+    end
+  end
+
+  @doc """
+  BANされているユーザー一覧
+  """
+  def list_banned_users do
+    from(u in User, where: not is_nil(u.banned_at), order_by: [desc: u.banned_at])
+    |> Repo.all()
+  end
+
+  @doc """
+  管理者一覧
+  """
+  def list_admins do
+    from(u in User, where: u.is_admin == true, order_by: u.email)
+    |> Repo.all()
+  end
 end

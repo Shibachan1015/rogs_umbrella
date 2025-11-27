@@ -16,6 +16,13 @@ defmodule RogsComm.Rooms.Room do
     field :is_private, :boolean, default: false
     field :max_participants, :integer, default: 8
 
+    # 削除関連フィールド
+    field :host_id, :binary_id
+    field :last_activity_at, :utc_datetime
+    field :deletion_proposed_at, :utc_datetime
+    field :deletion_votes, {:array, :binary_id}, default: []
+    field :current_participants, :integer, default: 0
+
     timestamps(type: :utc_datetime)
   end
 
@@ -54,13 +61,22 @@ defmodule RogsComm.Rooms.Room do
   end
 
   defp slugify(name) do
-    name
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/u, "-")
-    |> String.trim("-")
-    |> case do
-      "" -> nil
-      slug -> slug
+    slug =
+      name
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/u, "-")
+      |> String.trim("-")
+
+    # 日本語などで空になった場合はランダムslugを生成
+    case slug do
+      "" -> generate_random_slug()
+      s -> s
     end
+  end
+
+  defp generate_random_slug do
+    # room-xxxx の形式でランダムslugを生成
+    random = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
+    "room-#{random}"
   end
 end

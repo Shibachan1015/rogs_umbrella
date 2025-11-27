@@ -12,8 +12,28 @@ defmodule RogsIdentity.Accounts.User do
     field :confirmed_at, :naive_datetime
     field :authenticated_at, :naive_datetime, virtual: true
 
+    # 管理者権限
+    field :is_admin, :boolean, default: false
+
+    # BAN情報
+    field :banned_at, :utc_datetime
+    field :banned_reason, :string
+    belongs_to :banned_by, __MODULE__
+
     timestamps()
   end
+
+  @doc """
+  ユーザーがBANされているか確認
+  """
+  def banned?(%__MODULE__{banned_at: nil}), do: false
+  def banned?(%__MODULE__{banned_at: _}), do: true
+
+  @doc """
+  ユーザーが管理者か確認
+  """
+  def admin?(%__MODULE__{is_admin: true}), do: true
+  def admin?(_), do: false
 
   @doc """
   A user changeset for registering or changing the email.

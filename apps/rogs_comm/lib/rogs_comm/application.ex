@@ -16,8 +16,8 @@ defmodule RogsComm.Application do
       {DNSCluster, query: Application.get_env(:rogs_comm, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RogsComm.PubSub},
       RogsComm.Cache.MessageCache,
-      # Start a worker by calling: RogsComm.Worker.start_link(arg)
-      # {RogsComm.Worker, arg},
+      # ルーム自動削除ジョブ
+      RogsComm.RoomCleaner,
       # Start to serve requests, typically the last entry
       RogsCommWeb.Endpoint
     ]

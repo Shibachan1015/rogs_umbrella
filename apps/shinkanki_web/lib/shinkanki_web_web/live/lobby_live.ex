@@ -21,9 +21,6 @@ defmodule ShinkankiWebWeb.LobbyLive do
        |> put_flash(:error, "ログインしてください")
        |> push_navigate(to: ~p"/users/log_in")}
     else
-      # ルーム一覧を取得（公開ルームのみ）
-      rooms = Rooms.list_rooms(include_private: false)
-
       # ルーム作成フォーム
       changeset = Room.changeset(%Room{}, %{})
 
@@ -36,12 +33,27 @@ defmodule ShinkankiWebWeb.LobbyLive do
         socket
         |> assign(:current_user, effective_user)
         |> assign(:current_scope, nil)
-        |> assign(:rooms, rooms)
+        |> assign(:search, "")
+        |> assign(:filter_has_space, false)
         |> assign(:form, to_form(changeset))
         |> assign(:show_create_form, false)
+        |> load_rooms()
 
       {:ok, socket}
     end
+  end
+
+  # ルーム一覧を読み込み
+  defp load_rooms(socket) do
+    rooms =
+      Rooms.list_rooms(
+        include_private: false,
+        search: socket.assigns.search,
+        has_space: socket.assigns.filter_has_space,
+        limit: 50
+      )
+
+    assign(socket, :rooms, rooms)
   end
 
   @impl true
@@ -114,14 +126,49 @@ defmodule ShinkankiWebWeb.LobbyLive do
             </div>
           <% end %>
 
+          <!-- 検索・フィルター -->
+          <div class="search-filter-section">
+            <div class="search-box">
+              <form phx-change="search" phx-submit="search">
+                <input
+                  type="text"
+                  name="query"
+                  value={@search}
+                  placeholder="ルーム名・トピックで検索..."
+                  class="search-input"
+                  phx-debounce="300"
+                />
+              </form>
+            </div>
+
+            <div class="filter-options">
+              <label class="filter-checkbox">
+                <input
+                  type="checkbox"
+                  checked={@filter_has_space}
+                  phx-click="toggle_filter_space"
+                />
+                <span>空きありのみ</span>
+              </label>
+            </div>
+          </div>
+
           <!-- ルーム一覧 -->
           <div class="rooms-section">
-            <h2 class="section-title">公開ルーム</h2>
+            <div class="section-header">
+              <h2 class="section-title">公開ルーム</h2>
+              <span class="room-count">{length(@rooms)}件</span>
+            </div>
 
             <%= if @rooms == [] do %>
               <div class="empty-rooms">
-                <p>まだルームがありません</p>
-                <p class="empty-rooms-hint">新しいルームを作成して、仲間を待ちましょう</p>
+                <%= if @search != "" do %>
+                  <p>「{@search}」に一致するルームが見つかりません</p>
+                  <p class="empty-rooms-hint">別のキーワードで検索してみてください</p>
+                <% else %>
+                  <p>まだルームがありません</p>
+                  <p class="empty-rooms-hint">新しいルームを作成して、仲間を待ちましょう</p>
+                <% end %>
               </div>
             <% else %>
               <div class="rooms-grid">
@@ -171,6 +218,26 @@ defmodule ShinkankiWebWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("search", %{"query" => query}, socket) do
+    socket =
+      socket
+      |> assign(:search, query)
+      |> load_rooms()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_filter_space", _params, socket) do
+    socket =
+      socket
+      |> assign(:filter_has_space, !socket.assigns.filter_has_space)
+      |> load_rooms()
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("validate", %{"room" => room_params}, socket) do
     changeset =
       %Room{}
@@ -182,7 +249,9 @@ defmodule ShinkankiWebWeb.LobbyLive do
 
   @impl true
   def handle_event("create_room", %{"room" => room_params}, socket) do
-    case Rooms.create_room(room_params) do
+    host_id = socket.assigns.current_user.id
+
+    case Rooms.create_room_with_host(room_params, host_id) do
       {:ok, room} ->
         # 作成したルームに遷移
         {:noreply,

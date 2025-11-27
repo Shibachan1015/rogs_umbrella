@@ -3307,9 +3307,80 @@ input[type="radio"] {
   opacity: 0.9;
 }
 
+/* Search & Filter Section */
+.search-filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  color: var(--color-landing-pale);
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-landing-gold);
+}
+
+.filter-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-landing-text-secondary);
+  transition: color 0.3s ease;
+}
+
+.filter-checkbox:hover {
+  color: var(--color-landing-pale);
+}
+
+.filter-checkbox input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-landing-gold);
+  cursor: pointer;
+}
+
 /* Rooms Section */
 .rooms-section {
-  margin-top: 2rem;
+  margin-top: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
 .section-title {
@@ -3317,7 +3388,15 @@ input[type="radio"] {
   color: var(--color-landing-text-secondary);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  margin-bottom: 1.5rem;
+  margin: 0;
+}
+
+.room-count {
+  font-size: 0.85rem;
+  color: var(--color-landing-gold);
+  padding: 0.25rem 0.75rem;
+  background: rgba(212, 175, 55, 0.1);
+  border-radius: 999px;
 }
 
 .empty-rooms {
@@ -3614,6 +3693,153 @@ input[type="radio"] {
   padding: 1rem;
   font-size: 0.85rem;
   color: var(--color-landing-text-secondary);
+}
+
+/* Deletion Section */
+.deletion-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.deletion-proposal-active {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.deletion-warning {
+  color: #dc3545;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.deletion-votes-count {
+  font-size: 0.85rem;
+  color: var(--color-landing-text-secondary);
+  margin: 0 0 1rem 0;
+}
+
+.vote-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #dc3545;
+  border: none;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.vote-btn:hover {
+  background: #c82333;
+}
+
+.vote-btn--voted {
+  background: rgba(220, 53, 69, 0.3);
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--color-landing-text-secondary);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--color-landing-pale);
+}
+
+.propose-delete-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(220, 53, 69, 0.5);
+  color: rgba(220, 53, 69, 0.8);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.propose-delete-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+/* Admin Section */
+.admin-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 0.75rem;
+}
+
+.admin-title {
+  font-size: 0.9rem;
+  color: var(--color-landing-gold);
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.admin-subtitle {
+  font-size: 0.8rem;
+  color: var(--color-landing-text-secondary);
+  margin: 0.75rem 0 0.5rem 0;
+}
+
+.admin-delete-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #dc3545;
+  border: none;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-delete-btn:hover {
+  background: #c82333;
+}
+
+.admin-player-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-ban-btn {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 140, 0, 0.2);
+  border: 1px solid rgba(255, 140, 0, 0.5);
+  color: #ff8c00;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.admin-ban-btn:hover {
+  background: rgba(255, 140, 0, 0.3);
+  border-color: #ff8c00;
 }
 
 /* Chat Panel */

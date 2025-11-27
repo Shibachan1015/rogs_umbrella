@@ -546,171 +546,133 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </section>
             <% end %>
-            <div class="life-index-orb" role="region" aria-label="Life Index表示">
-              <!-- Life Index Circle -->
-              <div
-                class="life-index-core life-index-ring"
-                aria-label={"Life Index: #{life_index(@game_state)}"}
-                role="meter"
-                aria-valuenow={life_index(@game_state)}
-                aria-valuemin="0"
-                aria-valuemax={@game_state.life_index_target}
-              >
-                <!-- Circular progress SVG -->
-                <svg
-                  class="absolute inset-0 w-full h-full circular-progress"
-                  viewBox="0 0 200 200"
-                  aria-hidden="true"
+            <!-- Game Stats Panel -->
+            <div class="game-stats-container" role="region" aria-label="ゲーム状況">
+              <!-- Gauges Row -->
+              <div class="gauges-row" role="group" aria-label="パラメータゲージ">
+                <div class="gauge-card gauge-card--forest" role="group" aria-label="Forest (F) ゲージ">
+                  <span class="gauge-label text-matsu">
+                    <span class="gauge-icon">🌲</span> Forest (F)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.forest}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Forest: #{@game_state.forest}"}
+                  >
+                    <div
+                      id="forest-gauge-bar"
+                      class="gauge-fill bg-matsu"
+                      style={"width: #{gauge_width(@game_state.forest)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">{@game_state.forest}</span>
+                  </div>
+                </div>
+
+                <div class="gauge-card gauge-card--culture" role="group" aria-label="Culture (K) ゲージ">
+                  <span class="gauge-label text-sakura">
+                    <span class="gauge-icon">🎭</span> Culture (K)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.culture}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Culture: #{@game_state.culture}"}
+                  >
+                    <div
+                      id="culture-gauge-bar"
+                      class="gauge-fill bg-sakura"
+                      style={"width: #{gauge_width(@game_state.culture)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">{@game_state.culture}</span>
+                  </div>
+                </div>
+
+                <div class="gauge-card gauge-card--social" role="group" aria-label="Social (S) ゲージ">
+                  <span class="gauge-label text-kohaku">
+                    <span class="gauge-icon">🤝</span> Social (S)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.social}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Social: #{@game_state.social}"}
+                  >
+                    <div
+                      id="social-gauge-bar"
+                      class="gauge-fill bg-kohaku"
+                      style={"width: #{gauge_width(@game_state.social)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">{@game_state.social}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Life Index Circle (Compact) -->
+              <div class="life-index-compact" role="region" aria-label="Life Index表示">
+                <div
+                  class="life-index-circle"
+                  aria-label={"Life Index: #{life_index(@game_state)}"}
+                  role="meter"
+                  aria-valuenow={life_index(@game_state)}
+                  aria-valuemin="0"
+                  aria-valuemax={@game_state.life_index_target}
                 >
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
-                    fill="none"
-                    stroke="rgba(28, 28, 28, 0.1)"
-                    stroke-width="8"
+                  <svg class="life-index-svg" viewBox="0 0 120 120" aria-hidden="true">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="6" />
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      fill="none"
+                      stroke="rgba(212, 175, 55, 0.6)"
+                      stroke-width="6"
+                      stroke-dasharray={2 * :math.pi() * 52}
+                      stroke-dashoffset={
+                        2 * :math.pi() * 52 * (1 - min(life_index(@game_state) / @game_state.life_index_target, 1.0))
+                      }
+                      stroke-linecap="round"
+                      class="life-index-progress"
+                    />
+                  </svg>
+                  <div class="life-index-content">
+                    <div class="life-index-label">L</div>
+                    <div class="life-index-value">{life_index(@game_state)}</div>
+                    <div class="life-index-target">/ {@game_state.life_index_target}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions Panel -->
+              <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
+              <div class="actions-panel" role="toolbar" aria-label="アクションボタン">
+                <div class="actions-header">
+                  <span class="actions-title">AKASHA ACTIONS</span>
+                  <span class="actions-turns">残り {remaining_turns} ターン</span>
+                </div>
+                <div class="actions-buttons">
+                  <.hanko_btn
+                    :for={button <- @action_buttons}
+                    label={button.label}
+                    color={button.color}
+                    class="action-hanko"
+                    aria-label={button.label <> "を実行"}
+                    phx-click="execute_action"
+                    phx-value-action={button.action || button.label}
                   />
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
-                    fill="none"
-                    stroke="rgba(211, 56, 28, 0.3)"
-                    stroke-width="8"
-                    stroke-dasharray={circumference()}
-                    stroke-dashoffset={
-                      circumference_offset(life_index(@game_state), @game_state.life_index_target)
-                    }
-                    stroke-linecap="round"
-                    class="transition-all duration-1000"
-                  />
-                </svg>
-                <div class="text-center relative z-10 px-2 sm:px-4 text-[var(--color-landing-text-primary)]">
-                  <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
-                    Life Index
-                  </div>
-                  <div
-                    id="life-index-value"
-                    class="text-3xl sm:text-4xl md:text-7xl font-bold text-[var(--color-landing-pale)] font-serif mb-1 sm:mb-2 life-index-value"
-                    phx-update="ignore"
-                  >
-                    {life_index(@game_state)}
-                  </div>
-                  <div class="text-[9px] sm:text-[10px] md:text-xs text-[var(--color-landing-text-secondary)] uppercase tracking-[0.3em] sm:tracking-[0.5em]">
-                    Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
-                  </div>
                 </div>
-              </div>
-
-    <!-- Gauges -->
-              <div
-                class="absolute top-2 sm:top-4 md:top-12 left-1/2 -translate-x-1/2 gauge-stack"
-                role="group"
-                aria-label="Forest (F) ゲージ"
-              >
-                <span class="text-matsu font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Forest (F)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.forest}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Forest: #{@game_state.forest}"}
-                >
-                  <div
-                    id="forest-gauge-bar"
-                    class="gauge-fill bg-matsu"
-                    style={"width: #{gauge_width(@game_state.forest)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.forest}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-4 sm:left-10 md:left-20 gauge-stack"
-                role="group"
-                aria-label="Culture (K) ゲージ"
-              >
-                <span class="text-sakura font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Culture (K)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.culture}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Culture: #{@game_state.culture}"}
-                >
-                  <div
-                    id="culture-gauge-bar"
-                    class="gauge-fill bg-sakura"
-                    style={"width: #{gauge_width(@game_state.culture)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.culture}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-4 sm:right-10 md:right-20 gauge-stack"
-                role="group"
-                aria-label="Social (S) ゲージ"
-              >
-                <span class="text-kohaku font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Social (S)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.social}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Social: #{@game_state.social}"}
-                >
-                  <div
-                    id="social-gauge-bar"
-                    class="gauge-fill bg-kohaku"
-                    style={"width: #{gauge_width(@game_state.social)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.social}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-    <!-- Actions (Stamps) -->
-            <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
-            <div class="action-ribbon" role="toolbar" aria-label="アクションボタン">
-              <div class="action-ribbon-label">
-                AKASHA ACTIONS
-                <span>残り {remaining_turns} Turn</span>
-              </div>
-              <p class="action-ribbon-subtext">
-                神印で流れを刻み、空環ポイントを循環させましょう。
-              </p>
-              <div class="action-ribbon-buttons">
-                <.hanko_btn
-                  :for={button <- @action_buttons}
-                  label={button.label}
-                  color={button.color}
-                  class="action-hanko"
-                  aria-label={button.label <> "を実行"}
-                  phx-click="execute_action"
-                  phx-value-action={button.action || button.label}
-                />
               </div>
             </div>
           <% end %>

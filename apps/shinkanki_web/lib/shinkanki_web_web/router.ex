@@ -25,8 +25,24 @@ defmodule ShinkankiWebWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/game", GameLive
-    live "/game/:room_id", GameLive
+
+    # 認証ルート（未ログイン用）
+    live "/users/log-in", UserLive.Login, :new
+    live "/users/register", UserLive.Registration, :new
+    post "/users/log-in", UserSessionController, :create
+    delete "/users/log-out", UserSessionController, :delete
+
+    # ユーザー情報を取得するLiveSession
+    live_session :with_user, on_mount: [{ShinkankiWebWeb.UserAuth, :default}] do
+      # ロビー（ルーム一覧・作成）
+      live "/lobby", LobbyLive
+
+      # 待機室（ゲーム開始前）
+      live "/room/:slug", WaitingRoomLive
+
+      # ゲーム画面（ゲーム中）
+      live "/game/:room_id", GameLive
+    end
   end
 
   # Other scopes may use custom stacks.

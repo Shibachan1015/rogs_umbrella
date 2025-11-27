@@ -356,6 +356,50 @@ defmodule Shinkanki.Game do
   def start_game(_game), do: {:error, :game_over}
 
   @doc """
+  Toggles a player's ready status in the waiting room (before game starts).
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def toggle_waiting_ready(%__MODULE__{status: :waiting} = game, player_id) do
+    case Map.get(game.players, player_id) do
+      nil ->
+        {:error, :player_not_found}
+
+      player ->
+        new_ready = !player.is_ready
+        updated_player = Map.put(player, :is_ready, new_ready)
+        new_players = Map.put(game.players, player_id, updated_player)
+
+        new_game =
+          game
+          |> Map.put(:players, new_players)
+          |> add_log("#{player.name} is #{if new_ready, do: "ready", else: "not ready"}")
+
+        {:ok, new_game}
+    end
+  end
+
+  def toggle_waiting_ready(%__MODULE__{status: status}, _player_id) when status != :waiting do
+    {:error, :game_already_started}
+  end
+
+  def toggle_waiting_ready(_game, _player_id), do: {:error, :invalid_game}
+
+  @doc """
+  Checks if all players in the waiting room are ready.
+  """
+  def all_players_ready?(%__MODULE__{status: :waiting, players: players, player_order: order})
+      when map_size(players) > 0 do
+    Enum.all?(order, fn player_id ->
+      case Map.get(players, player_id) do
+        nil -> false
+        player -> player.is_ready == true
+      end
+    end)
+  end
+
+  def all_players_ready?(_game), do: false
+
+  @doc """
   Checks if the game can be started (meets minimum player requirements).
   """
   def can_start?(%__MODULE__{status: :waiting} = game) do

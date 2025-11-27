@@ -111,6 +111,16 @@ defmodule Shinkanki do
   end
 
   @doc """
+  Toggles a player's ready status in the waiting room (before game starts).
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def toggle_waiting_ready(room_id, player_id) do
+    call_server(room_id, fn ->
+      GameServer.toggle_waiting_ready(room_id, player_id)
+    end)
+  end
+
+  @doc """
   Starts the game if minimum player requirements are met.
   Returns {:ok, new_game} or {:error, reason}.
   """

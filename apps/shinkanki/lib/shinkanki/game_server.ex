@@ -51,6 +51,10 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), {:mark_discussion_ready, player_id})
   end
 
+  def toggle_waiting_ready(room_id, player_id) do
+    GenServer.call(via_tuple(room_id), {:toggle_waiting_ready, player_id})
+  end
+
   def start_game(room_id) do
     GenServer.call(via_tuple(room_id), :start_game)
   end
@@ -183,6 +187,32 @@ defmodule Shinkanki.GameServer do
     case Game.mark_discussion_ready(game, player_id) do
       {:ok, new_game} = ok ->
         log_action(new_game, "mark_discussion_ready", player_id, %{})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:toggle_waiting_ready, player_id}, _from, game) do
+    case Game.toggle_waiting_ready(game, player_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "toggle_waiting_ready", player_id, %{})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call(:start_game, _from, game) do
+    case Game.start_game(game) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "start_game", nil, %{})
         broadcast_state(new_game)
         {:reply, ok, new_game}
 

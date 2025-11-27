@@ -67,11 +67,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
               </div>
             <% else %>
               <div class="user-guest">
-                <.link navigate={~p"/users/log-in"} class="login-btn">
+                <.link navigate={~p"/users/log-in"} class="login-btn-header">
                   ログイン
-                </.link>
-                <.link navigate={~p"/users/register"} class="register-btn">
-                  新規登録
                 </.link>
               </div>
             <% end %>

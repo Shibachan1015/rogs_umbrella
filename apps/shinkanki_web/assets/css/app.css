@@ -3245,35 +3245,24 @@ input[type="radio"] {
   color: #dc3545;
 }
 
-/* ログイン・新規登録ボタン */
-.login-btn,
-.register-btn {
-  padding: 0.25rem 0.75rem;
+/* ヘッダーのログインボタン */
+.login-btn-header {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   text-decoration: none;
   transition: all 0.3s ease;
+  background: #d4a84b;
+  color: #1a1a2e !important;
+  border: 1px solid #d4a84b;
+  font-weight: 600;
 }
 
-.login-btn {
-  background: var(--color-accent-gold);
-  color: #1a1a2e;
-  border: 1px solid var(--color-accent-gold);
-}
-
-.login-btn:hover {
-  background: var(--color-accent-gold-hover);
-}
-
-.register-btn {
-  background: transparent;
-  color: var(--color-landing-text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.register-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+.login-btn-header:hover {
+  background: #e6bc5f;
+  color: #1a1a2e !important;
+  transform: translateY(-1px);
 }
 
 /* ログインプロンプト */
@@ -3307,14 +3296,15 @@ input[type="radio"] {
 }
 
 .login-btn-large {
-  background: var(--color-accent-gold);
-  color: #1a1a2e;
-  border: 1px solid var(--color-accent-gold);
+  background: #d4a84b;
+  color: #1a1a2e !important;
+  border: 1px solid #d4a84b;
   font-weight: 600;
 }
 
 .login-btn-large:hover {
-  background: var(--color-accent-gold-hover);
+  background: #e6bc5f;
+  color: #1a1a2e !important;
   transform: translateY(-2px);
 }
 

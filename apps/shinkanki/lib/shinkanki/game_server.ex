@@ -59,6 +59,10 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), :start_game)
   end
 
+  def start_game_with_ai(room_id) do
+    GenServer.call(via_tuple(room_id), :start_game_with_ai)
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end
@@ -213,6 +217,20 @@ defmodule Shinkanki.GameServer do
     case Game.start_game(game) do
       {:ok, new_game} = ok ->
         log_action(new_game, "start_game", nil, %{})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call(:start_game_with_ai, _from, game) do
+    case Game.start_game_with_ai(game) do
+      {:ok, new_game} = ok ->
+        ai_count = Enum.count(new_game.players, fn {_id, p} -> p.is_ai end)
+        log_action(new_game, "start_game_with_ai", nil, %{ai_count: ai_count})
         broadcast_state(new_game)
         {:reply, ok, new_game}
 

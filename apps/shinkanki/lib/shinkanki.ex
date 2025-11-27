@@ -131,6 +131,16 @@ defmodule Shinkanki do
   end
 
   @doc """
+  AIプレイヤーで4人に補完してゲームを開始
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def start_game_with_ai(room_id) do
+    call_server(room_id, fn ->
+      GameServer.start_game_with_ai(room_id)
+    end)
+  end
+
+  @doc """
   Checks if the game can be started.
   Returns true or false.
   """

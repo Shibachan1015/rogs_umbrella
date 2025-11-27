@@ -11,6 +11,8 @@ defmodule Shinkanki.Games.Player do
     field :akasha, :integer
     field :role, :string
     field :player_order, :integer
+    field :is_ai, :boolean, default: false
+    field :ai_name, :string
 
     belongs_to :game_session, Shinkanki.Games.GameSession
     field :user_id, :binary_id
@@ -24,12 +26,30 @@ defmodule Shinkanki.Games.Player do
   @doc false
   def changeset(player, attrs) do
     player
-    |> cast(attrs, [:akasha, :role, :player_order, :game_session_id, :user_id])
+    |> cast(attrs, [:akasha, :role, :player_order, :game_session_id, :user_id, :is_ai, :ai_name])
     |> validate_required([:akasha, :role, :player_order, :game_session_id])
     |> validate_number(:akasha, greater_than_or_equal_to: 0)
     |> validate_number(:player_order, greater_than_or_equal_to: 1, less_than_or_equal_to: 4)
     |> validate_inclusion(:role, @roles)
     |> unique_constraint([:game_session_id, :player_order])
+  end
+
+  @ai_names ~w(森の精霊 文化の守人 絆の使者 空環の賢者)
+
+  @doc """
+  AIプレイヤーを作成するための属性を生成
+  """
+  def ai_player_attrs(player_order, role) do
+    ai_name = Enum.at(@ai_names, player_order - 1, "AI神#{player_order}")
+
+    %{
+      akasha: 10,
+      role: role,
+      player_order: player_order,
+      is_ai: true,
+      ai_name: ai_name,
+      user_id: nil
+    }
   end
 
   @doc """

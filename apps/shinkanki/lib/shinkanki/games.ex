@@ -149,6 +149,54 @@ defmodule Shinkanki.Games do
     add_to_dao_pool(game_session, total_demurrage)
   end
 
+  @doc """
+  AIプレイヤーで4人になるように補完
+  現在の人間プレイヤー数を確認し、足りない分をAIで埋める
+  """
+  def fill_with_ai_players(game_session_id, human_players) do
+    human_count = length(human_players)
+    roles = ["forest_guardian", "heritage_weaver", "community_keeper", "akasha_architect"]
+
+    # 人間プレイヤーが使用している役割を取得
+    used_roles = Enum.map(human_players, fn p -> p.role end)
+    available_roles = Enum.reject(roles, &(&1 in used_roles))
+
+    # 足りない分のAIプレイヤーを作成
+    ai_count = 4 - human_count
+
+    if ai_count > 0 do
+      Enum.with_index(1..ai_count)
+      |> Enum.map(fn {_, idx} ->
+        player_order = human_count + idx
+        role = Enum.at(available_roles, idx - 1, Enum.at(roles, player_order - 1))
+
+        ai_attrs = Player.ai_player_attrs(player_order, role)
+        attrs = Map.put(ai_attrs, :game_session_id, game_session_id)
+
+        %Player{}
+        |> Player.changeset(attrs)
+        |> Repo.insert!()
+      end)
+    else
+      []
+    end
+  end
+
+  @doc """
+  ゲームセッションのAIプレイヤーを取得
+  """
+  def get_ai_players(game_session_id) do
+    from(p in Player,
+      where: p.game_session_id == ^game_session_id and p.is_ai == true
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  プレイヤーがAIかどうかを確認
+  """
+  def ai_player?(%Player{is_ai: is_ai}), do: is_ai
+
   # ===================
   # ターン管理
   # ===================

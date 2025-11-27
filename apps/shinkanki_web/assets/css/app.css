@@ -3815,6 +3815,40 @@ input[type="radio"] {
   color: var(--color-landing-text-secondary);
 }
 
+/* AI Fill Section */
+.ai-fill-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.ai-fill-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ai-fill-btn:hover {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  transform: scale(1.02);
+}
+
+.ai-fill-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 193, 7, 0.8);
+}
+
 /* Deletion Section */
 .deletion-section {
   margin-top: 1.5rem;

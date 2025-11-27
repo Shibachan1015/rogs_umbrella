@@ -209,6 +209,23 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                     <% end %>
                   </button>
                 <% end %>
+
+                <!-- AIで補完してスタート（4人未満の場合） -->
+                <%= if length(@players) < 4 && length(@players) >= 1 do %>
+                  <div class="ai-fill-section">
+                    <button
+                      type="button"
+                      class="ai-fill-btn"
+                      phx-click="start_with_ai"
+                      data-confirm={"AIプレイヤー#{4 - length(@players)}人を追加してゲームを開始しますか？"}
+                    >
+                      🤖 AIで補完して開始（{4 - length(@players)}人追加）
+                    </button>
+                    <p class="ai-fill-hint">
+                      人間{length(@players)}人 + AI{4 - length(@players)}人 = 4人でゲーム開始
+                    </p>
+                  </div>
+                <% end %>
               </div>
             <% else %>
               <div class="waiting-for-host">
@@ -386,6 +403,25 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       {:ok, _game} ->
         # ゲーム画面に遷移
         {:noreply, push_navigate(socket, to: ~p"/game/#{room_id}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("start_with_ai", _params, socket) do
+    room_id = socket.assigns.room_id
+
+    # AIプレイヤーを追加してゲーム開始
+    case Shinkanki.start_game_with_ai(room_id) do
+      {:ok, game} ->
+        ai_count = Enum.count(game.players, fn {_id, p} -> p.is_ai end)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "AIプレイヤー#{ai_count}人を追加してゲームを開始しました")
+         |> push_navigate(to: ~p"/game/#{room_id}")}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}

@@ -356,6 +356,65 @@ defmodule Shinkanki.Game do
   def start_game(_game), do: {:error, :game_over}
 
   @doc """
+  AIプレイヤーで4人に補完してゲームを開始
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def start_game_with_ai(%__MODULE__{status: :waiting} = game) do
+    human_count = length(game.player_order)
+
+    if human_count < 1 do
+      {:error, :not_enough_players}
+    else
+      # 足りない分のAIプレイヤーを追加
+      ai_count = @max_players - human_count
+      game_with_ai = add_ai_players(game, ai_count)
+
+      # ゲーム開始
+      new_game =
+        game_with_ai
+        |> Map.put(:status, :playing)
+        |> add_log("Game started with #{human_count} human(s) and #{ai_count} AI player(s)")
+        |> execute_phase() # Trigger the first phase (Event)
+
+      {:ok, new_game}
+    end
+  end
+
+  def start_game_with_ai(%__MODULE__{status: :playing}), do: {:error, :game_already_started}
+  def start_game_with_ai(_game), do: {:error, :game_over}
+
+  defp add_ai_players(game, 0), do: game
+
+  defp add_ai_players(game, count) do
+    ai_names = ["森の精霊", "文化の守人", "絆の使者", "空環の賢者"]
+    roles = [:forest_guardian, :heritage_weaver, :community_keeper, :akasha_architect]
+
+    # 既に使われている役割を除外
+    used_roles = Enum.map(game.player_order, fn player_id ->
+      Map.get(game.players, player_id, %{}) |> Map.get(:role)
+    end)
+
+    available_roles = Enum.reject(roles, &(&1 in used_roles))
+
+    Enum.reduce(1..count, game, fn idx, acc_game ->
+      player_order_index = length(acc_game.player_order)
+      ai_id = "ai_player_#{idx}"
+      ai_name = Enum.at(ai_names, player_order_index, "AI神#{idx}")
+      role = Enum.at(available_roles, idx - 1, Enum.at(roles, player_order_index))
+
+      player =
+        Player.new(ai_id, ai_name)
+        |> Map.put(:is_ai, true)
+        |> Map.put(:role, role)
+
+      acc_game
+      |> Map.update!(:players, &Map.put(&1, ai_id, player))
+      |> Map.update!(:player_order, &(&1 ++ [ai_id]))
+      |> draw_cards(ai_id, @initial_hand_size)
+    end)
+  end
+
+  @doc """
   Toggles a player's ready status in the waiting room (before game starts).
   Returns {:ok, new_game} or {:error, reason}.
   """

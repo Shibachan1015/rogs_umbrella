@@ -107,15 +107,30 @@ defmodule ShinkankiWebWeb.CoreComponents do
         |> List.wrap()
       end)
 
+    # Extract accessibility attributes
+    aria_label = rest[:aria_label] || rest[:"aria-label"]
+    aria_label_attr = if aria_label, do: [{"aria-label", aria_label}], else: []
+
     if rest[:href] || rest[:navigate] || rest[:patch] do
       ~H"""
-      <.link class={@class |> List.wrap()} {@rest}>
+      <.link
+        class={@class |> List.wrap()}
+        role="button"
+        tabindex="0"
+        {aria_label_attr}
+        {@rest}
+      >
         {render_slot(@inner_block)}
       </.link>
       """
     else
       ~H"""
-      <button class={@class |> List.wrap()} {@rest}>
+      <button
+        class={@class |> List.wrap()}
+        type={rest[:type] || "button"}
+        {aria_label_attr}
+        {@rest}
+      >
         {render_slot(@inner_block)}
       </button>
       """
@@ -191,6 +206,12 @@ defmodule ShinkankiWebWeb.CoreComponents do
         Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
       end)
 
+    error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
+    aria_attrs = [
+      if(error_id, do: {"aria-describedby", error_id}, else: nil),
+      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil)
+    ] |> Enum.reject(&is_nil/1)
+
     ~H"""
     <div class="fieldset mb-2">
       <label>
@@ -203,16 +224,24 @@ defmodule ShinkankiWebWeb.CoreComponents do
             value="true"
             checked={@checked}
             class={checkbox_class(assigns)}
+            {aria_attrs}
             {@rest}
           />{@label}
         </span>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
     </div>
     """
   end
 
   def input(%{type: "select"} = assigns) do
+    error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
+    aria_attrs = [
+      if(error_id, do: {"aria-describedby", error_id}, else: nil),
+      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+      if(@label, do: {"aria-label", @label}, else: nil)
+    ] |> Enum.reject(&is_nil/1)
+
     ~H"""
     <div class="fieldset mb-2">
       <label>
@@ -226,18 +255,26 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> maybe_add_error_class(assigns, "select-error")
           }
           multiple={@multiple}
+          {aria_attrs}
           {@rest}
         >
           <option :if={@prompt} value="">{@prompt}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
+    error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
+    aria_attrs = [
+      if(error_id, do: {"aria-describedby", error_id}, else: nil),
+      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+      if(@label, do: {"aria-label", @label}, else: nil)
+    ] |> Enum.reject(&is_nil/1)
+
     ~H"""
     <div class="fieldset mb-2">
       <label>
@@ -250,16 +287,24 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> List.wrap()
             |> maybe_add_error_class(assigns, "textarea-error")
           }
+          {aria_attrs}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
     </div>
     """
   end
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
+    error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
+    aria_attrs = [
+      if(error_id, do: {"aria-describedby", error_id}, else: nil),
+      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+      if(assigns.label, do: {"aria-label", assigns.label}, else: nil)
+    ] |> Enum.reject(&is_nil/1)
+
     ~H"""
     <div class="fieldset mb-2">
       <label>
@@ -274,23 +319,37 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> List.wrap()
             |> maybe_add_error_class(assigns, "input-error")
           }
+          {aria_attrs}
           {@rest}
         />
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
     </div>
     """
   end
 
   # Helper used by inputs to generate form errors
+  attr :id, :string, default: nil
+
   defp error(assigns) do
     ~H"""
     <p
+      :if={@id}
+      id={@id}
       class="mt-1.5 flex gap-2 items-center text-sm text-shu error-shake"
       role="alert"
       aria-live="polite"
     >
-      <.icon name="hero-exclamation-circle" class="size-4 flex-shrink-0" />
+      <.icon name="hero-exclamation-circle" class="size-4 flex-shrink-0" aria-hidden="true" />
+      <span>{render_slot(@inner_block)}</span>
+    </p>
+    <p
+      :if={!@id}
+      class="mt-1.5 flex gap-2 items-center text-sm text-shu error-shake"
+      role="alert"
+      aria-live="polite"
+    >
+      <.icon name="hero-exclamation-circle" class="size-4 flex-shrink-0" aria-hidden="true" />
       <span>{render_slot(@inner_block)}</span>
     </p>
     """
@@ -485,6 +544,105 @@ defmodule ShinkankiWebWeb.CoreComponents do
     )
   end
 
+  @doc """
+  Renders a TRDS-styled modal dialog.
+
+  ## Examples
+
+      <.modal id="confirm-modal" show={@show_modal}>
+        <:title>確認</:title>
+        <:body>この操作を実行しますか？</:body>
+        <:footer>
+          <.button phx-click="confirm">実行</.button>
+          <.button phx-click="cancel">キャンセル</.button>
+        </:footer>
+      </.modal>
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :variant, :string, default: "default", values: ~w(default trds)
+  attr :rest, :global
+
+  slot :title
+  slot :body, required: true
+  slot :footer
+
+  def modal(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class={[
+        "fixed inset-0 z-50 overflow-y-auto",
+        if(@show, do: "block", else: "hidden")
+      ]}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={"#{@id}-title"}
+      aria-describedby={"#{@id}-body"}
+      phx-click-away={JS.hide(to: "##{@id}")}
+      {@rest}
+    >
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div
+          class={[
+            "relative w-full max-w-lg transform overflow-hidden rounded-lg shadow-xl transition-all",
+            if(@variant == "trds",
+              do: "bg-trds-surface-glass border border-trds-outline-soft backdrop-blur-xl",
+              else: "bg-base-100"
+            )
+          ]}
+          phx-click-away={JS.hide(to: "##{@id}")}
+        >
+          <div class="px-6 py-4">
+            <div :if={@title != []} class="mb-4">
+              <h3 id={"#{@id}-title"} class={[
+                "text-lg font-semibold",
+                if(@variant == "trds",
+                  do: "text-trds-text-primary tracking-[0.2em] uppercase",
+                  else: "text-base-content"
+                )
+              ]}>
+                {render_slot(@title)}
+              </h3>
+            </div>
+            <div id={"#{@id}-body"} class={[
+              if(@variant == "trds", do: "text-trds-text-secondary", else: "text-base-content")
+            ]}>
+              {render_slot(@body)}
+            </div>
+          </div>
+          <div :if={@footer != []} class={[
+            "px-6 py-4 border-t",
+            if(@variant == "trds",
+              do: "border-trds-outline-soft bg-trds-surface/50",
+              else: "border-base-300 bg-base-200"
+            )
+          ]}>
+            <div class="flex justify-end gap-2">
+              {render_slot(@footer)}
+            </div>
+          </div>
+          <button
+            type="button"
+            class={[
+              "absolute top-4 right-4 rounded-full p-2 transition-colors",
+              if(@variant == "trds",
+                do: "text-trds-text-secondary hover:bg-trds-surface hover:text-trds-text-primary",
+                else: "text-base-content hover:bg-base-200"
+              )
+            ]}
+            phx-click={JS.hide(to: "##{@id}")}
+            aria-label="モーダルを閉じる"
+          >
+            <.icon name="hero-x-mark" class="size-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   def hide(js \\ %JS{}, selector) do
     JS.hide(js,
       to: selector,
@@ -511,6 +669,57 @@ defmodule ShinkankiWebWeb.CoreComponents do
     Enum.reduce(opts, msg, fn {key, value}, acc ->
       String.replace(acc, "%{#{key}}", fn _ -> to_string(value) end)
     end)
+  end
+
+  @doc """
+  Renders a TRDS-styled loading indicator.
+
+  ## Examples
+
+      <.loading_indicator />
+      <.loading_indicator text="読み込み中..." />
+      <.loading_indicator variant="trds" size="lg" />
+  """
+  attr :text, :string, default: nil
+  attr :variant, :string, default: "default", values: ~w(default trds)
+  attr :size, :string, default: "md", values: ~w(sm md lg)
+  attr :rest, :global
+
+  def loading_indicator(assigns) do
+    size_classes = %{
+      "sm" => "size-4",
+      "md" => "size-8",
+      "lg" => "size-12"
+    }
+
+    spinner_class = [
+      "animate-spin rounded-full border-2 border-t-transparent",
+      size_classes[assigns.size],
+      if(assigns.variant == "trds",
+        do: "border-trds-outline-strong",
+        else: "border-primary"
+      )
+    ]
+
+    ~H"""
+    <div class="flex flex-col items-center justify-center gap-2" {@rest}>
+      <div class={spinner_class} role="status" aria-label="読み込み中">
+        <span class="sr-only">読み込み中</span>
+      </div>
+      <p
+        :if={@text}
+        class={[
+          "text-sm",
+          if(assigns.variant == "trds",
+            do: "text-trds-text-secondary",
+            else: "text-base-content/70"
+          )
+        ]}
+      >
+        {@text}
+      </p>
+    </div>
+    """
   end
 
   @doc """

@@ -1,86 +1,80 @@
 <Layouts.flash_group flash={@flash} />
 
-<div class="min-h-screen bg-washi">
-  <!-- Hero Section -->
-  <div class="relative overflow-hidden">
-    <!-- Background Pattern -->
-    <div class="absolute inset-0 opacity-5">
-      <div
-        class="absolute inset-0"
-        style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(28, 28, 28, 0.03) 10px, rgba(28, 28, 28, 0.03) 20px);"
-      >
-      </div>
-    </div>
+<div class="landing-body">
+  <!-- Torii Lines Decoration -->
+  <div class="torii-lines"></div>
 
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden" aria-labelledby="hero-title">
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
       <div class="text-center">
         <!-- Title -->
         <div class="mb-8">
-          <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-sumi mb-4">
+          <h1 id="hero-title" class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4" style="font-family: var(--trds-font-serif); letter-spacing: 0.3em; color: var(--color-landing-text-primary);">
             コミュニケーション
           </h1>
-          <p class="text-lg sm:text-xl text-sumi/80 mb-2">Communication Hub</p>
-          <p class="text-sm sm:text-base text-sumi/60">神環記のためのリアルタイムチャットシステム</p>
+          <p class="text-lg sm:text-xl mb-2" style="color: var(--color-landing-text-secondary);">Communication Hub</p>
+          <p class="text-sm sm:text-base" style="color: var(--color-landing-text-secondary);">神環記のためのリアルタイムチャットシステム</p>
         </div>
-        
-<!-- CTA Buttons -->
+
+        <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
           <.link
             navigate={~p"/rooms"}
-            class="px-8 py-4 bg-shu text-washi rounded-lg border-4 border-double border-sumi font-bold text-lg hover:bg-shu/90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+            class="cta-button cta-solid trds-focusable"
           >
             ルーム一覧へ
           </.link>
           <.link
             href="#features"
-            class="px-8 py-4 bg-washi text-sumi rounded-lg border-2 border-sumi font-semibold hover:bg-sumi/5 transition-all duration-300"
+            class="cta-button cta-outline trds-focusable"
           >
             機能について
           </.link>
         </div>
-        
-<!-- Features Preview -->
+
+        <!-- Features Preview -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mt-12">
-          <div class="bg-kohaku/10 border-2 border-kohaku/30 rounded-lg p-6">
+          <div class="concept-card">
             <div class="text-4xl mb-3">💬</div>
-            <h3 class="text-lg font-bold text-sumi mb-2">リアルタイムチャット</h3>
-            <p class="text-sm text-sumi/70">Phoenix PubSubによる即座のメッセージ配信</p>
+            <h3 class="text-lg font-bold mb-2" style="color: var(--color-landing-text-primary);">リアルタイムチャット</h3>
+            <p class="text-sm" style="color: var(--color-landing-text-secondary);">Phoenix PubSubによる即座のメッセージ配信</p>
           </div>
-          <div class="bg-sakura/10 border-2 border-sakura/30 rounded-lg p-6">
+          <div class="concept-card">
             <div class="text-4xl mb-3">🏠</div>
-            <h3 class="text-lg font-bold text-sumi mb-2">ルーム管理</h3>
-            <p class="text-sm text-sumi/70">複数のチャットルームを作成・管理</p>
+            <h3 class="text-lg font-bold mb-2" style="color: var(--color-landing-text-primary);">ルーム管理</h3>
+            <p class="text-sm" style="color: var(--color-landing-text-secondary);">複数のチャットルームを作成・管理</p>
           </div>
-          <div class="bg-kin/10 border-2 border-kin/30 rounded-lg p-6">
+          <div class="concept-card">
             <div class="text-4xl mb-3">⚡</div>
-            <h3 class="text-lg font-bold text-sumi mb-2">WebSocket通信</h3>
-            <p class="text-sm text-sumi/70">低遅延の双方向通信</p>
+            <h3 class="text-lg font-bold mb-2" style="color: var(--color-landing-text-primary);">WebSocket通信</h3>
+            <p class="text-sm" style="color: var(--color-landing-text-secondary);">低遅延の双方向通信</p>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  
-<!-- Features Section -->
-  <div id="features" class="bg-washi-dark py-16 sm:py-24">
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="relative py-16 sm:py-24" aria-labelledby="features-title">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-bold text-sumi mb-4">機能</h2>
-        <p class="text-lg text-sumi/70">神環記のコミュニケーション機能</p>
+        <h2 id="features-title" class="text-3xl sm:text-4xl font-bold mb-4" style="font-family: var(--trds-font-serif); letter-spacing: 0.3em; color: var(--color-landing-text-primary);">機能</h2>
+        <p class="text-lg" style="color: var(--color-landing-text-secondary);">神環記のコミュニケーション機能</p>
       </div>
 
       <div class="space-y-8">
         <!-- Real-time Chat -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
+        <div class="concept-card">
           <div class="flex items-start gap-4">
             <div class="text-3xl">💬</div>
             <div class="flex-1">
-              <h3 class="text-xl font-bold text-sumi mb-3">リアルタイムチャット</h3>
-              <p class="text-sumi/80 leading-relaxed mb-3">
+              <h3 class="text-xl font-bold mb-3" style="color: var(--color-landing-text-primary);">リアルタイムチャット</h3>
+              <p class="leading-relaxed mb-3" style="color: var(--color-landing-text-secondary);">
                 Phoenix PubSubを使用したリアルタイムメッセージングシステムです。
                 ゲーム中の相談フェーズで、プレイヤー同士が即座にコミュニケーションを取ることができます。
               </p>
-              <ul class="list-disc list-inside space-y-1 text-sumi/70 text-sm">
+              <ul class="list-disc list-inside space-y-1 text-sm" style="color: var(--color-landing-text-secondary);">
                 <li>即座のメッセージ配信</li>
                 <li>複数ユーザーとの同時チャット</li>
                 <li>メッセージ履歴の保存</li>
@@ -88,18 +82,18 @@
             </div>
           </div>
         </div>
-        
-<!-- Room Management -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
+
+        <!-- Room Management -->
+        <div class="concept-card">
           <div class="flex items-start gap-4">
             <div class="text-3xl">🏠</div>
             <div class="flex-1">
-              <h3 class="text-xl font-bold text-sumi mb-3">ルーム管理</h3>
-              <p class="text-sumi/80 leading-relaxed mb-3">
+              <h3 class="text-xl font-bold mb-3" style="color: var(--color-landing-text-primary);">ルーム管理</h3>
+              <p class="leading-relaxed mb-3" style="color: var(--color-landing-text-secondary);">
                 ゲームルームごとに独立したチャットルームを作成・管理できます。
                 各ゲームセッションで専用のコミュニケーション空間を提供します。
               </p>
-              <ul class="list-disc list-inside space-y-1 text-sumi/70 text-sm">
+              <ul class="list-disc list-inside space-y-1 text-sm" style="color: var(--color-landing-text-secondary);">
                 <li>ルームの作成と削除</li>
                 <li>ルーム一覧の表示</li>
                 <li>ルームへの参加と退出</li>
@@ -107,18 +101,18 @@
             </div>
           </div>
         </div>
-        
-<!-- WebSocket -->
-        <div class="bg-washi border-2 border-sumi/20 rounded-lg p-6 shadow-sm">
+
+        <!-- WebSocket -->
+        <div class="concept-card">
           <div class="flex items-start gap-4">
             <div class="text-3xl">⚡</div>
             <div class="flex-1">
-              <h3 class="text-xl font-bold text-sumi mb-3">WebSocket通信</h3>
-              <p class="text-sumi/80 leading-relaxed mb-3">
+              <h3 class="text-xl font-bold mb-3" style="color: var(--color-landing-text-primary);">WebSocket通信</h3>
+              <p class="leading-relaxed mb-3" style="color: var(--color-landing-text-secondary);">
                 Phoenix Channelsを使用した低遅延の双方向通信を実現しています。
                 将来的には音声チャットのシグナリングにも対応予定です。
               </p>
-              <ul class="list-disc list-inside space-y-1 text-sumi/70 text-sm">
+              <ul class="list-disc list-inside space-y-1 text-sm" style="color: var(--color-landing-text-secondary);">
                 <li>低遅延の双方向通信</li>
                 <li>自動再接続機能</li>
                 <li>プレゼンス（オンライン状態）の管理</li>
@@ -128,45 +122,45 @@
         </div>
       </div>
     </div>
-  </div>
-  
-<!-- Integration Section -->
-  <div class="bg-washi py-16 sm:py-24">
+  </section>
+
+  <!-- Integration Section -->
+  <section class="relative py-16 sm:py-24" aria-labelledby="integration-title">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-bold text-sumi mb-4">統合</h2>
-        <p class="text-lg text-sumi/70">神環記エコシステムとの連携</p>
+        <h2 id="integration-title" class="text-3xl sm:text-4xl font-bold mb-4" style="font-family: var(--trds-font-serif); letter-spacing: 0.3em; color: var(--color-landing-text-primary);">統合</h2>
+        <p class="text-lg" style="color: var(--color-landing-text-secondary);">神環記エコシステムとの連携</p>
       </div>
 
-      <div class="bg-washi-dark border-2 border-sumi/20 rounded-lg p-6">
-        <p class="text-sumi/80 leading-relaxed mb-4">
+      <div class="concept-card">
+        <p class="leading-relaxed mb-4" style="color: var(--color-landing-text-secondary);">
           RogsCommは神環記のコミュニケーション基盤として設計されています。
-          ゲーム画面（<code class="bg-sumi/10 px-2 py-1 rounded text-sm">shinkanki_web</code>）と連携し、
+          ゲーム画面（<code class="trds-pill" style="background: var(--trds-surface-dark);">shinkanki_web</code>）と連携し、
           相談フェーズでのプレイヤー間コミュニケーションをサポートします。
         </p>
         <div class="flex flex-wrap gap-2 mt-4">
-          <span class="px-3 py-1 bg-matsu/10 text-matsu rounded-full text-sm font-semibold">
+          <span class="trds-pill">
             RogsIdentity
           </span>
-          <span class="px-3 py-1 bg-sakura/10 text-sakura rounded-full text-sm font-semibold">
+          <span class="trds-pill trds-pill--gold">
             Shinkanki
           </span>
-          <span class="px-3 py-1 bg-kohaku/10 text-kohaku rounded-full text-sm font-semibold">
+          <span class="trds-pill">
             Phoenix PubSub
           </span>
-          <span class="px-3 py-1 bg-kin/10 text-kin rounded-full text-sm font-semibold">
+          <span class="trds-pill">
             LiveView
           </span>
         </div>
       </div>
     </div>
-  </div>
-  
-<!-- Footer -->
-  <footer class="bg-sumi text-washi py-8">
+  </section>
+
+  <!-- Footer -->
+  <footer class="relative border-t" style="border-color: var(--trds-outline-soft); padding: 2rem 0;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-sm text-washi/80">RogsComm - Communication Hub for 神環記</p>
-      <p class="text-xs text-washi/60 mt-2">リアルタイムコミュニケーションで、協力プレイをより楽しく</p>
+      <p class="text-sm" style="color: var(--color-landing-text-secondary);">RogsComm - Communication Hub for 神環記</p>
+      <p class="text-xs mt-2" style="color: var(--color-landing-text-secondary); opacity: 0.7;">リアルタイムコミュニケーションで、協力プレイをより楽しく</p>
     </div>
   </footer>
 </div>

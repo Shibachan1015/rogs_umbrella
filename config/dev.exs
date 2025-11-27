@@ -61,7 +61,16 @@ config :rogs_comm, RogsCommWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
-  watchers: []
+  watchers: [
+    esbuild: {Esbuild, :install_and_run, [:rogs_comm, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:rogs_comm, ~w(--watch)]}
+  ],
+  live_reload: [
+    patterns: [
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"lib/rogs_comm_web/(controllers|live|components)/.*(ex|heex)$"
+    ]
+  ]
 
 # Swoosh設定（開発環境ではAPIクライアントを無効化）
 config :swoosh, :api_client, false

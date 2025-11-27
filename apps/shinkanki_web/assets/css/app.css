@@ -2665,3 +2665,378 @@ html {
   transform: translateY(-4px);
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.2));
 }
+
+/* ============================================================
+   Responsive Design Enhancements (Mobile & Tablet)
+   ============================================================ */
+
+/* Touch Target Size Optimization (WCAG 2.5.5 - Target Size) */
+button,
+a.cta-button,
+.action-hanko,
+.ambient-gear-btn,
+.ambient-mute-toggle,
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 480px) {
+  /* Typography adjustments */
+  .hero-title {
+    font-size: clamp(2rem, 8vw, 3rem);
+    letter-spacing: 0.3em;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  /* Spacing adjustments */
+  .landing-hero {
+    padding: 6rem 1rem 3rem;
+  }
+
+  .landing-section {
+    padding: 4rem 1rem;
+  }
+
+  /* Card grid adjustments */
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .play-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Button adjustments */
+  .cta-button {
+    padding: 0.9rem 2rem;
+    font-size: 0.85rem;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* Game UI adjustments */
+  .resonance-hand {
+    height: 28vh;
+  }
+
+  .ofuda-card,
+  .talent-card {
+    min-width: 60px;
+    min-height: 90px;
+  }
+
+  /* Sidebar adjustments */
+  .game-sidebar-card {
+    padding: 1rem;
+  }
+
+  /* Ambient audio control */
+  .ambient-audio-shell {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .ambient-gear-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ambient-panel {
+    width: calc(100vw - 1.5rem);
+    max-width: 280px;
+  }
+}
+
+/* Tablet-specific optimizations */
+@media (min-width: 481px) and (max-width: 1024px) {
+  /* Typography adjustments */
+  .hero-title {
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+  }
+
+  /* Card grid adjustments */
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .play-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem;
+  }
+
+  /* Game UI adjustments */
+  .resonance-hand {
+    height: 32vh;
+  }
+
+  /* Sidebar adjustments */
+  .game-sidebar-card {
+    padding: 1.25rem;
+  }
+}
+
+/* Swipe gesture support */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device optimizations */
+  .resonance-hand,
+  .talent-cards-area {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Remove hover effects on touch devices */
+  .concept-card:hover,
+  .play-card:hover,
+  .ofuda-card:hover,
+  .talent-card:hover {
+    transform: none;
+  }
+
+  /* Increase tap target sizes */
+  .action-hanko {
+    width: 48px;
+    height: 48px;
+  }
+
+  .ofuda-card,
+  .talent-card {
+    min-width: 70px;
+    min-height: 105px;
+  }
+}
+
+/* Landscape mobile optimizations */
+@media (max-width: 896px) and (orientation: landscape) {
+  .landing-hero {
+    min-height: auto;
+    padding: 4rem 1.5rem 2rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .resonance-hand {
+    height: 24vh;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .torii-lines::before,
+  .torii-lines::after {
+    width: 1.5px;
+  }
+
+  .scroll-indicator {
+    width: 1.5px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   Accessibility Enhancements (a11y)
+   ============================================================ */
+
+/* Keyboard Navigation - Focus Styles */
+*:focus-visible {
+  outline: 3px solid var(--color-landing-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip to main content link */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--color-landing-gold);
+  color: var(--color-midnight);
+  padding: 1rem 2rem;
+  text-decoration: none;
+  z-index: 1000;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* Focus trap for modals */
+.modal-focus-trap {
+  position: relative;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .concept-card,
+  .play-card,
+  .hud-panel,
+  .game-sidebar-card {
+    border-width: 2px;
+    border-color: var(--color-landing-gold);
+  }
+
+  .cta-button {
+    border-width: 2px;
+  }
+
+  .action-hanko {
+    border-width: 3px;
+  }
+}
+
+/* Color contrast improvements */
+.hero-subtitle,
+.section-body,
+.concept-card p,
+.play-card p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Interactive element focus states */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-landing-gold);
+  outline-offset: 2px;
+}
+
+.cta-button:focus-visible {
+  outline: 3px solid var(--color-landing-pale);
+  outline-offset: 3px;
+}
+
+.action-hanko:focus-visible {
+  outline: 3px solid var(--color-landing-gold);
+  outline-offset: 3px;
+  transform: scale(1.05);
+}
+
+/* ARIA live regions */
+[role="alert"],
+[role="status"],
+[aria-live] {
+  position: relative;
+}
+
+/* Loading states for screen readers */
+[aria-busy="true"]::before {
+  content: "読み込み中";
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Error states */
+[aria-invalid="true"] {
+  border-color: var(--color-shu);
+  box-shadow: 0 0 0 3px rgba(211, 56, 28, 0.2);
+}
+
+/* Disabled states */
+[aria-disabled="true"],
+:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Landmark regions */
+[role="banner"],
+[role="navigation"],
+[role="main"],
+[role="complementary"],
+[role="contentinfo"] {
+  outline: none;
+}
+
+/* Focus management for modals */
+.modal-open {
+  overflow: hidden;
+}
+
+.modal-open body {
+  overflow: hidden;
+}
+
+/* Keyboard shortcuts hint */
+kbd {
+  display: inline-block;
+  padding: 0.2em 0.4em;
+  font-size: 0.85em;
+  line-height: 1;
+  color: var(--color-landing-text-primary);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}

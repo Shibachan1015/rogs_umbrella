@@ -790,7 +790,12 @@ defmodule RogsCommWeb.ChatLive do
           >
             <aside class="w-full xl:w-72 space-y-5" aria-label="チャット補助パネル">
               <div class="trds-glass-panel">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-4" style="color: var(--color-landing-text-primary);">Rooms</h3>
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-4"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  Rooms
+                </h3>
                 <nav class="space-y-3" aria-label="ルーム一覧" role="list">
                   <.link
                     :for={room <- @rooms}
@@ -812,7 +817,12 @@ defmodule RogsCommWeb.ChatLive do
               </div>
 
               <div class="trds-glass-panel">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3" style="color: var(--color-landing-text-primary);">Display name</h3>
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  Display name
+                </h3>
                 <.form
                   for={@name_form}
                   phx-submit="set_name"
@@ -839,7 +849,12 @@ defmodule RogsCommWeb.ChatLive do
               </div>
 
               <div class="trds-glass-panel">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3" style="color: var(--color-landing-text-primary);">メッセージ検索</h3>
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
+                  メッセージ検索
+                </h3>
                 <.form
                   for={@search_form}
                   phx-submit="search"
@@ -877,11 +892,18 @@ defmodule RogsCommWeb.ChatLive do
                 aria-live="polite"
               >
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em] mb-1" style="color: var(--color-landing-text-secondary);">音声チャネル</p>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em] mb-1"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    音声チャネル
+                  </p>
                   <p class="text-lg font-semibold" style="color: var(--color-landing-gold);">
                     {rtc_status_label(@rtc_state)}
                   </p>
-                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">{@rtc_state.status_message}</p>
+                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">
+                    {@rtc_state.status_message}
+                  </p>
                 </div>
 
                 <div class="flex gap-3">
@@ -939,7 +961,12 @@ defmodule RogsCommWeb.ChatLive do
                 </div>
 
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em] mb-2" style="color: var(--color-landing-text-primary);">参加者ステータス</p>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em] mb-2"
+                    style="color: var(--color-landing-text-primary);"
+                  >
+                    参加者ステータス
+                  </p>
                   <ul class="space-y-2" role="list">
                     <li
                       :for={{user_id, meta} <- list_presences(@presences)}
@@ -947,9 +974,15 @@ defmodule RogsCommWeb.ChatLive do
                       class="trds-pill flex items-center justify-between"
                     >
                       <span>{meta.user_email || "匿名"}</span>
-                      <span class="text-xs" style="color: var(--color-landing-text-secondary);">{rtc_participant_hint(@rtc_state)}</span>
+                      <span class="text-xs" style="color: var(--color-landing-text-secondary);">
+                        {rtc_participant_hint(@rtc_state)}
+                      </span>
                     </li>
-                    <li :if={Enum.empty?(@presences)} class="text-xs" style="color: var(--color-landing-text-secondary);">
+                    <li
+                      :if={Enum.empty?(@presences)}
+                      class="text-xs"
+                      style="color: var(--color-landing-text-secondary);"
+                    >
                       オンラインのプレイヤーはいません
                     </li>
                   </ul>
@@ -957,7 +990,10 @@ defmodule RogsCommWeb.ChatLive do
               </div>
 
               <div class="trds-glass-panel">
-                <h3 class="text-sm uppercase tracking-[0.4em] mb-3" style="color: var(--color-landing-text-primary);">
+                <h3
+                  class="text-sm uppercase tracking-[0.4em] mb-3"
+                  style="color: var(--color-landing-text-primary);"
+                >
                   Online ({Enum.count(@presences)})
                 </h3>
                 <div class="space-y-2" role="list" aria-label="オンラインユーザー">
@@ -968,22 +1004,44 @@ defmodule RogsCommWeb.ChatLive do
                   >
                     <span>{meta.user_email || "匿名"}</span>
                     <span class="flex items-center gap-1 text-xs uppercase tracking-[0.2em]">
-                      <span class="h-2 w-2 rounded-full inline-block" style="background-color: var(--color-landing-gold);" aria-hidden="true">
+                      <span
+                        class="h-2 w-2 rounded-full inline-block"
+                        style="background-color: var(--color-landing-gold);"
+                        aria-hidden="true"
+                      >
                       </span>
                       Online
                     </span>
                   </div>
-                  <p :if={Enum.empty?(@presences)} class="text-xs opacity-70" style="color: var(--color-landing-text-secondary);">現在オンラインのユーザーはいません。</p>
+                  <p
+                    :if={Enum.empty?(@presences)}
+                    class="text-xs opacity-70"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    現在オンラインのユーザーはいません。
+                  </p>
                 </div>
               </div>
             </aside>
 
             <div class="flex-1 flex flex-col trds-glass-panel overflow-hidden">
-              <div class="border-b px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style="border-color: var(--trds-outline-soft);">
+              <div
+                class="border-b px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                style="border-color: var(--trds-outline-soft);"
+              >
                 <div>
-                  <p class="text-xs uppercase tracking-[0.4em]" style="color: var(--color-landing-text-secondary);">現在のルーム</p>
-                  <h3 class="text-2xl font-semibold" style="color: var(--color-landing-text-primary);">{@room.name}</h3>
-                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">{@room.topic}</p>
+                  <p
+                    class="text-xs uppercase tracking-[0.4em]"
+                    style="color: var(--color-landing-text-secondary);"
+                  >
+                    現在のルーム
+                  </p>
+                  <h3 class="text-2xl font-semibold" style="color: var(--color-landing-text-primary);">
+                    {@room.name}
+                  </h3>
+                  <p class="text-sm mt-1" style="color: var(--color-landing-text-secondary);">
+                    {@room.topic}
+                  </p>
                 </div>
                 <div class="space-y-2 text-right">
                   <div
@@ -992,7 +1050,9 @@ defmodule RogsCommWeb.ChatLive do
                   >
                     検索モード: {length(@search_results)}件
                   </div>
-                  <div class="text-xs" style="color: var(--color-landing-text-secondary);">メッセージ数: {Enum.count(@streams.messages)}</div>
+                  <div class="text-xs" style="color: var(--color-landing-text-secondary);">
+                    メッセージ数: {Enum.count(@streams.messages)}
+                  </div>
                 </div>
               </div>
 
@@ -1037,13 +1097,20 @@ defmodule RogsCommWeb.ChatLive do
                 >
                   <div class="flex items-center justify-between mb-2">
                     <div class="text-sm" style="color: var(--color-landing-text-secondary);">
-                      <span class="font-semibold pl-2" style="color: var(--color-landing-text-primary); border-left: 2px solid var(--trds-outline-strong);">
+                      <span
+                        class="font-semibold pl-2"
+                        style="color: var(--color-landing-text-primary); border-left: 2px solid var(--trds-outline-strong);"
+                      >
                         {message.user_email}
                       </span>
                       <span class="ml-2">
                         {message.inserted_at && Calendar.strftime(message.inserted_at, "%H:%M")}
                       </span>
-                      <span :if={Map.get(message, :edited_at)} class="ml-2 text-xs" style="color: var(--color-landing-gold);">
+                      <span
+                        :if={Map.get(message, :edited_at)}
+                        class="ml-2 text-xs"
+                        style="color: var(--color-landing-gold);"
+                      >
                         (編集済み)
                       </span>
                     </div>
@@ -1092,12 +1159,21 @@ defmodule RogsCommWeb.ChatLive do
                   aria-live="polite"
                   style="color: var(--color-landing-text-secondary);"
                 >
-                  <span class="typing-indicator" aria-hidden="true" style="color: var(--color-landing-gold);">✍️</span>
+                  <span
+                    class="typing-indicator"
+                    aria-hidden="true"
+                    style="color: var(--color-landing-gold);"
+                  >
+                    ✍️
+                  </span>
                   {Enum.join(Enum.map(@typing_users, fn {_id, email} -> email end), ", ")}が入力中...
                 </div>
               </div>
 
-              <div class="border-t px-2 md:px-4 py-3 shadow-lg" style="border-color: var(--trds-outline-soft);">
+              <div
+                class="border-t px-2 md:px-4 py-3 shadow-lg"
+                style="border-color: var(--trds-outline-soft);"
+              >
                 <.form
                   for={@form}
                   id="chat-form"

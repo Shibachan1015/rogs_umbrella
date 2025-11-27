@@ -3245,6 +3245,96 @@ input[type="radio"] {
   color: #dc3545;
 }
 
+/* ログイン・新規登録ボタン */
+.login-btn,
+.register-btn {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.login-btn {
+  background: var(--color-accent-gold);
+  color: #1a1a2e;
+  border: 1px solid var(--color-accent-gold);
+}
+
+.login-btn:hover {
+  background: var(--color-accent-gold-hover);
+}
+
+.register-btn {
+  background: transparent;
+  color: var(--color-landing-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.register-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ログインプロンプト */
+.lobby-login-prompt {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-login-prompt p {
+  color: var(--color-landing-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.login-prompt-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.login-btn-large,
+.register-btn-large {
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.login-btn-large {
+  background: var(--color-accent-gold);
+  color: #1a1a2e;
+  border: 1px solid var(--color-accent-gold);
+  font-weight: 600;
+}
+
+.login-btn-large:hover {
+  background: var(--color-accent-gold-hover);
+  transform: translateY(-2px);
+}
+
+.register-btn-large {
+  background: transparent;
+  color: var(--color-landing-text);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.register-btn-large:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 未ログイン時の参加ボタン */
+.join-room-disabled {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+
 .login-link {
   color: var(--color-landing-gold);
   text-decoration: none;

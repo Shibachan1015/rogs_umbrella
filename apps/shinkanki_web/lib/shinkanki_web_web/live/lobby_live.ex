@@ -13,34 +13,21 @@ defmodule ShinkankiWebWeb.LobbyLive do
     # ログイン状態を確認
     current_user = socket.assigns[:current_user]
 
-    # 本番環境では未ログインの場合はログインページにリダイレクト
-    # 開発環境ではゲストモードを許可
-    if current_user == nil and Mix.env() == :prod do
-      {:ok,
-       socket
-       |> put_flash(:error, "ログインしてください")
-       |> push_navigate(to: ~p"/users/log_in")}
-    else
-      # ルーム作成フォーム
-      changeset = Room.changeset(%Room{}, %{})
+    # ルーム作成フォーム
+    changeset = Room.changeset(%Room{}, %{})
 
-      # 開発環境用のゲストユーザー
-      effective_user =
-        current_user ||
-          %{id: Ecto.UUID.generate(), email: "dev@guest.local"}
+    socket =
+      socket
+      |> assign(:current_user, current_user)
+      |> assign(:logged_in, current_user != nil)
+      |> assign(:current_scope, nil)
+      |> assign(:search, "")
+      |> assign(:filter_has_space, false)
+      |> assign(:form, to_form(changeset))
+      |> assign(:show_create_form, false)
+      |> load_rooms()
 
-      socket =
-        socket
-        |> assign(:current_user, effective_user)
-        |> assign(:current_scope, nil)
-        |> assign(:search, "")
-        |> assign(:filter_has_space, false)
-        |> assign(:form, to_form(changeset))
-        |> assign(:show_create_form, false)
-        |> load_rooms()
-
-      {:ok, socket}
-    end
+    {:ok, socket}
   end
 
   # ルーム一覧を読み込み
@@ -70,29 +57,54 @@ defmodule ShinkankiWebWeb.LobbyLive do
 
           <!-- ログインユーザー表示 -->
           <div class="lobby-user-status">
-            <div class="user-logged-in">
-              <span class="user-icon">👤</span>
-              <span class="user-email">{@current_user.email}</span>
-              <.link href={~p"/users/log-out"} method="delete" class="logout-btn">
-                ログアウト
-              </.link>
-            </div>
+            <%= if @logged_in do %>
+              <div class="user-logged-in">
+                <span class="user-icon">👤</span>
+                <span class="user-email">{@current_user.email}</span>
+                <.link href={~p"/users/log-out"} method="delete" class="logout-btn">
+                  ログアウト
+                </.link>
+              </div>
+            <% else %>
+              <div class="user-guest">
+                <.link navigate={~p"/users/log-in"} class="login-btn">
+                  ログイン
+                </.link>
+                <.link navigate={~p"/users/register"} class="register-btn">
+                  新規登録
+                </.link>
+              </div>
+            <% end %>
           </div>
         </header>
 
         <!-- メインコンテンツ -->
         <main class="lobby-main">
-          <!-- ルーム作成ボタン -->
-          <div class="lobby-actions">
-            <button
-              type="button"
-              class="create-room-btn"
-              phx-click="toggle_create_form"
-            >
-              <span class="btn-icon">＋</span>
-              <span>新しいルームを作成</span>
-            </button>
-          </div>
+          <!-- ルーム作成ボタン（ログイン時のみ） -->
+          <%= if @logged_in do %>
+            <div class="lobby-actions">
+              <button
+                type="button"
+                class="create-room-btn"
+                phx-click="toggle_create_form"
+              >
+                <span class="btn-icon">＋</span>
+                <span>新しいルームを作成</span>
+              </button>
+            </div>
+          <% else %>
+            <div class="lobby-login-prompt">
+              <p>ルームに参加するにはログインが必要です</p>
+              <div class="login-prompt-actions">
+                <.link navigate={~p"/users/log-in"} class="login-btn-large">
+                  ログイン
+                </.link>
+                <.link navigate={~p"/users/register"} class="register-btn-large">
+                  新規登録
+                </.link>
+              </div>
+            </div>
+          <% end %>
 
           <!-- ルーム作成フォーム -->
           <%= if @show_create_form do %>
@@ -176,7 +188,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <% else %>
               <div class="rooms-grid">
                 <%= for room <- @rooms do %>
-                  <.room_card room={room} />
+                  <.room_card room={room} logged_in={@logged_in} />
                 <% end %>
               </div>
             <% end %>
@@ -188,6 +200,9 @@ defmodule ShinkankiWebWeb.LobbyLive do
   end
 
   # ルームカードコンポーネント
+  attr :room, :map, required: true
+  attr :logged_in, :boolean, required: true
+
   defp room_card(assigns) do
     ~H"""
     <div class="room-card">
@@ -206,9 +221,15 @@ defmodule ShinkankiWebWeb.LobbyLive do
       </div>
 
       <div class="room-card-actions">
-        <.link navigate={~p"/room/#{@room.slug}"} class="join-room-btn">
-          参加する
-        </.link>
+        <%= if @logged_in do %>
+          <.link navigate={~p"/room/#{@room.slug}"} class="join-room-btn">
+            参加する
+          </.link>
+        <% else %>
+          <.link navigate={~p"/users/log-in"} class="join-room-btn join-room-disabled">
+            ログインして参加
+          </.link>
+        <% end %>
       </div>
     </div>
     """

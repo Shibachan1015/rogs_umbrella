@@ -101,6 +101,31 @@ defmodule Shinkanki do
   end
 
   @doc """
+  Sets a player's role in the game.
+  Returns {:ok, new_game} or {:error, reason}.
+  """
+  def set_player_role(room_id, player_id, role) do
+    call_server(room_id, fn -> GameServer.set_player_role(room_id, player_id, role) end)
+  end
+
+  @doc """
+  Gets game history (action logs) for the given room_id.
+  Returns a list of action log entries.
+  """
+  def get_game_history(room_id) do
+    if Code.ensure_loaded?(Repo) and function_exported?(Repo, :all, 1) do
+      Repo.all(
+        from log in ActionLog,
+          where: log.room_id == ^room_id,
+          order_by: [desc: log.inserted_at],
+          limit: 50
+      )
+    else
+      []
+    end
+  end
+
+  @doc """
   Marks a player as ready in the discussion phase.
   Returns {:ok, new_game} or {:error, reason}.
   """

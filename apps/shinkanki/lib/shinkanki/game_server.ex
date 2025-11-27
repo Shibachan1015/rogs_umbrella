@@ -55,6 +55,10 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), :start_game)
   end
 
+  def set_player_role(room_id, player_id, role) do
+    GenServer.call(via_tuple(room_id), {:set_player_role, player_id, role})
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end
@@ -170,6 +174,19 @@ defmodule Shinkanki.GameServer do
           talent_id: talent_id
         })
 
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:set_player_role, player_id, role}, _from, game) do
+    case Game.set_player_role(game, player_id, role) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "set_player_role", player_id, %{role: role})
         broadcast_state(new_game)
         {:reply, ok, new_game}
 

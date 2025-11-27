@@ -25,6 +25,7 @@ defmodule ShinkankiWebWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/rooms", RoomIndexLive
     live "/game", GameLive
     live "/game/:room_id", GameLive
   end

@@ -87,15 +87,16 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:show_ending, game_state.status in [:won, :lost])
       |> assign(:game_status, game_state.status || :waiting)
       |> assign(:ending_type, game_state.ending_type)
-      |> assign(:show_role_selection, false)
-      |> assign(:selected_role, nil)
-      |> assign(:player_role, nil)
       |> assign(:players, get_players(game_state))
+      |> assign(:player_role, get_player_role(game_state, user_id))
+      |> assign(:show_role_selection, should_show_role_selection(game_state, user_id))
+      |> assign(:selected_role, nil)
       |> assign(:show_demurrage, false)
       |> assign(:previous_currency, 0)
       |> assign(:show_card_detail, false)
       |> assign(:detail_card, nil)
       |> assign(:can_start, Shinkanki.can_start?(room_id))
+      |> assign(:game_history, get_game_history(room_id))
 
     socket =
       if connected?(socket) do
@@ -163,13 +164,19 @@ defmodule ShinkankiWebWeb.GameLive do
               is_critical = remaining_turns <= 3
               demurrage_value = @game_state.demurrage || 0 %>
               <div class="flex justify-between items-baseline text-[var(--color-landing-text-secondary)]">
-                <span class="text-xs uppercase tracking-[0.3em]" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
+                <span
+                  class="text-xs uppercase tracking-[0.3em]"
+                  aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}"
+                >
                   Turn {@game_state.turn} / {@game_state.max_turns}
                 </span>
                 <span class="text-[10px]">
                   ({progress_percentage}%)
                 </span>
-                <div class={["flex items-baseline gap-1", if(is_critical, do: "turn-remaining-warning", else: "")]}>
+                <div class={[
+                  "flex items-baseline gap-1",
+                  if(is_critical, do: "turn-remaining-warning", else: "")
+                ]}>
                   <span class={[
                     "text-lg sm:text-xl font-bold font-serif",
                     if(is_critical,
@@ -251,13 +258,36 @@ defmodule ShinkankiWebWeb.GameLive do
                 <span class="hud-info-card-value">{demurrage_value}</span>
                 <span class="hud-info-card-subtle">減衰量</span>
                 <span class="hud-info-card-diff">
-                  <%= if demurrage_value >= 0, do: "+", else: "-" %>{abs(demurrage_value)}
+                  {if demurrage_value >= 0, do: "+", else: "-"}{abs(demurrage_value)}
                 </span>
               </div>
             </div>
           </div>
 
           <div class="flex-1 overflow-y-auto px-3 sm:px-4 space-y-4 pb-6 sidebar-scroll">
+            <!-- Room Navigation -->
+            <div class="hud-panel-light p-3">
+              <.link
+                navigate={~p"/rooms"}
+                class="flex items-center gap-2 text-sm text-[var(--color-landing-text-secondary)] hover:text-[var(--color-landing-pale)] transition-colors"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
+                </svg>
+                <span>ルーム一覧に戻る</span>
+              </.link>
+            </div>
+
             <div class="hud-panel-light">
               <.phase_indicator current_phase={@current_phase} />
             </div>
@@ -379,12 +409,17 @@ defmodule ShinkankiWebWeb.GameLive do
                   aria-label={"メッセージ from #{msg.user_email || msg.author}"}
                 >
                   <div class="flex justify-between text-[10px] uppercase tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
-                    <span class="font-semibold text-[var(--color-landing-pale)]" aria-label="送信者">
+                    <span
+                      class="font-semibold text-[var(--color-landing-pale)]"
+                      aria-label="送信者"
+                    >
                       {msg.user_email || msg.author}
                     </span>
                     <time
                       class="text-[var(--color-landing-text-secondary)]"
-                      datetime={if msg.inserted_at, do: DateTime.to_iso8601(msg.inserted_at), else: ""}
+                      datetime={
+                        if msg.inserted_at, do: DateTime.to_iso8601(msg.inserted_at), else: ""
+                      }
                       aria-label="送信時刻"
                     >
                       {format_time(msg.inserted_at || msg.sent_at)}
@@ -396,6 +431,34 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             </div>
+            
+    <!-- Game History -->
+            <%= if @game_status == :playing && length(@game_history) > 0 do %>
+              <div
+                class="hud-panel-light p-4 space-y-3 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
+                role="region"
+                aria-label="ゲーム履歴"
+              >
+                <div class="hud-section-title">Game History</div>
+                <div class="space-y-2">
+                  <%= for entry <- @game_history do %>
+                    <div class="text-xs text-[var(--color-landing-text-secondary)] px-2 py-1 bg-white/5 rounded border border-white/10">
+                      <div class="flex items-start justify-between gap-2">
+                        <span class="text-[var(--color-landing-text-primary)] flex-1">
+                          {entry.message}
+                        </span>
+                        <time
+                          class="text-[10px] text-[var(--color-landing-text-secondary)] whitespace-nowrap"
+                          datetime={if entry.time, do: entry.time, else: ""}
+                        >
+                          {entry.time || ""}
+                        </time>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
 
             <div class="hud-panel-light space-y-3" role="region" aria-label="メッセージ送信">
               <div class="hud-section-title">Send Message</div>
@@ -467,7 +530,7 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
           </div>
         </aside>
-
+        
     <!-- Main Board -->
         <main
           class="flex-1 relative overflow-hidden flex flex-col items-center p-4 sm:p-8 md:p-10 lg:ml-0 resonance-shell"
@@ -475,249 +538,248 @@ defmodule ShinkankiWebWeb.GameLive do
           aria-label="ゲームボード"
         >
           <div class="resonance-board w-full max-w-6xl flex flex-col items-center gap-8 p-4 sm:p-8 md:p-10">
-          <!-- Phase Indicator (Top of Main Board) -->
-          <%= if @game_status == :playing do %>
-            <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">
-              <.phase_indicator current_phase={@current_phase} />
-            </div>
-          <% end %>
-
-    <!-- Event Card Display (Event Phase) -->
-          <%= if @current_phase == :event && @current_event do %>
-            <div class="w-full max-w-md mx-auto animate-fade-in hud-panel text-[var(--color-landing-text-primary)]">
-              <div class="hud-section-title mb-3 text-center">現在のイベント</div>
-              <.event_card
-                title={@current_event[:title] || @current_event["title"] || "イベント"}
-                description={@current_event[:description] || @current_event["description"] || ""}
-                effect={@current_event[:effect] || @current_event["effect"] || %{}}
-                category={@current_event[:category] || @current_event["category"] || :neutral}
-                phx-click="show_event_modal"
-                class="cursor-pointer hover:scale-105 transition-transform"
-              />
-            </div>
-          <% else %>
-            <!-- Active Projects Display -->
-            <%= if length(@active_projects) > 0 && @game_status == :playing do %>
-              <section class="project-stage" aria-label="共創プロジェクト">
-                <div class="project-stage-header">
-                  <div>
-                    <p class="stage-label">共創プロジェクト</p>
-                    <p class="stage-subtitle">才能を捧げ、森と文化とつながりを再構築</p>
-                  </div>
-                  <div class="project-metrics">
-                    <div class="project-metric">
-                      <span class="metric-label">ACTIVE</span>
-                      <span class="metric-value">{length(@active_projects)}</span>
-                    </div>
-                    <div class="project-metric">
-                      <span class="metric-label">AKASHA φ</span>
-                      <span class="metric-value">{@game_state.currency}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="project-grid">
-                  <%= for project <- @active_projects do %>
-                    <div
-                      class="cursor-pointer transition-transform"
-                      phx-click="open_project_contribute"
-                      phx-value-project-id={project[:id] || project["id"]}
-                    >
-                      <.project_card
-                        title={project[:name] || project["name"] || "プロジェクト"}
-                        description={project[:description] || project["description"] || ""}
-                        cost={
-                          project[:required_progress] || project["required_progress"] ||
-                            project[:cost] || 0
-                        }
-                        progress={project[:progress] || project["progress"] || 0}
-                        effect={project[:effect] || project["effect"] || %{}}
-                        unlock_condition={
-                          project[:unlock_condition] || project["unlock_condition"] || %{}
-                        }
-                        is_unlocked={project[:is_unlocked] || project["is_unlocked"] || true}
-                        is_completed={project[:is_completed] || project["is_completed"] || false}
-                        contributed_talents={
-                          project[:contributed_talents] || project["contributed_talents"] || []
-                        }
-                        class="h-full"
-                      />
-                    </div>
-                  <% end %>
-                </div>
-              </section>
+            <!-- Phase Indicator (Top of Main Board) -->
+            <%= if @game_status == :playing do %>
+              <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">
+                <.phase_indicator current_phase={@current_phase} />
+              </div>
             <% end %>
-            <div class="life-index-orb" role="region" aria-label="Life Index表示">
-              <!-- Life Index Circle -->
-              <div
-                class="life-index-core life-index-ring"
-                aria-label={"Life Index: #{life_index(@game_state)}"}
-                role="meter"
-                aria-valuenow={life_index(@game_state)}
-                aria-valuemin="0"
-                aria-valuemax={@game_state.life_index_target}
-              >
-                <!-- Circular progress SVG -->
-                <svg
-                  class="absolute inset-0 w-full h-full circular-progress"
-                  viewBox="0 0 200 200"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
-                    fill="none"
-                    stroke="rgba(28, 28, 28, 0.1)"
-                    stroke-width="8"
-                  />
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
-                    fill="none"
-                    stroke="rgba(211, 56, 28, 0.3)"
-                    stroke-width="8"
-                    stroke-dasharray={circumference()}
-                    stroke-dashoffset={
-                      circumference_offset(life_index(@game_state), @game_state.life_index_target)
-                    }
-                    stroke-linecap="round"
-                    class="transition-all duration-1000"
-                  />
-                </svg>
-                <div class="text-center relative z-10 px-2 sm:px-4 text-[var(--color-landing-text-primary)]">
-                  <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
-                    Life Index
-                  </div>
-                  <div
-                    id="life-index-value"
-                    class="text-3xl sm:text-4xl md:text-7xl font-bold text-[var(--color-landing-pale)] font-serif mb-1 sm:mb-2 life-index-value"
-                    phx-update="ignore"
-                  >
-                    {life_index(@game_state)}
-                  </div>
-                  <div class="text-[9px] sm:text-[10px] md:text-xs text-[var(--color-landing-text-secondary)] uppercase tracking-[0.3em] sm:tracking-[0.5em]">
-                    Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
-                  </div>
-                </div>
-              </div>
-
-    <!-- Gauges -->
-              <div
-                class="absolute top-2 sm:top-4 md:top-12 left-1/2 -translate-x-1/2 gauge-stack"
-                role="group"
-                aria-label="Forest (F) ゲージ"
-              >
-                <span class="text-matsu font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Forest (F)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.forest}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Forest: #{@game_state.forest}"}
-                >
-                  <div
-                    id="forest-gauge-bar"
-                    class="gauge-fill bg-matsu"
-                    style={"width: #{gauge_width(@game_state.forest)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.forest}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-4 sm:left-10 md:left-20 gauge-stack"
-                role="group"
-                aria-label="Culture (K) ゲージ"
-              >
-                <span class="text-sakura font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Culture (K)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.culture}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Culture: #{@game_state.culture}"}
-                >
-                  <div
-                    id="culture-gauge-bar"
-                    class="gauge-fill bg-sakura"
-                    style={"width: #{gauge_width(@game_state.culture)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.culture}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-4 sm:right-10 md:right-20 gauge-stack"
-                role="group"
-                aria-label="Social (S) ゲージ"
-              >
-                <span class="text-kohaku font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
-                  Social (S)
-                </span>
-                <div
-                  class="gauge-track"
-                  role="progressbar"
-                  aria-valuenow={@game_state.social}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                  aria-label={"Social: #{@game_state.social}"}
-                >
-                  <div
-                    id="social-gauge-bar"
-                    class="gauge-fill bg-kohaku"
-                    style={"width: #{gauge_width(@game_state.social)}%"}
-                    phx-update="ignore"
-                  >
-                  </div>
-                  <span class="gauge-value">
-                    {@game_state.social}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-    <!-- Actions (Stamps) -->
-            <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
-            <div class="action-ribbon" role="toolbar" aria-label="アクションボタン">
-              <div class="action-ribbon-label">
-                AKASHA ACTIONS
-                <span>残り {remaining_turns} Turn</span>
-              </div>
-              <p class="action-ribbon-subtext">
-                神印で流れを刻み、空環ポイントを循環させましょう。
-              </p>
-              <div class="action-ribbon-buttons">
-                <.hanko_btn
-                  :for={button <- @action_buttons}
-                  label={button.label}
-                  color={button.color}
-                  class="action-hanko"
-                  aria-label={button.label <> "を実行"}
-                  phx-click="execute_action"
-                  phx-value-action={button.action || button.label}
+            
+    <!-- Event Card Display (Event Phase) -->
+            <%= if @current_phase == :event && @current_event do %>
+              <div class="w-full max-w-md mx-auto animate-fade-in hud-panel text-[var(--color-landing-text-primary)]">
+                <div class="hud-section-title mb-3 text-center">現在のイベント</div>
+                <.event_card
+                  title={@current_event[:title] || @current_event["title"] || "イベント"}
+                  description={@current_event[:description] || @current_event["description"] || ""}
+                  effect={@current_event[:effect] || @current_event["effect"] || %{}}
+                  category={@current_event[:category] || @current_event["category"] || :neutral}
+                  phx-click="show_event_modal"
+                  class="cursor-pointer hover:scale-105 transition-transform"
                 />
               </div>
-            </div>
-          <% end %>
+            <% else %>
+              <!-- Active Projects Display -->
+              <%= if length(@active_projects) > 0 && @game_status == :playing do %>
+                <section class="project-stage" aria-label="共創プロジェクト">
+                  <div class="project-stage-header">
+                    <div>
+                      <p class="stage-label">共創プロジェクト</p>
+                      <p class="stage-subtitle">才能を捧げ、森と文化とつながりを再構築</p>
+                    </div>
+                    <div class="project-metrics">
+                      <div class="project-metric">
+                        <span class="metric-label">ACTIVE</span>
+                        <span class="metric-value">{length(@active_projects)}</span>
+                      </div>
+                      <div class="project-metric">
+                        <span class="metric-label">AKASHA φ</span>
+                        <span class="metric-value">{@game_state.currency}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="project-grid">
+                    <%= for project <- @active_projects do %>
+                      <div
+                        class="cursor-pointer transition-transform"
+                        phx-click="open_project_contribute"
+                        phx-value-project-id={project[:id] || project["id"]}
+                      >
+                        <.project_card
+                          title={project[:name] || project["name"] || "プロジェクト"}
+                          description={project[:description] || project["description"] || ""}
+                          cost={
+                            project[:required_progress] || project["required_progress"] ||
+                              project[:cost] || 0
+                          }
+                          progress={project[:progress] || project["progress"] || 0}
+                          effect={project[:effect] || project["effect"] || %{}}
+                          unlock_condition={
+                            project[:unlock_condition] || project["unlock_condition"] || %{}
+                          }
+                          is_unlocked={project[:is_unlocked] || project["is_unlocked"] || true}
+                          is_completed={project[:is_completed] || project["is_completed"] || false}
+                          contributed_talents={
+                            project[:contributed_talents] || project["contributed_talents"] || []
+                          }
+                          class="h-full"
+                        />
+                      </div>
+                    <% end %>
+                  </div>
+                </section>
+              <% end %>
+              <div class="life-index-orb" role="region" aria-label="Life Index表示">
+                <!-- Life Index Circle -->
+                <div
+                  class="life-index-core life-index-ring"
+                  aria-label={"Life Index: #{life_index(@game_state)}"}
+                  role="meter"
+                  aria-valuenow={life_index(@game_state)}
+                  aria-valuemin="0"
+                  aria-valuemax={@game_state.life_index_target}
+                >
+                  <!-- Circular progress SVG -->
+                  <svg
+                    class="absolute inset-0 w-full h-full circular-progress"
+                    viewBox="0 0 200 200"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="90"
+                      fill="none"
+                      stroke="rgba(28, 28, 28, 0.1)"
+                      stroke-width="8"
+                    />
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="90"
+                      fill="none"
+                      stroke="rgba(211, 56, 28, 0.3)"
+                      stroke-width="8"
+                      stroke-dasharray={circumference()}
+                      stroke-dashoffset={
+                        circumference_offset(life_index(@game_state), @game_state.life_index_target)
+                      }
+                      stroke-linecap="round"
+                      class="transition-all duration-1000"
+                    />
+                  </svg>
+                  <div class="text-center relative z-10 px-2 sm:px-4 text-[var(--color-landing-text-primary)]">
+                    <div class="text-sm sm:text-lg md:text-2xl uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
+                      Life Index
+                    </div>
+                    <div
+                      id="life-index-value"
+                      class="text-3xl sm:text-4xl md:text-7xl font-bold text-[var(--color-landing-pale)] font-serif mb-1 sm:mb-2 life-index-value"
+                      phx-update="ignore"
+                    >
+                      {life_index(@game_state)}
+                    </div>
+                    <div class="text-[9px] sm:text-[10px] md:text-xs text-[var(--color-landing-text-secondary)] uppercase tracking-[0.3em] sm:tracking-[0.5em]">
+                      Target {@game_state.life_index_target} / Turn {@game_state.turn} of {@game_state.max_turns}
+                    </div>
+                  </div>
+                </div>
+                
+    <!-- Gauges -->
+                <div
+                  class="absolute top-2 sm:top-4 md:top-12 left-1/2 -translate-x-1/2 gauge-stack"
+                  role="group"
+                  aria-label="Forest (F) ゲージ"
+                >
+                  <span class="text-matsu font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                    Forest (F)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.forest}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Forest: #{@game_state.forest}"}
+                  >
+                    <div
+                      id="forest-gauge-bar"
+                      class="gauge-fill bg-matsu"
+                      style={"width: #{gauge_width(@game_state.forest)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">
+                      {@game_state.forest}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="absolute bottom-8 sm:bottom-12 md:bottom-20 left-4 sm:left-10 md:left-20 gauge-stack"
+                  role="group"
+                  aria-label="Culture (K) ゲージ"
+                >
+                  <span class="text-sakura font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                    Culture (K)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.culture}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Culture: #{@game_state.culture}"}
+                  >
+                    <div
+                      id="culture-gauge-bar"
+                      class="gauge-fill bg-sakura"
+                      style={"width: #{gauge_width(@game_state.culture)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">
+                      {@game_state.culture}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  class="absolute bottom-8 sm:bottom-12 md:bottom-20 right-4 sm:right-10 md:right-20 gauge-stack"
+                  role="group"
+                  aria-label="Social (S) ゲージ"
+                >
+                  <span class="text-kohaku font-semibold text-xs sm:text-sm md:text-base tracking-[0.3em] uppercase">
+                    Social (S)
+                  </span>
+                  <div
+                    class="gauge-track"
+                    role="progressbar"
+                    aria-valuenow={@game_state.social}
+                    aria-valuemin="0"
+                    aria-valuemax="20"
+                    aria-label={"Social: #{@game_state.social}"}
+                  >
+                    <div
+                      id="social-gauge-bar"
+                      class="gauge-fill bg-kohaku"
+                      style={"width: #{gauge_width(@game_state.social)}%"}
+                      phx-update="ignore"
+                    >
+                    </div>
+                    <span class="gauge-value">
+                      {@game_state.social}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+    <!-- Actions (Stamps) -->
+              <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
+              <div class="action-ribbon" role="toolbar" aria-label="アクションボタン">
+                <div class="action-ribbon-label">
+                  AKASHA ACTIONS <span>残り {remaining_turns} Turn</span>
+                </div>
+                <p class="action-ribbon-subtext">
+                  神印で流れを刻み、空環ポイントを循環させましょう。
+                </p>
+                <div class="action-ribbon-buttons">
+                  <.hanko_btn
+                    :for={button <- @action_buttons}
+                    label={button.label}
+                    color={button.color}
+                    class="action-hanko"
+                    aria-label={button.label <> "を実行"}
+                    phx-click="execute_action"
+                    phx-value-action={button.action || button.label}
+                  />
+                </div>
+              </div>
+            <% end %>
           </div>
         </main>
       </div>
-
+      
     <!-- Bottom Hand -->
       <div
         class="resonance-hand h-32 md:h-48 z-30 relative overflow-hidden"
@@ -793,7 +855,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Talent Cards Area (Action Phase) -->
       <%= if @current_phase == :action && length(@player_talents) > 0 do %>
         <div
@@ -821,7 +883,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div
@@ -1315,18 +1377,36 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_event("confirm_role_selection", _params, socket) do
     if socket.assigns.selected_role do
-      toast = %{
-        id: Ecto.UUID.generate(),
-        kind: :success,
-        message: "役割「#{get_role_name(socket.assigns.selected_role)}」を選択しました"
-      }
+      room_id = socket.assigns.room_id
+      user_id = socket.assigns.user_id
+      role = socket.assigns.selected_role
 
-      {:noreply,
-       socket
-       |> assign(:player_role, socket.assigns.selected_role)
-       |> assign(:show_role_selection, false)
-       |> assign(:selected_role, nil)
-       |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      case Shinkanki.set_player_role(room_id, user_id, role) do
+        {:ok, _game} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :success,
+            message: "役割「#{get_role_name(role)}」を選択しました"
+          }
+
+          {:noreply,
+           socket
+           |> assign(:player_role, role)
+           |> assign(:show_role_selection, false)
+           |> assign(:selected_role, nil)
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+
+        {:error, reason} ->
+          toast = %{
+            id: Ecto.UUID.generate(),
+            kind: :error,
+            message: "役割の設定に失敗しました: #{inspect(reason)}"
+          }
+
+          {:noreply,
+           socket
+           |> update(:toasts, fn toasts -> [toast | toasts] end)}
+      end
     else
       {:noreply, socket}
     end
@@ -1389,6 +1469,10 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
+    user_id = socket.assigns.user_id
+    formatted_game = format_game_state(game)
+    player_role = get_player_role(game, user_id)
+    show_role_selection = should_show_role_selection(game, user_id)
     # Update game state when broadcast from GameServer
     new_status = game.status || :waiting
     new_phase = game.phase || :event
@@ -1399,13 +1483,17 @@ defmodule ShinkankiWebWeb.GameLive do
 
     socket =
       socket
-      |> assign(:game_state, format_game_state(game))
+      |> assign(:game_state, formatted_game)
       |> assign(:current_phase, new_phase)
       |> assign(:current_event, format_current_event(game))
       |> assign(:game_status, new_status)
-      |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
-      |> assign(:player_talents, get_player_talents(game, socket.assigns.user_id))
+      |> assign(:hand_cards, get_hand_cards(game, user_id))
+      |> assign(:player_talents, get_player_talents(game, user_id))
       |> assign(:active_projects, get_active_projects(game))
+      |> assign(:players, get_players(game))
+      |> assign(:player_role, player_role)
+      |> assign(:show_role_selection, show_role_selection)
+      |> assign(:game_history, get_game_history(socket.assigns.room_id))
       |> assign(:can_start, Shinkanki.can_start?(socket.assigns.room_id))
       # Show ending screen if game ended
       |> assign(:show_ending, new_status in [:won, :lost])
@@ -1678,36 +1766,6 @@ defmodule ShinkankiWebWeb.GameLive do
     ]
   end
 
-  defp mock_game_history do
-    [
-      %{
-        turn: 8,
-        time: "14:30",
-        message: "プレイヤー1が「植林」カードを使用しました。F +5"
-      },
-      %{
-        turn: 8,
-        time: "14:28",
-        message: "イベント「神々の加護」が発生しました。F +2, K +2, S +1"
-      },
-      %{
-        turn: 7,
-        time: "14:25",
-        message: "減衰フェーズ: 空環ポイントが10%減衰しました"
-      },
-      %{
-        turn: 7,
-        time: "14:20",
-        message: "プレイヤー2が「祭事」カードを使用しました。K +5, S +3"
-      },
-      %{
-        turn: 6,
-        time: "14:15",
-        message: "プロジェクト「森の祝祭」に才能カードが捧げられました"
-      }
-    ]
-  end
-
   defp get_players(nil), do: mock_players()
 
   defp get_players(%{players: players} = _game) when is_map(players) do
@@ -1805,7 +1863,7 @@ defmodule ShinkankiWebWeb.GameLive do
                 id: card.id,
                 title: card.name,
                 cost: card.cost || 0,
-                type: card.type || :action,
+                type: (card.type && card.type) || :action,
                 tags: card.tags || []
               }
           end
@@ -1943,4 +2001,122 @@ defmodule ShinkankiWebWeb.GameLive do
         false
     end
   end
+
+  defp get_player_role(nil, _user_id), do: nil
+
+  defp get_player_role(%{players: players} = _game, user_id) when is_map(players) do
+    case Map.get(players, user_id) do
+      nil -> nil
+      player -> Map.get(player, :role)
+    end
+  end
+
+  defp get_player_role(_game, _user_id), do: nil
+
+  defp should_show_role_selection(nil, _user_id), do: false
+
+  defp should_show_role_selection(%{status: status} = game, user_id) do
+    # Only show role selection if game is waiting and player doesn't have a role
+    status == :waiting && get_player_role(game, user_id) == nil
+  end
+
+  defp should_show_role_selection(_game, _user_id), do: false
+
+  defp get_game_history(room_id) do
+    case Shinkanki.get_game_history(room_id) do
+      logs when is_list(logs) ->
+        logs
+        |> Enum.map(&format_history_entry/1)
+        |> Enum.reject(&is_nil/1)
+
+      _ ->
+        []
+    end
+  end
+
+  defp format_history_entry(%{
+         action: action,
+         player_id: player_id,
+         payload: payload,
+         turn: turn,
+         inserted_at: inserted_at
+       }) do
+    message = format_history_message(action, player_id, payload, turn)
+
+    %{
+      action: action,
+      player_id: player_id,
+      turn: turn,
+      message: message,
+      time: format_time(inserted_at)
+    }
+  end
+
+  defp format_history_entry(_), do: nil
+
+  defp format_history_message("join_player", player_id, payload, turn) do
+    name = Map.get(payload, "name") || Map.get(payload, :name) || "プレイヤー"
+    "ターン#{turn}: #{name}がゲームに参加しました"
+  end
+
+  defp format_history_message("play_action", player_id, payload, turn) do
+    action_id = Map.get(payload, "action_id") || Map.get(payload, :action_id)
+    talent_ids = Map.get(payload, "talent_ids") || Map.get(payload, :talent_ids) || []
+
+    case Shinkanki.Card.get_action(action_id) do
+      nil ->
+        "ターン#{turn}: アクションカードが使用されました"
+
+      card ->
+        talent_text = if length(talent_ids) > 0, do: "（才能#{length(talent_ids)}枚）", else: ""
+        "ターン#{turn}: 「#{card.name}」カードが使用されました#{talent_text}"
+    end
+  end
+
+  defp format_history_message("contribute_talent_to_project", player_id, payload, turn) do
+    project_id = Map.get(payload, "project_id") || Map.get(payload, :project_id)
+    talent_id = Map.get(payload, "talent_id") || Map.get(payload, :talent_id)
+
+    project_name =
+      case Shinkanki.Card.get_project(project_id) do
+        nil -> "プロジェクト"
+        project -> project.name
+      end
+
+    talent_name =
+      case Shinkanki.Card.get_talent(talent_id) do
+        nil -> "才能"
+        talent -> talent.name
+      end
+
+    "ターン#{turn}: 「#{talent_name}」が「#{project_name}」に捧げられました"
+  end
+
+  defp format_history_message("set_player_role", player_id, payload, turn) do
+    role = Map.get(payload, "role") || Map.get(payload, :role)
+    role_name = get_role_name(role)
+    "ターン#{turn}: 役割「#{role_name}」が選択されました"
+  end
+
+  defp format_history_message("next_turn", _player_id, _payload, turn) do
+    "ターン#{turn}: 次のターンに進みました"
+  end
+
+  defp format_history_message("next_phase", _player_id, payload, turn) do
+    phase = Map.get(payload, "phase") || Map.get(payload, :phase)
+    phase_name = get_phase_name(phase)
+    "ターン#{turn}: #{phase_name}フェーズに移行しました"
+  end
+
+  defp format_history_message(action, _player_id, _payload, turn) do
+    "ターン#{turn}: #{action}が実行されました"
+  end
+
+  defp get_phase_name(:event), do: "イベント"
+  defp get_phase_name(:discussion), do: "相談"
+  defp get_phase_name(:action), do: "アクション"
+  defp get_phase_name(:demurrage), do: "減衰"
+  defp get_phase_name(:life_update), do: "生命更新"
+  defp get_phase_name(:judgment), do: "判定"
+  defp get_phase_name(_), do: "不明"
 end

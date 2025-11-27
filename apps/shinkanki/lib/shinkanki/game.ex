@@ -146,6 +146,23 @@ defmodule Shinkanki.Game do
   end
 
   @doc """
+  Sets a player's role in the game.
+  """
+  def set_player_role(%__MODULE__{} = game, player_id, role) when is_atom(role) do
+    case Map.get(game.players, player_id) do
+      nil ->
+        {:error, :player_not_found}
+
+      player ->
+        updated_player = Map.put(player, :role, role)
+        updated_game = %{game | players: Map.put(game.players, player_id, updated_player)}
+        {:ok, updated_game}
+    end
+  end
+
+  def set_player_role(%__MODULE__{} = _game, _player_id, _role), do: {:error, :invalid_role}
+
+  @doc """
   Advances the game to the next turn.
   Resets phase to :event and automatically progresses through all phases until judgment.
   This maintains backward compatibility with existing code that expects next_turn to complete a full turn.

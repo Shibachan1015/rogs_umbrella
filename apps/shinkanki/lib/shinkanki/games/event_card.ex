@@ -61,31 +61,36 @@ defmodule Shinkanki.Games.EventCard do
   def get_effects(%__MODULE__{has_choice: true} = event) do
     # 選択肢がある場合は、デフォルトでchoice_aの効果を返す
     # 実際の選択はchoiceパラメータ付きのget_effects/2を使う
-    event.choice_a_effects || %{
-      forest: 0,
-      culture: 0,
-      social: 0,
-      akasha: 0
-    }
+    event.choice_a_effects ||
+      %{
+        forest: 0,
+        culture: 0,
+        social: 0,
+        akasha: 0
+      }
   end
 
   def get_effects(%__MODULE__{has_choice: true} = event, choice) do
     case choice do
-      :choice_a -> 
-        event.choice_a_effects || %{
-          forest: 0,
-          culture: 0,
-          social: 0,
-          akasha: 0
-        }
-      :choice_b -> 
-        event.choice_b_effects || %{
-          forest: 0,
-          culture: 0,
-          social: 0,
-          akasha: 0
-        }
-      _ -> 
+      :choice_a ->
+        event.choice_a_effects ||
+          %{
+            forest: 0,
+            culture: 0,
+            social: 0,
+            akasha: 0
+          }
+
+      :choice_b ->
+        event.choice_b_effects ||
+          %{
+            forest: 0,
+            culture: 0,
+            social: 0,
+            akasha: 0
+          }
+
+      _ ->
         %{
           forest: 0,
           culture: 0,

@@ -14,6 +14,7 @@ defmodule Shinkanki.Games.GameSession do
     field :dao_pool, :integer, default: 0
     field :status, :string, default: "active"
     field :seed, :string
+    field :room_id, :binary_id
 
     has_many :players, Shinkanki.Games.Player
     has_many :game_projects, Shinkanki.Games.GameProject
@@ -26,7 +27,7 @@ defmodule Shinkanki.Games.GameSession do
   @doc false
   def changeset(game_session, attrs) do
     game_session
-    |> cast(attrs, [:turn, :forest, :culture, :social, :life_index, :dao_pool, :status, :seed])
+    |> cast(attrs, [:turn, :forest, :culture, :social, :life_index, :dao_pool, :status, :seed, :room_id])
     |> validate_required([:forest, :culture, :social, :life_index])
     |> validate_number(:forest, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
     |> validate_number(:culture, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)

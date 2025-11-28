@@ -16,6 +16,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   alias RogsIdentity.Messages, as: UserMessages
   alias RogsIdentity.Presence
   alias Shinkanki
+  alias Shinkanki.Games
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -478,30 +479,64 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   @impl true
   def handle_event("start_game", _params, socket) do
     room_id = socket.assigns.room_id
+    game_state = socket.assigns.game_state
 
-    case Shinkanki.start_game(room_id) do
-      {:ok, _game} ->
-        # ゲーム画面に遷移
-        {:noreply, push_navigate(socket, to: ~p"/game/#{room_id}")}
+    # プレイヤーのuser_idリストを取得
+    user_ids = 
+      game_state
+      |> Map.get(:player_order, [])
+      |> Enum.map(fn player_id -> player_id end)
+
+    # DBにゲームセッションを作成
+    case Games.create_game_session_from_room(room_id, user_ids) do
+      {:ok, _game_session} ->
+        # メモリベースのゲームも起動（後方互換性のため）
+        case Shinkanki.start_game(room_id) do
+          {:ok, _game} ->
+            # ゲーム画面に遷移
+            {:noreply, push_navigate(socket, to: ~p"/game/#{room_id}")}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
+        end
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
+        {:noreply, put_flash(socket, :error, "ゲームセッション作成エラー: #{inspect(reason)}")}
     end
   end
 
   @impl true
   def handle_event("start_with_ai", _params, socket) do
     room_id = socket.assigns.room_id
+    game_state = socket.assigns.game_state
 
-    # AIプレイヤーを追加してゲーム開始
+    # プレイヤーのuser_idリストを取得
+    user_ids = 
+      game_state
+      |> Map.get(:player_order, [])
+      |> Enum.map(fn player_id -> player_id end)
+
+    # メモリベースのゲームでAIを追加して開始
     case Shinkanki.start_game_with_ai(room_id) do
       {:ok, game} ->
         ai_count = Enum.count(game.players, fn {_id, p} -> p.is_ai end)
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "AIプレイヤー#{ai_count}人を追加してゲームを開始しました")
-         |> push_navigate(to: ~p"/game/#{room_id}")}
+        # DBにゲームセッションを作成（人間プレイヤー + AI）
+        # AIプレイヤーはDBで後から追加される
+        case Games.create_game_session_from_room(room_id, user_ids) do
+          {:ok, game_session} ->
+            # AIプレイヤーを追加
+            human_players = Games.get_game_session!(game_session.id) |> Map.get(:players, [])
+            Games.fill_with_ai_players(game_session.id, human_players)
+
+            {:noreply,
+             socket
+             |> put_flash(:info, "AIプレイヤー#{ai_count}人を追加してゲームを開始しました")
+             |> push_navigate(to: ~p"/game/#{room_id}")}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "ゲームセッション作成エラー: #{inspect(reason)}")}
+        end
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}

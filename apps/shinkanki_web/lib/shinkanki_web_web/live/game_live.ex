@@ -4,98 +4,93 @@ defmodule ShinkankiWebWeb.GameLive do
   alias RogsComm.PubSub, as: CommPubSub
   alias RogsComm.Messages
   alias Shinkanki
+  alias Shinkanki.Games
 
   def mount(params, _session, socket) do
-    # Get room_id from params or generate new one
-    room_id = params["room_id"] || generate_room_id()
+    # Get room_id from params
+    room_id = params["room_id"]
 
-    # Get user info from session (from rogs_identity)
-    user_id =
-      (socket.assigns[:current_user] && socket.assigns.current_user.id) || Ecto.UUID.generate()
+    if room_id == nil do
+      {:ok,
+       socket
+       |> put_flash(:error, "ルームIDが指定されていません")
+       |> push_navigate(to: ~p"/lobby")}
+    else
+      # Get user info from session (from rogs_identity)
+      current_user = socket.assigns[:current_user]
 
-    user_email =
-      (socket.assigns[:current_user] && socket.assigns.current_user.email) || "anonymous"
+      if current_user == nil do
+        {:ok,
+         socket
+         |> put_flash(:error, "ログインしてください")
+         |> push_navigate(to: ~p"/users/log-in")}
+      else
+        user_id = current_user.id
+        user_email = current_user.email || "anonymous"
 
-    # Start game session if not exists
-    case Shinkanki.get_current_state(room_id) do
-      nil ->
-        # Game doesn't exist, start a new one
-        case Shinkanki.start_game_session(room_id) do
-          {:ok, _pid} ->
-            :ok
+        # DBからゲームセッションを取得
+        game_session = Games.get_game_session_by_room_id(room_id)
 
-          {:error, {:already_started, _pid}} ->
-            :ok
+        if game_session == nil do
+          {:ok,
+           socket
+           |> put_flash(:error, "ゲームセッションが見つかりません")
+           |> push_navigate(to: ~p"/lobby")}
+        else
+          # ゲーム状態をフォーマット
+          game_state = format_game_session(game_session, user_id)
 
-          error ->
-            # Log error but don't block mount - game might already exist
-            require Logger
-            Logger.warning("Failed to start game session: #{inspect(error)}")
+          mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state)
         end
-
-      _game ->
-        :ok
+      end
     end
+  end
 
-    # Join player to game
-    player_name = user_email || "Player #{String.slice(user_id, 0, 8)}"
-
-    case Shinkanki.join_player(room_id, user_id, player_name) do
-      {:ok, _game} ->
-        :ok
-
-      {:error, :already_joined} ->
-        :ok
-
-      {:error, :game_already_started} ->
-        :ok
-
-      error ->
-        # Log error but don't block mount - player might already be joined
-        require Logger
-        Logger.warning("Failed to join player: #{inspect(error)}")
-    end
-
-    # Get initial game state
-    game_state = Shinkanki.get_current_state(room_id) || %{}
+  defp mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state) do
+    # 現在のターン状態を取得
+    turn_state = get_current_turn_state(game_session)
+    current_phase = if turn_state, do: turn_state.phase, else: "event"
 
     socket =
       socket
-      |> assign(:game_state, format_game_state(game_state))
+      |> assign(:game_session, game_session)
+      |> assign(:game_state, game_state)
       |> assign(:room_id, room_id)
       |> assign(:user_id, user_id)
       |> assign(:user_email, user_email)
-      |> assign(:player_name, player_name)
-      |> assign(:hand_cards, get_hand_cards(game_state, user_id))
-      |> assign(:action_buttons, mock_actions())
+      |> assign(:current_user, current_user)
+      |> assign(:current_scope, nil)
+      |> assign(:player_name, user_email)
+      |> assign(:hand_cards, []) # TODO: 手札を実装
+      |> assign(:action_buttons, get_available_action_cards(game_session, turn_state))
       |> assign(:chat_form, chat_form())
       |> assign(:toasts, [])
       |> assign(:selected_card_id, nil)
-      |> assign(:current_phase, game_state.phase || :event)
-      |> assign(:current_event, format_current_event(game_state))
+      |> assign(:current_phase, current_phase)
+      |> assign(:current_event, get_current_event(game_session, turn_state))
       |> assign(:show_event_modal, false)
-      |> assign(:player_talents, get_player_talents(game_state, user_id))
+      |> assign(:player_talents, []) # TODO: タレントを実装
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
-      |> assign(:active_projects, get_active_projects(game_state))
+      |> assign(:active_projects, get_active_projects_from_session(game_session))
       |> assign(:show_project_contribute, false)
       |> assign(:project_contribute_id, nil)
       |> assign(:selected_talent_for_contribution, nil)
       |> assign(:show_action_confirm, false)
       |> assign(:confirm_card_id, nil)
-      |> assign(:show_ending, game_state.status in [:won, :lost])
-      |> assign(:game_status, game_state.status || :waiting)
-      |> assign(:ending_type, game_state.ending_type)
+      |> assign(:show_ending, game_session.status in ["completed", "failed"])
+      |> assign(:game_status, game_session.status)
+      |> assign(:ending_type, get_ending_type(game_session))
       |> assign(:show_role_selection, false)
       |> assign(:selected_role, nil)
-      |> assign(:player_role, nil)
-      |> assign(:players, get_players(game_state))
+      |> assign(:player_role, get_player_role(game_session, user_id))
+      |> assign(:players, get_players_from_session(game_session))
       |> assign(:show_demurrage, false)
       |> assign(:previous_currency, 0)
       |> assign(:show_card_detail, false)
       |> assign(:detail_card, nil)
-      |> assign(:can_start, Shinkanki.can_start?(room_id))
+      |> assign(:can_start, false) # ゲームは既に開始されている
 
     socket =
       if connected?(socket) do
@@ -103,9 +98,8 @@ defmodule ShinkankiWebWeb.GameLive do
         chat_topic = "room:#{room_id}"
         Phoenix.PubSub.subscribe(CommPubSub, chat_topic)
 
-        # Subscribe to shinkanki PubSub for game state updates
-        game_topic = "shinkanki:game:#{room_id}"
-        Phoenix.PubSub.subscribe(Shinkanki.PubSub, game_topic)
+        # Subscribe to GamePubSub for game state updates
+        Shinkanki.GamePubSub.subscribe(game_session.id)
 
         # Load initial messages from rogs_comm
         messages = load_messages(room_id)
@@ -115,6 +109,141 @@ defmodule ShinkankiWebWeb.GameLive do
       end
 
     {:ok, socket, layout: {ShinkankiWebWeb.Layouts, :game}}
+  end
+
+  # ゲームセッションをフォーマット
+  defp format_game_session(game_session, user_id) do
+    # プレイヤーのAkashaを取得（現在のユーザー）
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
+    currency = if player, do: player.akasha, else: 0
+
+    %{
+      id: game_session.id,
+      room: game_session.room_id || "UNKNOWN",
+      room_id: game_session.room_id,
+      turn: game_session.turn,
+      max_turns: 20,
+      forest: game_session.forest,
+      culture: game_session.culture,
+      social: game_session.social,
+      life_index: game_session.life_index,
+      life_index_target: 40,
+      dao_pool: game_session.dao_pool,
+      currency: currency,
+      demurrage: 0, # TODO: 減衰量を計算
+      status: game_session.status,
+      players: get_players_from_session(game_session),
+      current_user_id: user_id
+    }
+  end
+
+  # 現在のターン状態を取得
+  defp get_current_turn_state(game_session) do
+    game_session.turn_states
+    |> Enum.find(fn ts -> ts.turn_number == game_session.turn end)
+  end
+
+  # 利用可能なアクションカードを取得
+  defp get_available_action_cards(game_session, turn_state) do
+    if turn_state && turn_state.available_cards do
+      Shinkanki.Games.ActionCard
+      |> Shinkanki.Repo.all()
+      |> Enum.filter(fn card -> card.id in turn_state.available_cards end)
+      |> Enum.map(fn card ->
+        # カテゴリに応じた色を設定
+        color = case card.category do
+          "forest" -> "matsu"
+          "culture" -> "sakura"
+          "social" -> "kohaku"
+          "akasha" -> "kin"
+          _ -> "sumi"
+        end
+
+        %{
+          id: card.id,
+          name: card.name,
+          label: card.name,
+          category: card.category,
+          description: card.description,
+          cost_forest: card.cost_forest,
+          cost_culture: card.cost_culture,
+          cost_social: card.cost_social,
+          cost_akasha: card.cost_akasha,
+          color: color,
+          action: "play_action_card"
+        }
+      end)
+    else
+      []
+    end
+  end
+
+  # 現在のイベントカードを取得
+  defp get_current_event(game_session, turn_state) do
+    if turn_state && turn_state.current_event_id do
+      event = Shinkanki.Repo.get!(Shinkanki.Games.EventCard, turn_state.current_event_id)
+      %{
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        has_choice: event.has_choice,
+        choice_a_text: event.choice_a_text,
+        choice_b_text: event.choice_b_text
+      }
+    else
+      nil
+    end
+  end
+
+  # アクティブなプロジェクトを取得
+  defp get_active_projects_from_session(game_session) do
+    game_session.game_projects
+    |> Enum.filter(fn project -> project.status == "active" end)
+    |> Enum.map(fn project ->
+      template = project.project_template
+      %{
+        id: project.id,
+        name: template.name,
+        description: template.description,
+        progress: project.current_progress || 0,
+        required_participants: template.required_participants,
+        required_turns: template.required_turns,
+        required_dao_pool: template.required_dao_pool
+      }
+    end)
+  end
+
+  # エンディングタイプを取得
+  defp get_ending_type(game_session) do
+    if game_session.status == "completed" do
+      Shinkanki.Games.GameSession.get_ending(game_session)
+    else
+      nil
+    end
+  end
+
+  # プレイヤーの役割を取得
+  defp get_player_role(game_session, user_id) do
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
+    if player, do: player.role, else: nil
+  end
+
+  # プレイヤーリストを取得
+  defp get_players_from_session(game_session) do
+    game_session.players
+    |> Enum.sort_by(& &1.player_order)
+    |> Enum.map(fn player ->
+      %{
+        id: player.id,
+        user_id: player.user_id,
+        name: if(player.is_ai, do: player.ai_name, else: "Player"),
+        avatar: "🎮",
+        role: player.role,
+        akasha: player.akasha,
+        is_ai: player.is_ai,
+        is_ready: player.is_ready || false
+      }
+    end)
   end
 
   def render(assigns) do
@@ -151,17 +280,18 @@ defmodule ShinkankiWebWeb.GameLive do
             <div class="hud-section-title" aria-label="ルーム名">Room</div>
             <div
               class="text-2xl font-bold tracking-[0.45em] text-[var(--color-landing-gold)] drop-shadow"
-              aria-label={"ルーム: #{@game_state.room}"}
+              aria-label={"ルーム: #{@game_state[:room_id] || @game_state.room_id || "UNKNOWN"}"}
             >
-              {@game_state.room}
+              {@game_state[:room_id] || @game_state.room_id || "UNKNOWN"}
             </div>
             <div class="hud-panel-divider" aria-hidden="true"></div>
             <div class="w-full space-y-3">
-              <% remaining_turns = max(0, @game_state.max_turns - @game_state.turn)
-              progress_percentage = trunc(@game_state.turn / @game_state.max_turns * 100)
+              <% max_turns = 20
+              remaining_turns = max(0, max_turns - (@game_state[:turn] || @game_state.turn || 1))
+              progress_percentage = trunc((@game_state[:turn] || @game_state.turn || 1) / max_turns * 100)
               is_warning = remaining_turns <= 5
               is_critical = remaining_turns <= 3
-              demurrage_value = @game_state.demurrage || 0 %>
+              demurrage_value = 0 %>
               <div class="flex justify-between items-baseline text-[var(--color-landing-text-secondary)]">
                 <span class="text-xs uppercase tracking-[0.3em]" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
                   Turn {@game_state.turn} / {@game_state.max_turns}
@@ -243,7 +373,7 @@ defmodule ShinkankiWebWeb.GameLive do
             <div class="hud-info-grid mt-4 text-left">
               <div class="hud-info-card">
                 <span class="hud-info-card-label">AKASHA</span>
-                <span class="hud-info-card-value">{@game_state.currency || 0}</span>
+                <span class="hud-info-card-value">{@game_state[:currency] || @game_state.currency || 0}</span>
                 <span class="hud-info-card-subtle">空環ポイント</span>
               </div>
               <div class="hud-info-card">
@@ -511,7 +641,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     </div>
                     <div class="project-metric">
                       <span class="metric-label">AKASHA φ</span>
-                      <span class="metric-value">{@game_state.currency}</span>
+                      <span class="metric-value">{@game_state[:currency] || @game_state.currency || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -580,19 +710,19 @@ defmodule ShinkankiWebWeb.GameLive do
                   <div
                     class="gauge-track"
                     role="progressbar"
-                    aria-valuenow={@game_state.culture}
+                    aria-valuenow={@game_state[:culture] || @game_state.culture || 0}
                     aria-valuemin="0"
                     aria-valuemax="20"
-                    aria-label={"Culture: #{@game_state.culture}"}
+                    aria-label={"Culture: #{@game_state[:culture] || @game_state.culture || 0}"}
                   >
                     <div
                       id="culture-gauge-bar"
                       class="gauge-fill bg-sakura"
-                      style={"width: #{gauge_width(@game_state.culture)}%"}
+                      style={"width: #{gauge_width(@game_state[:culture] || @game_state.culture || 0)}%"}
                       phx-update="ignore"
                     >
                     </div>
-                    <span class="gauge-value">{@game_state.culture}</span>
+                    <span class="gauge-value">{@game_state[:culture] || @game_state.culture || 0}</span>
                   </div>
                 </div>
 
@@ -603,19 +733,19 @@ defmodule ShinkankiWebWeb.GameLive do
                   <div
                     class="gauge-track"
                     role="progressbar"
-                    aria-valuenow={@game_state.social}
+                    aria-valuenow={@game_state[:social] || @game_state.social || 0}
                     aria-valuemin="0"
                     aria-valuemax="20"
-                    aria-label={"Social: #{@game_state.social}"}
+                    aria-label={"Social: #{@game_state[:social] || @game_state.social || 0}"}
                   >
                     <div
                       id="social-gauge-bar"
                       class="gauge-fill bg-kohaku"
-                      style={"width: #{gauge_width(@game_state.social)}%"}
+                      style={"width: #{gauge_width(@game_state[:social] || @game_state.social || 0)}%"}
                       phx-update="ignore"
                     >
                     </div>
-                    <span class="gauge-value">{@game_state.social}</span>
+                    <span class="gauge-value">{@game_state[:social] || @game_state.social || 0}</span>
                   </div>
                 </div>
               </div>
@@ -628,7 +758,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   role="meter"
                   aria-valuenow={life_index(@game_state)}
                   aria-valuemin="0"
-                  aria-valuemax={@game_state.life_index_target}
+                  aria-valuemax={@game_state[:life_index_target] || @game_state.life_index_target || 40}
                 >
                   <svg class="life-index-svg" viewBox="0 0 120 120" aria-hidden="true">
                     <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="6" />
@@ -641,7 +771,7 @@ defmodule ShinkankiWebWeb.GameLive do
                       stroke-width="6"
                       stroke-dasharray={2 * :math.pi() * 52}
                       stroke-dashoffset={
-                        2 * :math.pi() * 52 * (1 - min(life_index(@game_state) / @game_state.life_index_target, 1.0))
+                        2 * :math.pi() * 52 * (1 - min(life_index(@game_state) / (@game_state[:life_index_target] || @game_state.life_index_target || 40), 1.0))
                       }
                       stroke-linecap="round"
                       class="life-index-progress"
@@ -650,7 +780,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   <div class="life-index-content">
                     <div class="life-index-label">L</div>
                     <div class="life-index-value">{life_index(@game_state)}</div>
-                    <div class="life-index-target">/ {@game_state.life_index_target}</div>
+                    <div class="life-index-target">/ {@game_state[:life_index_target] || @game_state.life_index_target || 40}</div>
                   </div>
                 </div>
               </div>
@@ -665,12 +795,12 @@ defmodule ShinkankiWebWeb.GameLive do
                 <div class="actions-buttons">
                   <.hanko_btn
                     :for={button <- @action_buttons}
-                    label={button.label}
-                    color={button.color}
+                    label={button[:label] || button.label || button[:name] || button.name}
+                    color={button[:color] || button.color || "sumi"}
                     class="action-hanko"
-                    aria-label={button.label <> "を実行"}
-                    phx-click="execute_action"
-                    phx-value-action={button.action || button.label}
+                    aria-label={(button[:label] || button.label || button[:name] || button.name) <> "を実行"}
+                    phx-click="play_action_card"
+                    phx-value-card_id={button[:id] || button.id}
                   />
                 </div>
               </div>
@@ -715,7 +845,7 @@ defmodule ShinkankiWebWeb.GameLive do
                         do: "ring-4 ring-shu/50 border-shu scale-105",
                         else: ""
                       ),
-                      if(@game_state.currency < card.cost,
+                      if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
                         do: "opacity-50 cursor-not-allowed",
                         else: "cursor-pointer"
                       )
@@ -740,7 +870,7 @@ defmodule ShinkankiWebWeb.GameLive do
                         do: "ring-4 ring-shu/50 border-shu scale-105",
                         else: ""
                       ),
-                      if(@game_state.currency < card.cost,
+                      if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
                         do: "opacity-50 cursor-not-allowed",
                         else: "cursor-pointer"
                       )
@@ -748,7 +878,7 @@ defmodule ShinkankiWebWeb.GameLive do
                     |> Enum.filter(&(&1 != ""))
                     |> Enum.join(" ")
                   }
-                  aria-disabled={@game_state.currency < card.cost}
+                  aria-disabled={(@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha}
                 />
               <% end %>
             </div>
@@ -821,12 +951,12 @@ defmodule ShinkankiWebWeb.GameLive do
       show={@show_action_confirm}
       card={get_card_by_id(@confirm_card_id, assigns)}
       talent_cards={get_card_talents(@confirm_card_id, assigns)}
-      current_currency={@game_state.currency}
+      current_currency={@game_state[:currency] || @game_state.currency || 0}
       current_params={
         %{
-          forest: @game_state.forest,
-          culture: @game_state.culture,
-          social: @game_state.social,
+          forest: @game_state[:forest] || @game_state.forest || 0,
+          culture: @game_state[:culture] || @game_state.culture || 0,
+          social: @game_state[:social] || @game_state.social || 0,
           currency: @game_state.currency
         }
       }
@@ -852,12 +982,12 @@ defmodule ShinkankiWebWeb.GameLive do
     <.card_detail_modal
       show={@show_card_detail}
       card={@detail_card}
-      current_currency={@game_state.currency}
+      current_currency={@game_state[:currency] || @game_state.currency || 0}
       current_params={
         %{
-          forest: @game_state.forest,
-          culture: @game_state.culture,
-          social: @game_state.social,
+          forest: @game_state[:forest] || @game_state.forest || 0,
+          culture: @game_state[:culture] || @game_state.culture || 0,
+          social: @game_state[:social] || @game_state.social || 0,
           currency: @game_state.currency
         }
       }
@@ -869,7 +999,7 @@ defmodule ShinkankiWebWeb.GameLive do
       show={@show_demurrage}
       previous_currency={@previous_currency}
       current_currency={@game_state.currency}
-      demurrage_amount={@game_state.demurrage || 0}
+      demurrage_amount={@game_state[:demurrage] || @game_state.demurrage || 0}
       id="demurrage-modal"
     />
 
@@ -1017,92 +1147,88 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_event("confirm_action", _params, socket) do
     card_id = socket.assigns.confirm_card_id
-    card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
-    room_id = socket.assigns.room_id
+    game_session = socket.assigns.game_session
     user_id = socket.assigns.user_id
 
-    if card && socket.assigns.game_state.currency >= card.cost do
-      # Get talent cards for this card
-      talent_ids = socket.assigns.selected_talents_for_card
-      card_id_atom = convert_to_atom(card_id)
+    if card_id do
+      # プレイヤーを取得
+      player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
-      case Shinkanki.play_action(room_id, user_id, card_id_atom, talent_ids) do
-        {:ok, _game} ->
-          toast_id = "toast-#{System.unique_integer([:positive])}"
+      if player do
+        # アクションカードを取得
+        action_card = Shinkanki.Repo.get!(Shinkanki.Games.ActionCard, card_id)
 
-          new_toast = %{
-            id: toast_id,
-            kind: :success,
-            message: "カード「#{card.title}」を使用しました。"
-          }
+        # アクションカードを実行
+        case Games.execute_action_card(player, action_card, game_session) do
+          {:ok, updated_session} ->
+            # ゲーム状態を更新
+            Shinkanki.GamePubSub.broadcast_state_update(game_session.id, updated_session)
 
-          socket =
-            socket
-            |> assign(:selected_card_id, nil)
-            |> assign(:show_action_confirm, false)
-            |> assign(:confirm_card_id, nil)
-            |> assign(:selected_talents_for_card, [])
-            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+            toast_id = "toast-#{System.unique_integer([:positive])}"
 
-          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+            new_toast = %{
+              id: toast_id,
+              kind: :success,
+              message: "カード「#{action_card.name}」を使用しました。"
+            }
 
-          {:noreply, socket}
+            socket =
+              socket
+              |> assign(:selected_card_id, nil)
+              |> assign(:show_action_confirm, false)
+              |> assign(:confirm_card_id, nil)
+              |> assign(:selected_talents_for_card, [])
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
-        {:error, :not_your_turn} ->
-          toast_id = "toast-#{System.unique_integer([:positive])}"
+            Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
-          new_toast = %{
-            id: toast_id,
-            kind: :error,
-            message: "まだあなたのターンではありません。"
-          }
+            {:noreply, socket}
 
-          socket =
-            socket
-            |> assign(:show_action_confirm, false)
-            |> assign(:confirm_card_id, nil)
-            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+          {:error, :insufficient_resources} ->
+            toast_id = "toast-#{System.unique_integer([:positive])}"
 
-          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+            new_toast = %{
+              id: toast_id,
+              kind: :error,
+              message: "リソースが不足しています。"
+            }
 
-          {:noreply, socket}
+            socket =
+              socket
+              |> assign(:show_action_confirm, false)
+              |> assign(:confirm_card_id, nil)
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
-        {:error, reason} ->
-          toast_id = "toast-#{System.unique_integer([:positive])}"
+            Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
-          new_toast = %{
-            id: toast_id,
-            kind: :error,
-            message: "カードの使用に失敗しました: #{inspect(reason)}"
-          }
+            {:noreply, socket}
 
-          socket =
-            socket
-            |> assign(:show_action_confirm, false)
-            |> assign(:confirm_card_id, nil)
-            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+          error ->
+            require Logger
+            Logger.error("Failed to execute action card: #{inspect(error)}")
 
-          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+            toast_id = "toast-#{System.unique_integer([:positive])}"
 
-          {:noreply, socket}
+            new_toast = %{
+              id: toast_id,
+              kind: :error,
+              message: "アクションの実行に失敗しました。"
+            }
+
+            socket =
+              socket
+              |> assign(:show_action_confirm, false)
+              |> assign(:confirm_card_id, nil)
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+            Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+            {:noreply, socket}
+        end
+      else
+        {:noreply, socket}
       end
     else
-      toast_id = "toast-#{System.unique_integer([:positive])}"
-
-      new_toast = %{
-        id: toast_id,
-        kind: :error,
-        message: "空環が不足しています。"
-      }
-
-      socket =
-        socket
-        |> assign(:show_action_confirm, false)
-        |> assign(:confirm_card_id, nil)
-        |> update(:toasts, fn toasts -> [new_toast | toasts] end)
-
-      Process.send_after(self(), {:remove_toast, toast_id}, 3000)
-
       {:noreply, socket}
     end
   end
@@ -1318,25 +1444,111 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:previous_currency, previous)}
   end
 
-  def handle_event("execute_action", %{"action" => action}, socket) do
-    # TODO: Implement actual action logic when backend is ready
-    toast_id = "toast-#{System.unique_integer([:positive])}"
+  # アクションカードを実行
+  def handle_event("play_action_card", %{"card_id" => card_id}, socket) do
+    game_session = socket.assigns.game_session
+    user_id = socket.assigns.user_id
 
-    new_toast = %{
-      id: toast_id,
-      kind: :info,
-      message: "アクション「#{action}」を実行しました。"
-    }
+    # プレイヤーを取得
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
-    socket =
-      socket
-      |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+    if player do
+      # アクションカードを取得
+      action_card = Shinkanki.Repo.get!(Shinkanki.Games.ActionCard, card_id)
 
-    # Auto-remove toast after 3 seconds
-    Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+      # アクションカードを実行
+      case Games.execute_action_card(player, action_card, game_session) do
+        {:ok, updated_session} ->
+          # ゲーム状態を更新（既にGamePubSubでブロードキャストされている）
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+          new_toast = %{
+            id: toast_id,
+            kind: :success,
+            message: "「#{action_card.name}」を実行しました。"
+          }
 
-    {:noreply, socket}
+          socket =
+            socket
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+
+        {:error, :insufficient_resources} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "リソースが不足しています。"
+          }
+
+          socket =
+            socket
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+
+        error ->
+          require Logger
+          Logger.error("Failed to execute action card: #{inspect(error)}")
+
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "アクションの実行に失敗しました。"
+          }
+
+          socket =
+            socket
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
   end
+
+  def handle_event("execute_action", %{"action" => action}, socket) do
+    case action do
+      "play_card" ->
+        # カードをプレイする処理（既存の実装を使用）
+        {:noreply, socket}
+
+      "mark_discussion_ready" ->
+        # 討論フェーズで準備完了
+        {:noreply, socket}
+
+      "start_game" ->
+        # ゲーム開始（待機ルームで処理済み）
+        {:noreply, socket}
+
+      _ ->
+        # その他のアクション
+        toast_id = "toast-#{System.unique_integer([:positive])}"
+
+        new_toast = %{
+          id: toast_id,
+          kind: :info,
+          message: "アクション「#{action}」を実行しました。"
+        }
+
+        socket =
+          socket
+          |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+        Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+        {:noreply, socket}
+    end
+  end
+
 
   # Info handlers
   def handle_info(%Phoenix.Socket.Broadcast{event: "new_message", payload: payload}, socket) do
@@ -1350,11 +1562,68 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, stream(socket, :chat_messages, [message])}
   end
 
+  # GamePubSubからの更新を受け取る
+  def handle_info({:game_state_updated, game_session}, socket) do
+    # DBから最新のゲームセッションを取得
+    updated_session = Games.get_game_session!(game_session.id)
+    game_state = format_game_session(updated_session, socket.assigns.user_id)
+    turn_state = get_current_turn_state(updated_session)
+    current_phase = if turn_state, do: turn_state.phase, else: "event"
+
+    # プレイヤーのAkashaを更新
+    player = Enum.find(updated_session.players, fn p -> p.user_id == socket.assigns.user_id end)
+    currency = if player, do: player.akasha, else: 0
+
+    socket =
+      socket
+      |> assign(:game_session, updated_session)
+      |> assign(:game_state, Map.put(game_state, :currency, currency))
+      |> assign(:current_phase, current_phase)
+      |> assign(:current_event, get_current_event(updated_session, turn_state))
+      |> assign(:action_buttons, get_available_action_cards(updated_session, turn_state))
+      |> assign(:active_projects, get_active_projects_from_session(updated_session))
+      |> assign(:players, get_players_from_session(updated_session))
+      |> assign(:player_role, get_player_role(updated_session, socket.assigns.user_id))
+      |> assign(:show_ending, updated_session.status in ["completed", "failed"])
+      |> assign(:game_status, updated_session.status)
+      |> assign(:ending_type, get_ending_type(updated_session))
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:phase_changed, %{phase: new_phase}}, socket) do
+    {:noreply, assign(socket, :current_phase, new_phase)}
+  end
+
+  def handle_info({:turn_started, %{turn: turn_number, event_card: event_card}}, socket) do
+    # ターン開始時の処理
+    {:noreply, socket}
+  end
+
+  def handle_info({:player_action, %{player_id: player_id, action: action}}, socket) do
+    # プレイヤーアクションの処理
+    {:noreply, socket}
+  end
+
+  def handle_info({:project_completed, project}, socket) do
+    # プロジェクト完成の処理
+    {:noreply, socket}
+  end
+
+  def handle_info({:game_ended, result}, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_ending, true)
+     |> assign(:game_status, "completed")
+     |> assign(:ending_type, result)}
+  end
+
+  # 旧形式のメッセージ（後方互換性のため）
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
     # Update game state when broadcast from GameServer
     new_status = game.status || :waiting
     new_phase = game.phase || :event
-    previous_currency = socket.assigns.game_state.currency || 0
+    previous_currency = socket.assigns.game_state[:currency] || 0
 
     # Show demurrage modal when entering demurrage phase
     entering_demurrage = new_phase == :demurrage && socket.assigns.current_phase != :demurrage
@@ -1392,7 +1661,12 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_info(_msg, socket), do: {:noreply, socket}
 
-  defp life_index(state), do: state.forest + state.culture + state.social
+  defp life_index(state) do
+    forest = state[:forest] || state.forest || 0
+    culture = state[:culture] || state.culture || 0
+    social = state[:social] || state.social || 0
+    forest + culture + social
+  end
 
   defp gauge_width(value, max \\ 20) do
     value

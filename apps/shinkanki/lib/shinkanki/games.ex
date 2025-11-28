@@ -5,6 +5,7 @@ defmodule Shinkanki.Games do
 
   import Ecto.Query, warn: false
   alias Shinkanki.Repo
+  alias Shinkanki.GamePubSub
 
   alias Shinkanki.Games.{
     GameSession,
@@ -43,6 +44,43 @@ defmodule Shinkanki.Games do
     %GameSession{}
     |> GameSession.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  ルームIDとユーザーIDリストからゲームセッションを作成し、プレイヤーも作成
+  """
+  def create_game_session_from_room(room_id, user_ids) do
+    Repo.transaction(fn ->
+      # ゲームセッションを作成（room_idを含める）
+      {:ok, game_session} = create_game_session(%{room_id: room_id})
+      
+      # プレイヤーを作成
+      _players = create_players(game_session.id, user_ids)
+      
+      # 初期プロジェクトをセットアップ
+      setup_initial_projects(game_session)
+      
+      # 最初のターンを開始
+      {:ok, _turn_state} = start_new_turn(game_session)
+      
+      # ゲームセッションを再取得（関連データをpreload）
+      get_game_session!(game_session.id)
+    end)
+  end
+
+  @doc """
+  ルームIDからゲームセッションを取得
+  """
+  def get_game_session_by_room_id(room_id) do
+    GameSession
+    |> where([gs], gs.room_id == ^room_id)
+    |> order_by([gs], desc: gs.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      game_session -> get_game_session!(game_session.id)
+    end
   end
 
   @doc """
@@ -92,7 +130,6 @@ defmodule Shinkanki.Games do
   """
   def create_players(game_session_id, user_ids \\ []) do
     roles = ["forest_guardian", "heritage_weaver", "community_keeper", "akasha_architect"]
-    user_count = length(user_ids)
 
     Enum.with_index(user_ids, 1)
     |> Enum.map(fn {user_id, index} ->
@@ -344,10 +381,29 @@ defmodule Shinkanki.Games do
           social: new_social - card.cost_social
         })
 
-      # アクション履歴記録
-      record_action(game_session, player, card, "play_card")
+      # 生命指数を更新
+      {:ok, updated_session} = update_life_index(updated_session)
 
-      {:ok, updated_session}
+      # アクション履歴記録
+      record_action(updated_session, player, card, "play_card")
+
+      # ゲーム終了チェック
+      case check_game_end(updated_session) do
+        {:immediate_loss, reason} ->
+          {:ok, final_session} = update_game_session(updated_session, %{status: "failed"})
+          GamePubSub.broadcast_game_end(final_session.id, reason)
+          {:ok, final_session}
+
+        {:completed, ending} ->
+          {:ok, final_session} = update_game_session(updated_session, %{status: "completed"})
+          GamePubSub.broadcast_game_end(final_session.id, ending)
+          {:ok, final_session}
+
+        {:continue, _} ->
+          # 状態更新をブロードキャスト
+          GamePubSub.broadcast_state_update(updated_session.id, updated_session)
+          {:ok, updated_session}
+      end
     else
       {:error, :insufficient_resources}
     end

@@ -100,24 +100,30 @@ defmodule ShinkankiWebWeb.CoreComponents do
       nil => ["btn", "btn-primary", "btn-soft"]
     }
 
+    # Extract accessibility attributes
+    aria_label = rest[:aria_label] || rest[:"aria-label"]
+    aria_label_attr = if aria_label, do: [{"aria-label", aria_label}], else: []
+    button_type = rest[:type] || "button"
+    is_link = rest[:href] || rest[:navigate] || rest[:patch]
+
     assigns =
-      assign_new(assigns, :class, fn ->
+      assigns
+      |> assign_new(:class, fn ->
         variants
         |> Map.fetch!(assigns[:variant])
         |> List.wrap()
       end)
+      |> assign(:aria_label_attr, aria_label_attr)
+      |> assign(:button_type, button_type)
+      |> assign(:is_link, is_link)
 
-    # Extract accessibility attributes
-    aria_label = rest[:aria_label] || rest[:"aria-label"]
-    aria_label_attr = if aria_label, do: [{"aria-label", aria_label}], else: []
-
-    if rest[:href] || rest[:navigate] || rest[:patch] do
+    if is_link do
       ~H"""
       <.link
         class={@class |> List.wrap()}
         role="button"
         tabindex="0"
-        {aria_label_attr}
+        {@aria_label_attr}
         {@rest}
       >
         {render_slot(@inner_block)}
@@ -127,8 +133,8 @@ defmodule ShinkankiWebWeb.CoreComponents do
       ~H"""
       <button
         class={@class |> List.wrap()}
-        type={rest[:type] || "button"}
-        {aria_label_attr}
+        type={@button_type}
+        {@aria_label_attr}
         {@rest}
       >
         {render_slot(@inner_block)}
@@ -201,16 +207,19 @@ defmodule ShinkankiWebWeb.CoreComponents do
   end
 
   def input(%{type: "checkbox"} = assigns) do
-    assigns =
-      assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
-      end)
-
     error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
     aria_attrs = [
       if(error_id, do: {"aria-describedby", error_id}, else: nil),
       if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil)
     ] |> Enum.reject(&is_nil/1)
+
+    assigns =
+      assigns
+      |> assign_new(:checked, fn ->
+        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+      end)
+      |> assign(:error_id, error_id)
+      |> assign(:aria_attrs, aria_attrs)
 
     ~H"""
     <div class="fieldset mb-2">
@@ -224,12 +233,12 @@ defmodule ShinkankiWebWeb.CoreComponents do
             value="true"
             checked={@checked}
             class={checkbox_class(assigns)}
-            {aria_attrs}
+            {@aria_attrs}
             {@rest}
           />{@label}
         </span>
       </label>
-      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
+      <.error :for={msg <- @errors} id={@error_id}>{msg}</.error>
     </div>
     """
   end
@@ -239,8 +248,13 @@ defmodule ShinkankiWebWeb.CoreComponents do
     aria_attrs = [
       if(error_id, do: {"aria-describedby", error_id}, else: nil),
       if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(@label, do: {"aria-label", @label}, else: nil)
+      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
     ] |> Enum.reject(&is_nil/1)
+
+    assigns =
+      assigns
+      |> assign(:error_id, error_id)
+      |> assign(:aria_attrs, aria_attrs)
 
     ~H"""
     <div class="fieldset mb-2">
@@ -255,14 +269,14 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> maybe_add_error_class(assigns, "select-error")
           }
           multiple={@multiple}
-          {aria_attrs}
+          {@aria_attrs}
           {@rest}
         >
           <option :if={@prompt} value="">{@prompt}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
+      <.error :for={msg <- @errors} id={@error_id}>{msg}</.error>
     </div>
     """
   end
@@ -272,8 +286,13 @@ defmodule ShinkankiWebWeb.CoreComponents do
     aria_attrs = [
       if(error_id, do: {"aria-describedby", error_id}, else: nil),
       if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(@label, do: {"aria-label", @label}, else: nil)
+      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
     ] |> Enum.reject(&is_nil/1)
+
+    assigns =
+      assigns
+      |> assign(:error_id, error_id)
+      |> assign(:aria_attrs, aria_attrs)
 
     ~H"""
     <div class="fieldset mb-2">
@@ -287,11 +306,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> List.wrap()
             |> maybe_add_error_class(assigns, "textarea-error")
           }
-          {aria_attrs}
+          {@aria_attrs}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
+      <.error :for={msg <- @errors} id={@error_id}>{msg}</.error>
     </div>
     """
   end
@@ -302,8 +321,13 @@ defmodule ShinkankiWebWeb.CoreComponents do
     aria_attrs = [
       if(error_id, do: {"aria-describedby", error_id}, else: nil),
       if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(assigns.label, do: {"aria-label", assigns.label}, else: nil)
+      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
     ] |> Enum.reject(&is_nil/1)
+
+    assigns =
+      assigns
+      |> assign(:error_id, error_id)
+      |> assign(:aria_attrs, aria_attrs)
 
     ~H"""
     <div class="fieldset mb-2">
@@ -319,11 +343,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
             |> List.wrap()
             |> maybe_add_error_class(assigns, "input-error")
           }
-          {aria_attrs}
+          {@aria_attrs}
           {@rest}
         />
       </label>
-      <.error :for={msg <- @errors} id={error_id}>{msg}</.error>
+      <.error :for={msg <- @errors} id={@error_id}>{msg}</.error>
     </div>
     """
   end
@@ -701,21 +725,25 @@ defmodule ShinkankiWebWeb.CoreComponents do
       )
     ]
 
+    text_class = [
+      "text-sm",
+      if(assigns.variant == "trds",
+        do: "text-trds-text-secondary",
+        else: "text-base-content/70"
+      )
+    ]
+
+    assigns =
+      assigns
+      |> assign(:spinner_class, spinner_class)
+      |> assign(:text_class, text_class)
+
     ~H"""
     <div class="flex flex-col items-center justify-center gap-2" {@rest}>
-      <div class={spinner_class} role="status" aria-label="読み込み中">
+      <div class={@spinner_class} role="status" aria-label="読み込み中">
         <span class="sr-only">読み込み中</span>
       </div>
-      <p
-        :if={@text}
-        class={[
-          "text-sm",
-          if(assigns.variant == "trds",
-            do: "text-trds-text-secondary",
-            else: "text-base-content/70"
-          )
-        ]}
-      >
+      <p :if={@text} class={@text_class}>
         {@text}
       </p>
     </div>

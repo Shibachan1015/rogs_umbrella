@@ -38,6 +38,20 @@ const ChatScroll = {
   }
 }
 
+// Message scroll hook for DM page
+const MessageScroll = {
+  mounted() {
+    this.scrollToBottom()
+  },
+  updated() {
+    this.scrollToBottom()
+  },
+  scrollToBottom() {
+    const container = this.el
+    container.scrollTop = container.scrollHeight
+  }
+}
+
 // Toast auto-remove hook
 const ToastAutoRemove = {
   mounted() {
@@ -218,7 +232,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {ChatScroll, ToastAutoRemove, ChatInput, AmbientAudio},
+  hooks: {ChatScroll, MessageScroll, ToastAutoRemove, ChatInput, AmbientAudio},
 })
 
 // Show progress bar on live navigation and form submits

@@ -51,4 +51,3 @@ defmodule RogsIdentity.Friends.Friendship do
     end
   end
 end
-

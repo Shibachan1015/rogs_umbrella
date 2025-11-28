@@ -48,6 +48,10 @@ defmodule ShinkankiWebWeb.Router do
 
       # フレンドリスト
       live "/friends", UserLive.Friends
+
+      # ダイレクトメッセージ
+      live "/messages", UserLive.Messages
+      live "/messages/:user_id", UserLive.Messages
     end
   end
 

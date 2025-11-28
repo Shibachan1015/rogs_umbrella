@@ -12,6 +12,8 @@ defmodule RogsIdentity.Application do
       RogsIdentity.Repo,
       {DNSCluster, query: Application.get_env(:rogs_identity, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RogsIdentity.PubSub},
+      # Presence tracking for online status
+      RogsIdentity.Presence,
       # Start a worker by calling: RogsIdentity.Worker.start_link(arg)
       # {RogsIdentity.Worker, arg},
       # Start to serve requests, typically the last entry

@@ -318,4 +318,3 @@ defmodule RogsIdentity.Friends do
     |> Repo.aggregate(:count, :id)
   end
 end
-

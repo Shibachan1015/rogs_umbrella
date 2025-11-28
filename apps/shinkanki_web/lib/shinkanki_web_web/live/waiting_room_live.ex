@@ -13,6 +13,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   alias RogsComm.PubSub, as: CommPubSub
   alias RogsIdentity.Accounts.User
   alias RogsIdentity.Friends
+  alias RogsIdentity.Messages, as: UserMessages
+  alias RogsIdentity.Presence
   alias Shinkanki
 
   @impl true
@@ -106,6 +108,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       |> assign(:deletion_votes, room.deletion_votes || [])
       |> assign(:has_voted, user_id in (room.deletion_votes || []))
       |> assign(:is_admin, RogsIdentity.Accounts.admin?(current_user))
+      |> assign(:show_invite_panel, false)
+      |> assign(:online_friends, [])
 
     socket =
       if connected?(socket) do
@@ -116,9 +120,24 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
         game_topic = "shinkanki:game:#{room_id}"
         Phoenix.PubSub.subscribe(Shinkanki.PubSub, game_topic)
 
+        # Presenceをトラック
+        Presence.track_user(current_user)
+
+        # オンラインフレンドを取得
+        friends = Friends.list_friends(user_id)
+        friend_ids = Enum.map(friends, & &1.id)
+        online_friend_ids = Presence.online_friend_ids(friend_ids)
+
+        online_friends =
+          friends
+          |> Enum.filter(&(&1.id in online_friend_ids))
+
         # メッセージ読み込み
         messages = load_messages(room_id)
-        stream(socket, :chat_messages, messages, reset: true)
+
+        socket
+        |> assign(:online_friends, online_friends)
+        |> stream(:chat_messages, messages, reset: true)
       else
         stream(socket, :chat_messages, [], reset: true)
       end
@@ -167,6 +186,39 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 </div>
               <% end %>
             </div>
+
+            <%!-- フレンド招待ボタン --%>
+            <%= if length(@online_friends) > 0 do %>
+              <div class="invite-section">
+                <button
+                  type="button"
+                  class="invite-friends-btn"
+                  phx-click="toggle_invite_panel"
+                >
+                  📨 フレンドを招待（{length(@online_friends)}人オンライン）
+                </button>
+
+                <%= if @show_invite_panel do %>
+                  <div class="invite-panel">
+                    <%= for friend <- @online_friends do %>
+                      <div class="invite-friend-item">
+                        <span class="invite-avatar">{friend.avatar || "🎮"}</span>
+                        <span class="invite-name">{friend.name}</span>
+                        <button
+                          type="button"
+                          class="invite-btn"
+                          phx-click="invite_friend"
+                          phx-value-id={friend.id}
+                          phx-value-name={friend.name}
+                        >
+                          招待
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
 
             <div class="ready-section">
               <%= if @is_ready do %>
@@ -623,6 +675,31 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "申請できませんでした")}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_invite_panel", _params, socket) do
+    {:noreply, assign(socket, :show_invite_panel, !socket.assigns.show_invite_panel)}
+  end
+
+  @impl true
+  def handle_event("invite_friend", %{"id" => friend_id, "name" => name}, socket) do
+    user_id = socket.assigns.user_id
+    room = socket.assigns.room
+
+    case UserMessages.invite_to_room(user_id, friend_id, room) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "#{name} を招待しました")
+         |> assign(:show_invite_panel, false)}
+
+      {:error, :not_friends} ->
+        {:noreply, put_flash(socket, :error, "フレンドでないと招待できません")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "招待できませんでした")}
     end
   end
 

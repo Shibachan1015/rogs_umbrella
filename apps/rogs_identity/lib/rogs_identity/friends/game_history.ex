@@ -30,4 +30,3 @@ defmodule RogsIdentity.Friends.GameHistory do
     |> validate_required([:user_id, :played_with_id, :room_id, :played_at])
   end
 end
-

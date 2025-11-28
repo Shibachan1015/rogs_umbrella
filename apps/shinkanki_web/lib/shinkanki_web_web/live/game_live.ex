@@ -1789,29 +1789,12 @@ defmodule ShinkankiWebWeb.GameLive do
   def format_time(str) when is_binary(str), do: str
   def format_time(_), do: ""
 
-  defp circumference, do: 2 * :math.pi() * 90
-
-  defp circumference_offset(current, target) when target > 0 do
-    progress = min(current / target, 1.0)
-    circumference() * (1 - progress)
-  end
-
-  defp circumference_offset(_, _), do: circumference()
-
   defp mock_hand_cards do
     [
       %{id: "c1", title: "植林", type: :action, cost: 3},
       %{id: "c2", title: "祭事", type: :event, cost: 5},
       %{id: "c3", title: "交流", type: :reaction, cost: 2},
       %{id: "c4", title: "開発", type: :action, cost: 8}
-    ]
-  end
-
-  defp mock_actions do
-    [
-      %{label: "投資", color: "shu", action: "invest"},
-      %{label: "伐採", color: "matsu", action: "harvest"},
-      %{label: "寄付", color: "sumi", action: "donate"}
     ]
   end
 
@@ -1917,78 +1900,6 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_role_name(:akasha_engineer), do: "空環エンジニア"
   defp get_role_name(_), do: "不明"
 
-  defp mock_players do
-    [
-      %{
-        id: "player-1",
-        name: "プレイヤー1",
-        role: :forest_guardian,
-        is_ready: true
-      },
-      %{
-        id: "player-2",
-        name: "プレイヤー2",
-        role: :culture_keeper,
-        is_ready: false
-      },
-      %{
-        id: "player-3",
-        name: "プレイヤー3",
-        role: :community_light,
-        is_ready: true
-      }
-    ]
-  end
-
-  defp mock_game_history do
-    [
-      %{
-        turn: 8,
-        time: "14:30",
-        message: "プレイヤー1が「植林」カードを使用しました。F +5"
-      },
-      %{
-        turn: 8,
-        time: "14:28",
-        message: "イベント「神々の加護」が発生しました。F +2, K +2, S +1"
-      },
-      %{
-        turn: 7,
-        time: "14:25",
-        message: "減衰フェーズ: 空環ポイントが10%減衰しました"
-      },
-      %{
-        turn: 7,
-        time: "14:20",
-        message: "プレイヤー2が「祭事」カードを使用しました。K +5, S +3"
-      },
-      %{
-        turn: 6,
-        time: "14:15",
-        message: "プロジェクト「森の祝祭」に才能カードが捧げられました"
-      }
-    ]
-  end
-
-  defp get_players(nil), do: mock_players()
-
-  defp get_players(%{players: players} = _game) when is_map(players) do
-    Enum.map(players, fn {user_id, player} ->
-      %{
-        id: user_id,
-        name: player.name || "Player",
-        role: Map.get(player, :role),
-        is_ready: player.is_ready || false
-      }
-    end)
-  end
-
-  defp get_players(_game), do: mock_players()
-
-  # Helper functions to connect to Shinkanki context
-  defp generate_room_id do
-    "ROOM-#{System.unique_integer([:positive]) |> Integer.to_string() |> String.pad_leading(4, "0")}"
-  end
 
   defp format_game_state(nil), do: mock_game_state()
 

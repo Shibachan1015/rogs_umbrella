@@ -529,9 +529,14 @@ defmodule ShinkankiWebWeb.GameComponents do
       <% else %>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
           <%= for talent <- @compatible_talents do %>
-            <% talent_id = talent[:id] || talent["id"]
+            <%
+            # player_talent_idがある場合はそれを使用（DB経由のタレント）
+            # なければ通常のidを使用（フォールバック用）
+            talent_id = talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
             is_selected = Enum.member?(@selected_talent_ids, talent_id)
-            can_select = length(@selected_talent_ids) < @max_selection || is_selected %>
+            is_used = talent[:is_used] || talent["is_used"] || false
+            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used
+            %>
             <.talent_card
               title={talent[:name] || talent["name"] || "才能"}
               description={talent[:description] || talent["description"]}
@@ -540,7 +545,8 @@ defmodule ShinkankiWebWeb.GameComponents do
               class={
                 join_class([
                   "w-full",
-                  if(not can_select, do: "opacity-50 cursor-not-allowed", else: "")
+                  if(not can_select, do: "opacity-50 cursor-not-allowed", else: ""),
+                  if(is_used, do: "grayscale", else: "")
                 ])
               }
               phx-click={if can_select, do: "toggle_talent", else: nil}

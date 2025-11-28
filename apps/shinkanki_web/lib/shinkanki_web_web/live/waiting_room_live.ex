@@ -153,8 +153,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 />
               <% end %>
 
-              <!-- 空きスロット -->
-              <%= for _i <- 1..(@room.max_participants - length(@players)) do %>
+              <!-- 空きスロット（最大4人、既にいるプレイヤー分を除く） -->
+              <%= for _i <- 1..max(0, min(4, @room.max_participants) - length(@players)) do %>
                 <div class="player-slot empty">
                   <span class="slot-icon">⭕</span>
                   <span class="slot-text">空き</span>

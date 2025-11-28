@@ -14,7 +14,7 @@ defmodule RogsComm.Rooms.Room do
     field :slug, :string
     field :topic, :string
     field :is_private, :boolean, default: false
-    field :max_participants, :integer, default: 8
+    field :max_participants, :integer, default: 4
 
     # 削除関連フィールド
     field :host_id, :binary_id
@@ -37,7 +37,7 @@ defmodule RogsComm.Rooms.Room do
     |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     |> validate_number(:max_participants,
       greater_than_or_equal_to: 2,
-      less_than_or_equal_to: 64
+      less_than_or_equal_to: 4
     )
     |> unique_constraint(:slug)
   end

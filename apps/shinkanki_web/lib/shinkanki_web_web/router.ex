@@ -45,6 +45,9 @@ defmodule ShinkankiWebWeb.Router do
 
       # プロフィール編集
       live "/profile", UserLive.Profile
+
+      # フレンドリスト
+      live "/friends", UserLive.Friends
     end
   end
 

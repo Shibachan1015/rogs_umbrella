@@ -2,6 +2,7 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
   use ShinkankiWebWeb, :live_view
 
   alias RogsIdentity.Accounts
+  alias RogsIdentity.Friends
 
   @impl true
   def mount(_params, session, socket) do
@@ -16,6 +17,7 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
        |> assign(:current_user, user)
        |> assign(:form, to_form(changeset))
        |> assign(:stats, Accounts.get_user_stats(user))
+       |> assign(:pending_count, Friends.count_pending_requests(user.id))
        |> assign(:saved, false)}
     else
       {:ok,
@@ -137,6 +139,16 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
             </div>
           </div>
 
+          <%!-- フレンドリンク --%>
+          <div class="friends-link-section">
+            <.link navigate={~p"/friends"} class="friends-link-btn">
+              👥 フレンドリスト
+              <%= if @pending_count > 0 do %>
+                <span class="friends-badge">{@pending_count}</span>
+              <% end %>
+            </.link>
+          </div>
+
           <%!-- ロビーに戻る --%>
           <div class="back-link">
             <.link navigate={~p"/lobby"} class="back-btn">
@@ -195,4 +207,3 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
     end
   end
 end
-

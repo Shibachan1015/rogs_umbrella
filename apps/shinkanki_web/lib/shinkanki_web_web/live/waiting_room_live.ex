@@ -12,6 +12,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   alias RogsComm.Messages
   alias RogsComm.PubSub, as: CommPubSub
   alias RogsIdentity.Accounts.User
+  alias RogsIdentity.Friends
   alias Shinkanki
 
   @impl true
@@ -154,6 +155,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                   player={player}
                   is_current_user={player.id == @user_id}
                   is_host={player.is_host}
+                  friendship_status={get_friendship_status(@user_id, player.id)}
                 />
               <% end %>
 
@@ -375,6 +377,28 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
           <%= if @player.is_ready, do: "✓ 準備完了", else: "準備中..." %>
         </span>
       </div>
+      <%!-- フレンド申請ボタン（自分以外） --%>
+      <%= if not @is_current_user do %>
+        <div class="player-friend-action">
+          <%= case @friendship_status do %>
+            <% :none -> %>
+              <button
+                type="button"
+                class="friend-request-btn"
+                phx-click="send_friend_request"
+                phx-value-id={@player.id}
+                phx-value-name={@player.name}
+              >
+                ＋ フレンド
+              </button>
+            <% :pending -> %>
+              <span class="friend-status pending">申請中</span>
+            <% :accepted -> %>
+              <span class="friend-status accepted">✓ フレンド</span>
+            <% _ -> %>
+          <% end %>
+        </div>
+      <% end %>
     </div>
     """
   end
@@ -580,6 +604,28 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     end
   end
 
+  @impl true
+  def handle_event("send_friend_request", %{"id" => addressee_id, "name" => name}, socket) do
+    user_id = socket.assigns.user_id
+
+    case Friends.send_friend_request(user_id, addressee_id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "#{name} にフレンド申請を送信しました")
+         |> update_players_friendship_status()}
+
+      {:error, :already_pending} ->
+        {:noreply, put_flash(socket, :error, "すでに申請済みです")}
+
+      {:error, :already_friends} ->
+        {:noreply, put_flash(socket, :error, "すでにフレンドです")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "申請できませんでした")}
+    end
+  end
+
   # PubSub ハンドラ
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "new_message", payload: payload}, socket) do
@@ -679,4 +725,19 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
   defp format_time(%DateTime{} = dt), do: Calendar.strftime(dt, "%H:%M")
   defp format_time(_), do: ""
+
+  # フレンド関係のステータスを取得
+  defp get_friendship_status(user_id, other_id) when user_id == other_id, do: :self
+
+  defp get_friendship_status(user_id, other_id) do
+    case Friends.get_friendship(user_id, other_id) do
+      nil -> :none
+      %{status: status} -> status
+    end
+  end
+
+  defp update_players_friendship_status(socket) do
+    game_state = socket.assigns.game_state
+    assign(socket, :players, get_players(game_state))
+  end
 end

@@ -85,19 +85,24 @@ defmodule Shinkanki.Games do
   # ===================
 
   @doc """
-  4人のプレイヤーを作成
+  プレイヤーを作成
+  user_ids: ユーザーIDのリスト（最大4人）
   役割: forest_guardian, heritage_weaver, community_keeper, akasha_architect
   初期Akasha: 800〜1200（ランダム）
   """
-  def create_players(game_session_id) do
+  def create_players(game_session_id, user_ids \\ []) do
     roles = ["forest_guardian", "heritage_weaver", "community_keeper", "akasha_architect"]
+    user_count = length(user_ids)
 
-    Enum.map(1..4, fn order ->
+    Enum.with_index(user_ids, 1)
+    |> Enum.map(fn {user_id, index} ->
       player_attrs = %{
         game_session_id: game_session_id,
+        user_id: user_id,
         akasha: Enum.random(800..1200),
-        role: Enum.at(roles, order - 1),
-        player_order: order
+        role: Enum.at(roles, index - 1),
+        player_order: index,
+        is_ai: false
       }
 
       %Player{}

@@ -1,4 +1,15 @@
 <div class="min-h-screen bg-washi text-sumi font-serif">
+  <%!-- 右上のアバター（ログイン時のみ） --%>
+  <%= if assigns[:current_user] do %>
+    <div class="user-avatar-header">
+      <.link navigate={~p"/profile"} class="avatar-link" title="プロフィール">
+        <div class="avatar-circle">
+          {RogsIdentity.Accounts.User.avatar(assigns[:current_user])}
+        </div>
+      </.link>
+    </div>
+  <% end %>
+
   {@inner_content}
   <.flash_group flash={@flash} />
 </div>

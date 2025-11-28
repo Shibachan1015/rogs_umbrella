@@ -30,6 +30,7 @@ defmodule ShinkankiWebWeb.Router do
     live "/users/log-in", UserLive.Login, :new
     live "/users/register", UserLive.Registration, :new
     post "/users/log-in", UserSessionController, :create
+    get "/users/auto-login", UserSessionController, :auto_login
     delete "/users/log-out", UserSessionController, :delete
 
     # ユーザー情報を取得するLiveSession

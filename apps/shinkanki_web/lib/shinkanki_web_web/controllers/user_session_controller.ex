@@ -22,6 +22,28 @@ defmodule ShinkankiWebWeb.UserSessionController do
     end
   end
 
+  # 登録後の自動ログイン用エンドポイント（トークンベース）
+  def auto_login(conn, %{"token" => token, "redirect" => redirect}) do
+    case Accounts.get_user_by_session_token(token) do
+      {user, _inserted_at} ->
+        conn
+        |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
+        |> log_in_user(user, %{})
+        |> redirect(to: redirect)
+
+      nil ->
+        conn
+        |> put_flash(:error, "トークンが無効です")
+        |> redirect(to: ~p"/users/log-in")
+    end
+  end
+
+  def auto_login(conn, _params) do
+    conn
+    |> put_flash(:error, "パラメータが不正です")
+    |> redirect(to: ~p"/users/log-in")
+  end
+
   def delete(conn, _params) do
     if live_socket_id = get_session(conn, :live_socket_id) do
       ShinkankiWebWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})

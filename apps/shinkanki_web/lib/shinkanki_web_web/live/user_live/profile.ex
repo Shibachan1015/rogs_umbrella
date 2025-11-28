@@ -42,7 +42,7 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
       <div class="profile-container">
         <div class="profile-card">
           <h1 class="profile-title">🎮 プロフィール編集</h1>

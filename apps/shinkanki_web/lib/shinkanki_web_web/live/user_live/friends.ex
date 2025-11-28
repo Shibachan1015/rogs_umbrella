@@ -68,7 +68,7 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
       <div class="friends-container">
         <div class="friends-card">
           <header class="friends-header">

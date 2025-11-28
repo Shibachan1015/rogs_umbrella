@@ -4,8 +4,6 @@ defmodule ShinkankiWebWeb.UserLive.Login do
   """
   use ShinkankiWebWeb, :live_view
 
-  alias RogsIdentity.Accounts
-
   @impl true
   def mount(_params, _session, socket) do
     email = Phoenix.Flash.get(socket.assigns.flash, :email)
@@ -23,7 +21,7 @@ defmodule ShinkankiWebWeb.UserLive.Login do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={assigns[:current_user]}>
       <div class="auth-container">
         <div class="auth-card">
           <div class="auth-header">

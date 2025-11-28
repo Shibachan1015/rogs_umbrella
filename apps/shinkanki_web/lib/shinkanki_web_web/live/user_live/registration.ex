@@ -22,7 +22,7 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={assigns[:current_user]}>
       <div class="auth-container">
         <div class="auth-card">
           <div class="auth-header">
@@ -80,13 +80,16 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
     case register_user_with_password(user_params) do
       {:ok, user} ->
         # 登録後すぐにログインしてプロフィールページに遷移
+        # トークンを生成して自動ログインエンドポイントにリダイレクト
         token = Accounts.generate_user_session_token(user)
 
         {:noreply,
          socket
          |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
-         |> push_navigate(to: ~p"/users/log-in", replace: true)
-         |> push_event("auto_login", %{token: token, redirect: ~p"/profile"})}
+         |> redirect(
+           external:
+             "/users/auto-login?token=#{URI.encode(token)}&redirect=#{URI.encode("/profile")}"
+         )}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}

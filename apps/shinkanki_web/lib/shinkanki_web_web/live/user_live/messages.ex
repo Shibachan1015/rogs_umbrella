@@ -4,7 +4,6 @@ defmodule ShinkankiWebWeb.UserLive.Messages do
   alias RogsIdentity.Accounts
   alias RogsIdentity.Accounts.User
   alias RogsIdentity.Messages
-  alias RogsIdentity.Friends
 
   @impl true
   def mount(_params, session, socket) do
@@ -74,7 +73,7 @@ defmodule ShinkankiWebWeb.UserLive.Messages do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
       <div class="messages-container">
         <div class="messages-layout">
           <%!-- 会話リスト（左サイドバー） --%>

@@ -148,7 +148,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
       <div class="waiting-room-container">
         <!-- ヘッダー -->
         <header class="waiting-room-header">

@@ -47,7 +47,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
       <div class="lobby-container min-h-screen">
         <!-- Header -->
         <header class="lobby-header">

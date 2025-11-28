@@ -31,15 +31,30 @@ defmodule ShinkankiWebWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :current_user, :any, default: nil, doc: "the current user"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <main class="shinkanki-main">
-      {render_slot(@inner_block)}
-    </main>
+    <div class="app-wrapper">
+      <%!-- 右上のアバター（ログイン時のみ） --%>
+      <%= if @current_user do %>
+        <div class="user-avatar-header">
+          <.link navigate={~p"/profile"} class="avatar-link" title="プロフィール">
+            <div class="avatar-circle">
+              {RogsIdentity.Accounts.User.avatar(@current_user)}
+            </div>
+          </.link>
+        </div>
+      <% end %>
 
-    <.flash_group flash={@flash} />
+      <main class="shinkanki-main">
+        {render_slot(@inner_block)}
+      </main>
+
+      <.flash_group flash={@flash} />
+    </div>
     """
   end
 

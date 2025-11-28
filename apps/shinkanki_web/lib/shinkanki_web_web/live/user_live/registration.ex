@@ -98,15 +98,6 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
     end
   end
 
-  # パスワード付きでユーザー登録
-  defp register_user_with_password(attrs) do
-    %User{}
-    |> User.email_changeset(attrs)
-    |> User.password_changeset(attrs)
-    |> RogsIdentity.Repo.insert()
-  end
-
-  @impl true
   def handle_event("validate", %{"user" => user_params}, socket) do
     changeset =
       %User{}
@@ -114,6 +105,14 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
       |> Map.put(:action, :validate)
 
     {:noreply, assign_form(socket, changeset)}
+  end
+
+  # パスワード付きでユーザー登録
+  defp register_user_with_password(attrs) do
+    %User{}
+    |> User.email_changeset(attrs)
+    |> User.password_changeset(attrs)
+    |> RogsIdentity.Repo.insert()
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do

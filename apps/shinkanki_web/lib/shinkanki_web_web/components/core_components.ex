@@ -354,6 +354,7 @@ defmodule ShinkankiWebWeb.CoreComponents do
 
   # Helper used by inputs to generate form errors
   attr :id, :string, default: nil
+  slot :inner_block, required: true
 
   defp error(assigns) do
     ~H"""
@@ -548,10 +549,11 @@ defmodule ShinkankiWebWeb.CoreComponents do
   """
   attr :name, :string, required: true
   attr :class, :string, default: "size-4"
+  attr :rest, :global
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <span class={[@name, @class]} {@rest} />
     """
   end
 

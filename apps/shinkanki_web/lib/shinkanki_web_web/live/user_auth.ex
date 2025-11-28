@@ -6,8 +6,6 @@ defmodule ShinkankiWebWeb.UserAuth do
 
   alias RogsIdentity.Accounts
 
-  @remember_me_cookie "_rogs_identity_web_user_remember_me"
-
   @doc """
   LiveView mount時にセッションからユーザー情報を取得
   """

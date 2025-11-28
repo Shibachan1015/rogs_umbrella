@@ -10,11 +10,6 @@ defmodule RogsComm.Rooms do
   alias RogsComm.Rooms.Room
 
   @doc """
-  Lists rooms ordered by newest first.
-
-  Set `include_private: false` to exclude private rooms.
-  """
-  @doc """
   ルーム一覧を取得します。
 
   ## Options

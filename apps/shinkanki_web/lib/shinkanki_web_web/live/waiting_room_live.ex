@@ -53,7 +53,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   defp mount_with_room(room, current_user, socket) do
     # ユーザー情報
     user_id = current_user.id
-    user_email = current_user.email
+    _user_email = current_user.email
 
     # 表示名とアバターを取得
     display_name = User.display_name(current_user)

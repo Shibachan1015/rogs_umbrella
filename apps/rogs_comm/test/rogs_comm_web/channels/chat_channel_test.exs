@@ -161,13 +161,15 @@ defmodule RogsCommWeb.ChatChannelTest do
     end
 
     test "broadcasts edited message", %{socket: socket, message: message} do
+      message_id = message.id
+
       push(socket, "edit_message", %{
         "message_id" => message.id,
         "content" => "Edited content"
       })
 
       assert_broadcast "message_edited", %{
-        id: message.id,
+        id: ^message_id,
         content: "Edited content"
       }
     end
@@ -256,9 +258,10 @@ defmodule RogsCommWeb.ChatChannelTest do
     end
 
     test "broadcasts deleted message", %{socket: socket, message: message} do
+      message_id = message.id
       push(socket, "delete_message", %{"message_id" => message.id})
 
-      assert_broadcast "message_deleted", %{id: message.id}
+      assert_broadcast "message_deleted", %{id: ^message_id}
     end
 
     test "soft deletes message in database", %{socket: socket, message: message, room: room} do

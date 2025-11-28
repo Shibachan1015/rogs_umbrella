@@ -29,10 +29,12 @@ defmodule ShinkankiWebWeb.UserSessionController do
       {:ok, token} ->
         case Accounts.get_user_by_session_token(token) do
           {user, _inserted_at} ->
+            # redirectパラメータをパスに変換（文字列の場合はそのまま、~pの場合はto_string）
+            redirect_path = if is_binary(redirect), do: redirect, else: redirect
+
             conn
             |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
-            |> log_in_user(user, %{})
-            |> redirect(to: redirect)
+            |> log_in_user_with_redirect(user, %{}, redirect_path)
 
           nil ->
             conn
@@ -67,13 +69,29 @@ defmodule ShinkankiWebWeb.UserSessionController do
 
   defp log_in_user(conn, user, params) do
     token = Accounts.generate_user_session_token(user)
+    # セッションからreturn_toを取得（renew_sessionでクリアされる前に）
     return_to = get_session(conn, :user_return_to) || ~p"/lobby"
+    # return_toを文字列に変換（URI構造体の場合はto_string）
+    redirect_path = if is_binary(return_to), do: return_to, else: to_string(return_to)
 
     conn
     |> renew_session()
     |> put_token_in_session(token)
     |> maybe_remember_user(token, params)
-    |> redirect(to: return_to)
+    |> redirect(to: redirect_path)
+  end
+
+  # redirectパラメータを受け取る場合のヘルパー
+  defp log_in_user_with_redirect(conn, user, params, redirect_path) do
+    token = Accounts.generate_user_session_token(user)
+    # redirect_pathを文字列に変換（URI構造体の場合はto_string）
+    path = if is_binary(redirect_path), do: redirect_path, else: to_string(redirect_path)
+
+    conn
+    |> renew_session()
+    |> put_token_in_session(token)
+    |> maybe_remember_user(token, params)
+    |> redirect(to: path)
   end
 
   defp log_out_user(conn) do

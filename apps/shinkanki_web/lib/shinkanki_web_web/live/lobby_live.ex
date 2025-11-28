@@ -55,8 +55,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <h1 class="lobby-title">神環記 ロビー</h1>
             <p class="lobby-subtitle">ルームを選んでゲームに参加しましょう</p>
           </div>
-
-          <!-- ログインユーザー表示 -->
+          
+    <!-- ログインユーザー表示 -->
           <div class="lobby-user-status">
             <%= if @logged_in do %>
               <div class="user-logged-in">
@@ -78,8 +78,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <% end %>
           </div>
         </header>
-
-        <!-- メインコンテンツ -->
+        
+    <!-- メインコンテンツ -->
         <main class="lobby-main">
           <!-- ルーム作成ボタン（ログイン時のみ） -->
           <%= if @logged_in do %>
@@ -106,8 +106,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
               </div>
             </div>
           <% end %>
-
-          <!-- ルーム作成フォーム -->
+          
+    <!-- ルーム作成フォーム -->
           <%= if @show_create_form do %>
             <div class="create-room-form-container">
               <.form for={@form} id="create-room-form" phx-submit="create_room" phx-change="validate">
@@ -128,11 +128,15 @@ defmodule ShinkankiWebWeb.LobbyLive do
 
                 <div class="form-field">
                   <label for="room_max_participants">最大参加人数</label>
-                  <.input field={@form[:max_participants]} type="select" options={[
-                    {"2人", 2},
-                    {"3人", 3},
-                    {"4人", 4}
-                  ]} />
+                  <.input
+                    field={@form[:max_participants]}
+                    type="select"
+                    options={[
+                      {"2人", 2},
+                      {"3人", 3},
+                      {"4人", 4}
+                    ]}
+                  />
                 </div>
 
                 <div class="form-actions">
@@ -141,8 +145,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
               </.form>
             </div>
           <% end %>
-
-          <!-- 検索・フィルター -->
+          
+    <!-- 検索・フィルター -->
           <div class="search-filter-section">
             <div class="search-box">
               <form phx-change="search" phx-submit="search">
@@ -168,8 +172,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
               </label>
             </div>
           </div>
-
-          <!-- ルーム一覧 -->
+          
+    <!-- ルーム一覧 -->
           <div class="rooms-section">
             <div class="section-header">
               <h2 class="section-title">公開ルーム</h2>

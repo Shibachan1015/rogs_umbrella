@@ -23,17 +23,26 @@ defmodule ShinkankiWebWeb.UserSessionController do
   end
 
   # 登録後の自動ログイン用エンドポイント（トークンベース）
-  def auto_login(conn, %{"token" => token, "redirect" => redirect}) do
-    case Accounts.get_user_by_session_token(token) do
-      {user, _inserted_at} ->
-        conn
-        |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
-        |> log_in_user(user, %{})
-        |> redirect(to: redirect)
+  def auto_login(conn, %{"token" => encoded_token, "redirect" => redirect}) do
+    # Base64デコード（URL-safe Base64をデコード）
+    case Base.url_decode64(encoded_token, padding: false) do
+      {:ok, token} ->
+        case Accounts.get_user_by_session_token(token) do
+          {user, _inserted_at} ->
+            conn
+            |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
+            |> log_in_user(user, %{})
+            |> redirect(to: redirect)
 
-      nil ->
+          nil ->
+            conn
+            |> put_flash(:error, "トークンが無効です")
+            |> redirect(to: ~p"/users/log-in")
+        end
+
+      :error ->
         conn
-        |> put_flash(:error, "トークンが無効です")
+        |> put_flash(:error, "トークンの形式が不正です")
         |> redirect(to: ~p"/users/log-in")
     end
   end

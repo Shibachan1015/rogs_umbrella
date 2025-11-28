@@ -82,13 +82,15 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
         # 登録後すぐにログインしてプロフィールページに遷移
         # トークンを生成して自動ログインエンドポイントにリダイレクト
         token = Accounts.generate_user_session_token(user)
+        # Base64エンコード（URL-safe、UTF-8エラーを防ぐ）
+        encoded_token = Base.url_encode64(token, padding: false)
 
         {:noreply,
          socket
          |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
          |> redirect(
            external:
-             "/users/auto-login?token=#{URI.encode(token)}&redirect=#{URI.encode("/profile")}"
+             "/users/auto-login?token=#{encoded_token}&redirect=#{URI.encode("/profile")}"
          )}
 
       {:error, %Ecto.Changeset{} = changeset} ->

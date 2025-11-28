@@ -3406,6 +3406,36 @@ input[type="radio"] {
   letter-spacing: 0.1em;
 }
 
+.form-field input[type="text"],
+.form-field textarea,
+.form-field select {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  color: #f8f8f2;
+  font-size: 0.95rem;
+}
+
+.form-field input[type="text"]::placeholder,
+.form-field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-field input[type="text"]:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--color-landing-gold);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.form-field select option {
+  background: #1a1f2e;
+  color: #f8f8f2;
+}
+
 .form-actions {
   margin-top: 1.5rem;
 }

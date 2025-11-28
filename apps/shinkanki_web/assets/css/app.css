@@ -3468,15 +3468,20 @@ input[type="radio"] {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .search-box {
   flex: 1;
-  min-width: 200px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-input {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.75rem 1rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);

@@ -55,4 +55,3 @@ defmodule RogsIdentity.Messages.RoomInvitation do
     DateTime.compare(DateTime.utc_now(), expires_at) == :gt
   end
 end
-

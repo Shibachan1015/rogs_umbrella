@@ -40,4 +40,3 @@ defmodule RogsIdentity.Messages.DirectMessage do
     end
   end
 end
-

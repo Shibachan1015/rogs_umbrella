@@ -79,4 +79,3 @@ defmodule RogsIdentity.Presence do
   """
   def topic, do: @presence_topic
 end
-

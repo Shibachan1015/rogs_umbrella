@@ -223,4 +223,3 @@ defmodule ShinkankiWebWeb.UserLive.Messages do
     end
   end
 end
-

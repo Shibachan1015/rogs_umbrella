@@ -78,11 +78,15 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
   def handle_event("save", %{"user" => user_params}, socket) do
     # パスワードも含めて登録
     case register_user_with_password(user_params) do
-      {:ok, _user} ->
+      {:ok, user} ->
+        # 登録後すぐにログインしてプロフィールページに遷移
+        token = Accounts.generate_user_session_token(user)
+
         {:noreply,
          socket
-         |> put_flash(:info, "アカウントを作成しました。ログインしてください。")
-         |> push_navigate(to: ~p"/users/log-in")}
+         |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
+         |> push_navigate(to: ~p"/users/log-in", replace: true)
+         |> push_event("auto_login", %{token: token, redirect: ~p"/profile"})}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}

@@ -283,4 +283,3 @@ defmodule RogsIdentity.Messages do
     Phoenix.PubSub.subscribe(RogsIdentity.PubSub, "invitations:#{user_id}")
   end
 end
-

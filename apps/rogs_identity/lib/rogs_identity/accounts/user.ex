@@ -12,6 +12,12 @@ defmodule RogsIdentity.Accounts.User do
     field :confirmed_at, :naive_datetime
     field :authenticated_at, :naive_datetime, virtual: true
 
+    # プロフィール
+    field :avatar, :string, default: "🎮"
+    field :bio, :string
+    field :games_played, :integer, default: 0
+    field :games_won, :integer, default: 0
+
     # 管理者権限
     field :is_admin, :boolean, default: false
 
@@ -145,6 +151,43 @@ defmodule RogsIdentity.Accounts.User do
   end
 
   @doc """
+  A changeset for updating user profile (name, avatar, bio).
+  """
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :avatar, :bio])
+    |> validate_length(:name, min: 1, max: 30, message: "は1〜30文字で入力してください")
+    |> validate_length(:bio, max: 200, message: "は200文字以内で入力してください")
+    |> validate_avatar()
+  end
+
+  defp validate_avatar(changeset) do
+    avatar = get_change(changeset, :avatar)
+
+    if avatar do
+      # 絵文字1文字 or URL形式を許可
+      cond do
+        String.length(avatar) <= 2 -> changeset
+        String.starts_with?(avatar, "http") -> changeset
+        true -> add_error(changeset, :avatar, "は絵文字1文字またはURLを入力してください")
+      end
+    else
+      changeset
+    end
+  end
+
+  @doc """
+  Increments game statistics.
+  """
+  def increment_games_played_changeset(user) do
+    change(user, games_played: (user.games_played || 0) + 1)
+  end
+
+  def increment_games_won_changeset(user) do
+    change(user, games_won: (user.games_won || 0) + 1)
+  end
+
+  @doc """
   Confirms the account by setting `confirmed_at`.
   """
   def confirm_changeset(user) do
@@ -154,11 +197,19 @@ defmodule RogsIdentity.Accounts.User do
 
   @doc """
   Returns the display name for the user.
-  Falls back to email if name is not set.
+  Falls back to email prefix if name is not set.
   """
   def display_name(%__MODULE__{name: name}) when is_binary(name) and name != "", do: name
-  def display_name(%__MODULE__{email: email}), do: email
+  def display_name(%__MODULE__{email: email}) when is_binary(email) do
+    email |> String.split("@") |> List.first()
+  end
   def display_name(_), do: "Anonymous"
+
+  @doc """
+  Returns the avatar for the user.
+  """
+  def avatar(%__MODULE__{avatar: avatar}) when is_binary(avatar) and avatar != "", do: avatar
+  def avatar(_), do: "🎮"
 
   @doc """
   Verifies the password.

@@ -42,6 +42,9 @@ defmodule ShinkankiWebWeb.Router do
 
       # ゲーム画面（ゲーム中）
       live "/game/:room_id", GameLive
+
+      # プロフィール編集
+      live "/profile", UserLive.Profile
     end
   end
 

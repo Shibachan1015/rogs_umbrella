@@ -7,6 +7,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
 
   alias RogsComm.Rooms
   alias RogsComm.Rooms.Room
+  alias RogsIdentity.Accounts.User
 
   @impl true
   def mount(_params, _session, socket) do
@@ -59,8 +60,11 @@ defmodule ShinkankiWebWeb.LobbyLive do
           <div class="lobby-user-status">
             <%= if @logged_in do %>
               <div class="user-logged-in">
-                <span class="user-icon">👤</span>
-                <span class="user-email">{@current_user.email}</span>
+                <span class="user-avatar">{User.avatar(@current_user)}</span>
+                <span class="user-name">{User.display_name(@current_user)}</span>
+                <.link navigate={~p"/profile"} class="profile-link" title="プロフィール編集">
+                  ⚙️
+                </.link>
                 <.link href={~p"/users/log-out"} method="delete" class="logout-btn">
                   ログアウト
                 </.link>

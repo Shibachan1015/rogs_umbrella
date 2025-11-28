@@ -32,8 +32,8 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), {:play_action, player_id, action_id, talent_ids})
   end
 
-  def join_player(room_id, player_id, name, talent_ids \\ nil) do
-    GenServer.call(via_tuple(room_id), {:join_player, player_id, name, talent_ids})
+  def join_player(room_id, player_id, name, avatar \\ "🎮", talent_ids \\ nil) do
+    GenServer.call(via_tuple(room_id), {:join_player, player_id, name, avatar, talent_ids})
   end
 
   def ai_turn(room_id, player_id) do
@@ -134,10 +134,10 @@ defmodule Shinkanki.GameServer do
   end
 
   @impl true
-  def handle_call({:join_player, player_id, name, talent_ids}, _from, game) do
-    case Game.join(game, player_id, name, talent_ids) do
+  def handle_call({:join_player, player_id, name, avatar, talent_ids}, _from, game) do
+    case Game.join(game, player_id, name, avatar, talent_ids) do
       {:ok, new_game} = ok ->
-        log_action(new_game, "join_player", player_id, %{name: name, talent_ids: talent_ids})
+        log_action(new_game, "join_player", player_id, %{name: name, avatar: avatar, talent_ids: talent_ids})
         broadcast_state(new_game)
         {:reply, ok, new_game}
 

@@ -607,4 +607,70 @@ defmodule RogsIdentity.Accounts do
     from(u in User, where: u.is_admin == true, order_by: u.email)
     |> Repo.all()
   end
+
+  # ============================================================
+  # Profile Functions
+  # ============================================================
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for changing the user profile.
+  """
+  def change_user_profile(user, attrs \\ %{}) do
+    User.profile_changeset(user, attrs)
+  end
+
+  @doc """
+  Updates the user profile (name, avatar, bio).
+  """
+  def update_user_profile(user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets user display name.
+  """
+  def display_name(user), do: User.display_name(user)
+
+  @doc """
+  Gets user avatar.
+  """
+  def avatar(user), do: User.avatar(user)
+
+  @doc """
+  Increments games played count.
+  """
+  def increment_games_played(user) do
+    user
+    |> User.increment_games_played_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Increments games won count.
+  """
+  def increment_games_won(user) do
+    user
+    |> User.increment_games_won_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets user game statistics.
+  """
+  def get_user_stats(user) do
+    %{
+      games_played: user.games_played || 0,
+      games_won: user.games_won || 0,
+      win_rate: calculate_win_rate(user)
+    }
+  end
+
+  defp calculate_win_rate(%User{games_played: played, games_won: won})
+       when is_integer(played) and played > 0 and is_integer(won) do
+    Float.round(won / played * 100, 1)
+  end
+
+  defp calculate_win_rate(_), do: 0.0
 end

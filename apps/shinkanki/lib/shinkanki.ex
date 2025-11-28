@@ -51,10 +51,10 @@ defmodule Shinkanki do
   end
 
   @doc """
-  Lets a player join the room with optional talents.
+  Lets a player join the room with name and avatar, plus optional talents.
   """
-  def join_player(room_id, player_id, name, talent_ids \\ nil) do
-    call_server(room_id, fn -> GameServer.join_player(room_id, player_id, name, talent_ids) end)
+  def join_player(room_id, player_id, name, avatar \\ "🎮", talent_ids \\ nil) do
+    call_server(room_id, fn -> GameServer.join_player(room_id, player_id, name, avatar, talent_ids) end)
   end
 
   @doc """

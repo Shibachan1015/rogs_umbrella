@@ -112,7 +112,7 @@ defmodule Shinkanki.Game do
   @doc """
   Adds a player to the game. If talents are not provided, two default talents are assigned.
   """
-  def join(%__MODULE__{} = game, player_id, name, talent_ids \\ nil) do
+  def join(%__MODULE__{} = game, player_id, name, avatar \\ "🎮", talent_ids \\ nil) do
     cond do
       game.status in [:won, :lost] ->
         {:error, :game_over}
@@ -130,7 +130,7 @@ defmodule Shinkanki.Game do
         talents = prepare_talents(talent_ids)
 
         player =
-          Player.new(player_id, name)
+          Player.new(player_id, name, avatar)
           |> Map.put(:talents, talents)
 
         game_with_player = %{

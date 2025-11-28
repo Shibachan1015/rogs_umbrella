@@ -11,6 +11,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   alias RogsComm.Rooms
   alias RogsComm.Messages
   alias RogsComm.PubSub, as: CommPubSub
+  alias RogsIdentity.Accounts.User
   alias Shinkanki
 
   @impl true
@@ -24,7 +25,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       {:ok,
        socket
        |> put_flash(:error, "ログインしてください")
-       |> push_navigate(to: ~p"/users/log_in")}
+       |> push_navigate(to: ~p"/users/log-in")}
     else
       # 開発環境用のゲストユーザー
       effective_user =
@@ -50,6 +51,10 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     user_id = current_user.id
     user_email = current_user.email
 
+    # 表示名とアバターを取得
+    display_name = User.display_name(current_user)
+    avatar = User.avatar(current_user)
+
     # ゲームセッションを開始または取得
     room_id = room.id
 
@@ -65,15 +70,14 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
         :ok
     end
 
-    # プレイヤーとして参加
-    player_name = user_email
-    Shinkanki.join_player(room_id, user_id, player_name)
+    # プレイヤーとして参加（表示名とアバターを使用）
+    Shinkanki.join_player(room_id, user_id, display_name, avatar)
 
     # ゲーム状態を取得
     game_state = Shinkanki.get_current_state(room_id) || %{}
 
     # チャットフォーム
-    chat_form = to_form(%{"body" => "", "author" => user_email}, as: :chat)
+    chat_form = to_form(%{"body" => "", "author" => display_name}, as: :chat)
 
     # ルームのアクティビティを更新
     Rooms.touch_activity(room)
@@ -358,7 +362,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
         <%= if @is_host do %>
           <span class="host-badge">👑</span>
         <% end %>
-        <span class="avatar-icon">👤</span>
+        <span class="avatar-icon">{@player.avatar || "🎮"}</span>
       </div>
       <div class="player-info">
         <span class="player-name">
@@ -618,6 +622,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       %{
         id: player_id,
         name: player.name || "Player",
+        avatar: player.avatar || "🎮",
         is_ready: player.is_ready || false,
         is_host: List.first(order) == player_id
       }

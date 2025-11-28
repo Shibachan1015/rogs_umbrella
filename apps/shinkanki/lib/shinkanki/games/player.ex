@@ -19,6 +19,8 @@ defmodule Shinkanki.Games.Player do
 
     has_many :game_actions, Shinkanki.Games.GameAction
     has_many :project_participations, Shinkanki.Games.ProjectParticipation
+    has_many :player_talents, Shinkanki.Games.PlayerTalent
+    has_many :talents, through: [:player_talents, :talent_card]
 
     timestamps()
   end

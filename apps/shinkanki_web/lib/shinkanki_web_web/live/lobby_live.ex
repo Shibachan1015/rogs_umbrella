@@ -110,7 +110,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
     <!-- ルーム作成フォーム -->
           <%= if @show_create_form do %>
             <div class="create-room-form-container">
-              <.form for={@form} id="create-room-form" phx-submit="create_room" phx-change="validate">
+              <.form for={@form} id="create-room-form" phx-submit="create_room" phx-change="validate" data-1p-ignore>
                 <div class="form-header">
                   <h3>新しいルームを作成</h3>
                   <button type="button" class="close-btn" phx-click="toggle_create_form">×</button>

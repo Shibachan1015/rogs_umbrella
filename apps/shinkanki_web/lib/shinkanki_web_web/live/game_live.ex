@@ -3,14 +3,15 @@ defmodule ShinkankiWebWeb.GameLive do
 
   alias RogsComm.PubSub, as: CommPubSub
   alias RogsComm.Messages
+  alias RogsComm.Rooms
   alias Shinkanki
   alias Shinkanki.Games
 
   def mount(params, _session, socket) do
-    # Get room_id from params
-    room_id = params["room_id"]
+    # Get slug from params (route is /game/:room_id but actually receives slug)
+    slug = params["room_id"]
 
-    if room_id == nil do
+    if slug == nil do
       {:ok,
        socket
        |> put_flash(:error, "ルームIDが指定されていません")
@@ -25,22 +26,33 @@ defmodule ShinkankiWebWeb.GameLive do
          |> put_flash(:error, "ログインしてください")
          |> push_navigate(to: ~p"/users/log-in")}
       else
-        user_id = current_user.id
-        user_email = current_user.email || "anonymous"
+        # First, find the room by slug to get the actual room_id (UUID)
+        case Rooms.fetch_room_by_slug(slug) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, "ルームが見つかりません")
+             |> push_navigate(to: ~p"/lobby")}
 
-        # DBからゲームセッションを取得
-        game_session = Games.get_game_session_by_room_id(room_id)
+          room ->
+            user_id = current_user.id
+            user_email = current_user.email || "anonymous"
+            room_id = room.id
 
-        if game_session == nil do
-          {:ok,
-           socket
-           |> put_flash(:error, "ゲームセッションが見つかりません")
-           |> push_navigate(to: ~p"/lobby")}
-        else
-          # ゲーム状態をフォーマット
-          game_state = format_game_session(game_session, user_id)
+            # DBからゲームセッションを取得
+            game_session = Games.get_game_session_by_room_id(room_id)
 
-          mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state)
+            if game_session == nil do
+              {:ok,
+               socket
+               |> put_flash(:error, "ゲームセッションが見つかりません")
+               |> push_navigate(to: ~p"/lobby")}
+            else
+              # ゲーム状態をフォーマット
+              game_state = format_game_session(game_session, user_id)
+
+              mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state)
+            end
         end
       end
     end
@@ -61,7 +73,7 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:current_user, current_user)
       |> assign(:current_scope, nil)
       |> assign(:player_name, user_email)
-      |> assign(:hand_cards, []) # TODO: 手札を実装
+      |> assign(:hand_cards, get_hand_cards_from_session(game_session, turn_state))
       |> assign(:action_buttons, get_available_action_cards(game_session, turn_state))
       |> assign(:chat_form, chat_form())
       |> assign(:toasts, [])
@@ -69,7 +81,7 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:current_phase, current_phase)
       |> assign(:current_event, get_current_event(game_session, turn_state))
       |> assign(:show_event_modal, false)
-      |> assign(:player_talents, []) # TODO: タレントを実装
+      |> assign(:player_talents, get_player_talents_from_session(game_session, user_id))
       |> assign(:selected_talents_for_card, [])
       |> assign(:show_talent_selector, false)
       |> assign(:talent_selector_card_id, nil)
@@ -130,7 +142,7 @@ defmodule ShinkankiWebWeb.GameLive do
       life_index_target: 40,
       dao_pool: game_session.dao_pool,
       currency: currency,
-      demurrage: 0, # TODO: 減衰量を計算
+      demurrage: calculate_demurrage_amount(currency),
       status: game_session.status,
       players: get_players_from_session(game_session),
       current_user_id: user_id
@@ -144,7 +156,7 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   # 利用可能なアクションカードを取得
-  defp get_available_action_cards(game_session, turn_state) do
+  defp get_available_action_cards(_game_session, turn_state) do
     if turn_state && turn_state.available_cards do
       Shinkanki.Games.ActionCard
       |> Shinkanki.Repo.all()
@@ -179,7 +191,7 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   # 現在のイベントカードを取得
-  defp get_current_event(game_session, turn_state) do
+  defp get_current_event(_game_session, turn_state) do
     if turn_state && turn_state.current_event_id do
       event = Shinkanki.Repo.get!(Shinkanki.Games.EventCard, turn_state.current_event_id)
       %{
@@ -201,11 +213,13 @@ defmodule ShinkankiWebWeb.GameLive do
     |> Enum.filter(fn project -> project.status == "active" end)
     |> Enum.map(fn project ->
       template = project.project_template
+      # current_progress is not in DB schema, calculate from participations
+      progress = length(project.project_participations || [])
       %{
         id: project.id,
         name: template.name,
         description: template.description,
-        progress: project.current_progress || 0,
+        progress: progress,
         required_participants: template.required_participants,
         required_turns: template.required_turns,
         required_dao_pool: template.required_dao_pool
@@ -241,7 +255,8 @@ defmodule ShinkankiWebWeb.GameLive do
         role: player.role,
         akasha: player.akasha,
         is_ai: player.is_ai,
-        is_ready: player.is_ready || false
+        # is_ready is not in DB schema, use Map.get for safety
+        is_ready: Map.get(player, :is_ready, false)
       }
     end)
   end
@@ -1149,6 +1164,7 @@ defmodule ShinkankiWebWeb.GameLive do
     card_id = socket.assigns.confirm_card_id
     game_session = socket.assigns.game_session
     user_id = socket.assigns.user_id
+    selected_talents = socket.assigns[:selected_talents_for_card] || []
 
     if card_id do
       # プレイヤーを取得
@@ -1158,8 +1174,16 @@ defmodule ShinkankiWebWeb.GameLive do
         # アクションカードを取得
         action_card = Shinkanki.Repo.get!(Shinkanki.Games.ActionCard, card_id)
 
+        # タレントが選択されていれば、タレント付きで実行
+        result =
+          if Enum.empty?(selected_talents) do
+            Games.execute_action_card(player, action_card, game_session)
+          else
+            Games.execute_action_card_with_talents(player, action_card, game_session, selected_talents)
+          end
+
         # アクションカードを実行
-        case Games.execute_action_card(player, action_card, game_session) do
+        case result do
           {:ok, updated_session} ->
             # ゲーム状態を更新
             Shinkanki.GamePubSub.broadcast_state_update(game_session.id, updated_session)
@@ -1458,7 +1482,7 @@ defmodule ShinkankiWebWeb.GameLive do
 
       # アクションカードを実行
       case Games.execute_action_card(player, action_card, game_session) do
-        {:ok, updated_session} ->
+        {:ok, _updated_session} ->
           # ゲーム状態を更新（既にGamePubSubでブロードキャストされている）
           toast_id = "toast-#{System.unique_integer([:positive])}"
           new_toast = %{
@@ -1581,6 +1605,8 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:current_phase, current_phase)
       |> assign(:current_event, get_current_event(updated_session, turn_state))
       |> assign(:action_buttons, get_available_action_cards(updated_session, turn_state))
+      |> assign(:hand_cards, get_hand_cards_from_session(updated_session, turn_state))
+      |> assign(:player_talents, get_player_talents_from_session(updated_session, socket.assigns.user_id))
       |> assign(:active_projects, get_active_projects_from_session(updated_session))
       |> assign(:players, get_players_from_session(updated_session))
       |> assign(:player_role, get_player_role(updated_session, socket.assigns.user_id))
@@ -1595,17 +1621,17 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, assign(socket, :current_phase, new_phase)}
   end
 
-  def handle_info({:turn_started, %{turn: turn_number, event_card: event_card}}, socket) do
+  def handle_info({:turn_started, %{turn: _turn_number, event_card: _event_card}}, socket) do
     # ターン開始時の処理
     {:noreply, socket}
   end
 
-  def handle_info({:player_action, %{player_id: player_id, action: action}}, socket) do
+  def handle_info({:player_action, %{player_id: _player_id, action: _action}}, socket) do
     # プレイヤーアクションの処理
     {:noreply, socket}
   end
 
-  def handle_info({:project_completed, project}, socket) do
+  def handle_info({:project_completed, _project}, socket) do
     # プロジェクト完成の処理
     {:noreply, socket}
   end
@@ -2179,4 +2205,162 @@ defmodule ShinkankiWebWeb.GameLive do
         false
     end
   end
+
+  # ===================
+  # DB連携ヘルパー関数
+  # ===================
+
+  # 場に出ているアクションカードを手札として取得（DBベース）
+  defp get_hand_cards_from_session(_game_session, turn_state) do
+    if turn_state && turn_state.available_cards do
+      Shinkanki.Games.ActionCard
+      |> Shinkanki.Repo.all()
+      |> Enum.filter(fn card -> card.id in turn_state.available_cards end)
+      |> Enum.map(fn card ->
+        %{
+          id: card.id,
+          title: card.name,
+          cost: card.cost_akasha,
+          cost_akasha: card.cost_akasha,
+          cost_forest: card.cost_forest,
+          cost_culture: card.cost_culture,
+          cost_social: card.cost_social,
+          type: card_type_from_category(card.category),
+          category: card.category,
+          description: card.description,
+          effect_forest: card.effect_forest,
+          effect_culture: card.effect_culture,
+          effect_social: card.effect_social,
+          effect_akasha: card.effect_akasha,
+          tags: [String.to_atom(card.category)]
+        }
+      end)
+    else
+      []
+    end
+  end
+
+  # カテゴリからカードタイプを決定
+  defp card_type_from_category("forest"), do: :action
+  defp card_type_from_category("culture"), do: :event
+  defp card_type_from_category("social"), do: :reaction
+  defp card_type_from_category("akasha"), do: :action
+  defp card_type_from_category(_), do: :action
+
+  # プレイヤーのタレント（才能）を取得（DBベース）
+  defp get_player_talents_from_session(game_session, user_id) do
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
+
+    if player do
+      # プレイヤーにタレントが割り当てられているか確認
+      player_with_talents = Shinkanki.Repo.preload(player, player_talents: :talent_card)
+
+      if Enum.empty?(player_with_talents.player_talents) do
+        # タレントがまだ割り当てられていない場合は、ダミーデータを返す（フォールバック）
+        role_talents_fallback(player.role)
+      else
+        # DBからタレントを取得
+        Enum.map(player_with_talents.player_talents, fn pt ->
+          %{
+            id: pt.talent_card.id,
+            name: pt.talent_card.name,
+            description: pt.talent_card.description,
+            compatible_tags: Enum.map(pt.talent_card.compatible_tags, &String.to_atom/1),
+            effect_type: pt.talent_card.effect_type,
+            effect_value: pt.talent_card.effect_value,
+            is_used: pt.is_used,
+            player_talent_id: pt.id
+          }
+        end)
+      end
+    else
+      []
+    end
+  end
+
+  # フォールバック用のダミータレントデータ（DBにタレントがない場合用）
+  defp role_talents_fallback("forest_guardian") do
+    [
+      %{
+        id: "talent_forest_1",
+        name: "森の知恵",
+        description: "森への理解を深め、Forest系カードの効果+1",
+        compatible_tags: [:forest],
+        is_used: false
+      },
+      %{
+        id: "talent_forest_2",
+        name: "自然との対話",
+        description: "自然の声を聞き、調和をもたらす",
+        compatible_tags: [:forest, :social],
+        is_used: false
+      }
+    ]
+  end
+
+  defp role_talents_fallback("heritage_weaver") do
+    [
+      %{
+        id: "talent_culture_1",
+        name: "伝承の継承",
+        description: "文化への理解を深め、Culture系カードの効果+1",
+        compatible_tags: [:culture],
+        is_used: false
+      },
+      %{
+        id: "talent_culture_2",
+        name: "物語の紡ぎ手",
+        description: "物語を通じて人々の心をつなぐ",
+        compatible_tags: [:culture, :social],
+        is_used: false
+      }
+    ]
+  end
+
+  defp role_talents_fallback("community_keeper") do
+    [
+      %{
+        id: "talent_social_1",
+        name: "絆の守り手",
+        description: "社会への理解を深め、Social系カードの効果+1",
+        compatible_tags: [:social],
+        is_used: false
+      },
+      %{
+        id: "talent_social_2",
+        name: "調停者",
+        description: "対立を解消し、協力を促進する",
+        compatible_tags: [:social, :culture],
+        is_used: false
+      }
+    ]
+  end
+
+  defp role_talents_fallback("akasha_architect") do
+    [
+      %{
+        id: "talent_akasha_1",
+        name: "空環の設計者",
+        description: "Akashaの流れを読み、効率的に運用する",
+        compatible_tags: [:akasha],
+        is_used: false
+      },
+      %{
+        id: "talent_akasha_2",
+        name: "循環の知恵",
+        description: "リソースの循環を最適化する",
+        compatible_tags: [:akasha, :forest],
+        is_used: false
+      }
+    ]
+  end
+
+  defp role_talents_fallback(_), do: []
+
+  # 減衰量を計算（10%）
+  defp calculate_demurrage_amount(currency) when is_integer(currency) and currency > 0 do
+    -div(currency, 10)
+  end
+
+  defp calculate_demurrage_amount(_), do: 0
 end

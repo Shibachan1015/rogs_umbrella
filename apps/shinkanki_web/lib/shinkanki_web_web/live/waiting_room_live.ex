@@ -64,18 +64,60 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
     case Shinkanki.get_current_state(room_id) do
       nil ->
+        # GameServerがまだない場合は新規作成
         case Shinkanki.start_game_session(room_id) do
           {:ok, _pid} -> :ok
           {:error, {:already_started, _pid}} -> :ok
           _ -> :ok
         end
 
+      %{status: :playing} ->
+        # ゲームが既に進行中の場合はゲーム画面にリダイレクト
+        {:ok,
+         socket
+         |> put_flash(:info, "ゲームが進行中です")
+         |> push_navigate(to: ~p"/game/#{room.slug}")}
+        |> then(&{:redirect, &1})
+
+      %{status: :won} ->
+        # ゲーム終了（勝利）の場合はロビーにリダイレクト
+        {:ok,
+         socket
+         |> put_flash(:info, "このルームのゲームは終了しました")
+         |> push_navigate(to: ~p"/lobby")}
+        |> then(&{:redirect, &1})
+
+      %{status: :lost} ->
+        # ゲーム終了（敗北）の場合はロビーにリダイレクト
+        {:ok,
+         socket
+         |> put_flash(:info, "このルームのゲームは終了しました")
+         |> push_navigate(to: ~p"/lobby")}
+        |> then(&{:redirect, &1})
+
       _game ->
+        # :waiting状態の場合は通常通り続行
         :ok
     end
+    |> case do
+      {:redirect, result} ->
+        result
 
-    # プレイヤーとして参加（表示名とアバターを使用）
-    Shinkanki.join_player(room_id, user_id, display_name, avatar)
+      :ok ->
+        # プレイヤーとして参加（表示名とアバターを使用）
+        Shinkanki.join_player(room_id, user_id, display_name, avatar)
+        continue_mount_with_room(room, current_user, socket)
+    end
+  end
+
+  defp continue_mount_with_room(room, current_user, socket) do
+    user_id = current_user.id
+    user_email = current_user.email
+    display_name = User.display_name(current_user)
+    room_id = room.id
+
+    # プレイヤーとして参加（既にjoinしているので省略）
+    # Shinkanki.join_player(room_id, user_id, display_name, avatar)
 
     # ゲーム状態を取得
     game_state = Shinkanki.get_current_state(room_id) || %{}
@@ -180,11 +222,14 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
               <% end %>
 
               <!-- 空きスロット（最大4人、既にいるプレイヤー分を除く） -->
-              <%= for _i <- 1..max(0, min(4, @room.max_participants) - length(@players)) do %>
-                <div class="player-slot empty">
-                  <span class="slot-icon">⭕</span>
-                  <span class="slot-text">空き</span>
-                </div>
+              <% empty_slots = max(0, min(4, @room.max_participants) - length(@players)) %>
+              <%= if empty_slots > 0 do %>
+                <%= for _i <- 1..empty_slots do %>
+                  <div class="player-slot empty">
+                    <span class="slot-icon">⭕</span>
+                    <span class="slot-text">空き</span>
+                  </div>
+                <% end %>
               <% end %>
             </div>
 
@@ -471,7 +516,9 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
          |> assign(:is_ready, get_player_ready(game, user_id))
          |> assign(:all_ready, all_players_ready?(game))}
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        require Logger
+        Logger.error("toggle_ready failed: #{inspect(reason)} for room_id=#{inspect(room_id)}, user_id=#{inspect(user_id)}")
         {:noreply, socket}
     end
   end
@@ -482,7 +529,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     game_state = socket.assigns.game_state
 
     # プレイヤーのuser_idリストを取得
-    user_ids = 
+    user_ids =
       game_state
       |> Map.get(:player_order, [])
       |> Enum.map(fn player_id -> player_id end)
@@ -511,7 +558,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     game_state = socket.assigns.game_state
 
     # プレイヤーのuser_idリストを取得
-    user_ids = 
+    user_ids =
       game_state
       |> Map.get(:player_order, [])
       |> Enum.map(fn player_id -> player_id end)
@@ -840,11 +887,19 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
   # フレンド関係のステータスを取得
   defp get_friendship_status(user_id, other_id) when user_id == other_id, do: :self
+  defp get_friendship_status(nil, _other_id), do: :none
+  defp get_friendship_status(_user_id, nil), do: :none
 
   defp get_friendship_status(user_id, other_id) do
-    case Friends.get_friendship(user_id, other_id) do
-      nil -> :none
-      %{status: status} -> status
+    # user_idとother_idがUUID形式かチェック
+    with {:ok, _} <- Ecto.UUID.cast(user_id),
+         {:ok, _} <- Ecto.UUID.cast(other_id) do
+      case Friends.get_friendship(user_id, other_id) do
+        nil -> :none
+        %{status: status} -> status
+      end
+    else
+      _ -> :none
     end
   end
 

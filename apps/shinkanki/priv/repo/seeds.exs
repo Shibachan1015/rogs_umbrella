@@ -11,7 +11,7 @@
 # and so on) as they will fail if something goes wrong.
 
 alias Shinkanki.Repo
-alias Shinkanki.Games.{ActionCard, EventCard, ProjectTemplate}
+alias Shinkanki.Games.{ActionCard, EventCard, ProjectTemplate, TalentCard}
 
 # ===================
 # アクションカード（28枚）
@@ -737,8 +737,168 @@ end)
 
 IO.puts("✅ #{length(project_templates)} プロジェクトテンプレートを挿入しました")
 
+# ===================
+# タレントカード（16枚 - 各役割4枚）
+# ===================
+
+# 森の守護者（Forest Guardian）のタレント
+forest_guardian_talents = [
+  %{
+    name: "森の知恵",
+    category: "forest",
+    description: "森への深い理解。Forest系カードの効果+1",
+    compatible_tags: ["forest"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "自然との対話",
+    category: "forest",
+    description: "自然の声を聞き、調和をもたらす力",
+    compatible_tags: ["forest", "social"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "木霊の導き",
+    category: "forest",
+    description: "木霊に導かれ、森の秘密を知る",
+    compatible_tags: ["forest"],
+    effect_type: "cost_reduction",
+    effect_value: 50
+  },
+  %{
+    name: "森林再生の術",
+    category: "forest",
+    description: "傷ついた森を癒す特別な力",
+    compatible_tags: ["forest"],
+    effect_type: "bonus",
+    effect_value: 2
+  }
+]
+
+# 伝承の紡ぎ手（Heritage Weaver）のタレント
+heritage_weaver_talents = [
+  %{
+    name: "伝承の継承",
+    category: "culture",
+    description: "文化への深い理解。Culture系カードの効果+1",
+    compatible_tags: ["culture"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "物語の紡ぎ手",
+    category: "culture",
+    description: "物語を通じて人々の心をつなぐ力",
+    compatible_tags: ["culture", "social"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "古の記憶",
+    category: "culture",
+    description: "過去の知恵を呼び覚ます力",
+    compatible_tags: ["culture"],
+    effect_type: "cost_reduction",
+    effect_value: 50
+  },
+  %{
+    name: "職人の魂",
+    category: "culture",
+    description: "伝統技術を極める職人の魂",
+    compatible_tags: ["culture"],
+    effect_type: "bonus",
+    effect_value: 2
+  }
+]
+
+# 共同体の守り手（Community Keeper）のタレント
+community_keeper_talents = [
+  %{
+    name: "絆の守り手",
+    category: "social",
+    description: "社会への深い理解。Social系カードの効果+1",
+    compatible_tags: ["social"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "調停者",
+    category: "social",
+    description: "対立を解消し、協力を促進する力",
+    compatible_tags: ["social", "culture"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "共感の波動",
+    category: "social",
+    description: "人々の心に寄り添い、理解する力",
+    compatible_tags: ["social"],
+    effect_type: "cost_reduction",
+    effect_value: 50
+  },
+  %{
+    name: "コミュニティの絆",
+    category: "social",
+    description: "地域の絆を強化する特別な力",
+    compatible_tags: ["social"],
+    effect_type: "bonus",
+    effect_value: 2
+  }
+]
+
+# 空環の設計者（Akasha Architect）のタレント
+akasha_architect_talents = [
+  %{
+    name: "空環の設計者",
+    category: "akasha",
+    description: "Akashaの流れを読み、効率的に運用する力",
+    compatible_tags: ["akasha"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "循環の知恵",
+    category: "akasha",
+    description: "リソースの循環を最適化する力",
+    compatible_tags: ["akasha", "forest"],
+    effect_type: "bonus",
+    effect_value: 1
+  },
+  %{
+    name: "減衰の制御",
+    category: "akasha",
+    description: "Akashaの減衰を抑える技術",
+    compatible_tags: ["akasha"],
+    effect_type: "cost_reduction",
+    effect_value: 100
+  },
+  %{
+    name: "DAOの導き",
+    category: "akasha",
+    description: "DAOプールとの深いつながり",
+    compatible_tags: ["akasha"],
+    effect_type: "bonus",
+    effect_value: 2
+  }
+]
+
+# タレントカードを挿入
+all_talent_cards = forest_guardian_talents ++ heritage_weaver_talents ++ community_keeper_talents ++ akasha_architect_talents
+
+Enum.each(all_talent_cards, fn talent_attrs ->
+  %TalentCard{}
+  |> TalentCard.changeset(talent_attrs)
+  |> Repo.insert!()
+end)
+
+IO.puts("✅ #{length(all_talent_cards)} タレントカードを挿入しました")
+
 IO.puts("")
 IO.puts("🎉 シードデータの挿入が完了しました！")
 IO.puts("   - アクションカード: #{length(all_action_cards)}枚")
 IO.puts("   - イベントカード: #{length(all_event_cards)}枚")
 IO.puts("   - プロジェクトテンプレート: #{length(project_templates)}個")
+IO.puts("   - タレントカード: #{length(all_talent_cards)}枚")

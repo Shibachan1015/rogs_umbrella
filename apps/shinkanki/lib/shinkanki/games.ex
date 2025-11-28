@@ -16,7 +16,9 @@ defmodule Shinkanki.Games do
     GameProject,
     ProjectTemplate,
     GameAction,
-    ProjectParticipation
+    ProjectParticipation,
+    TalentCard,
+    PlayerTalent
   }
 
   # ===================
@@ -53,16 +55,16 @@ defmodule Shinkanki.Games do
     Repo.transaction(fn ->
       # ゲームセッションを作成（room_idを含める）
       {:ok, game_session} = create_game_session(%{room_id: room_id})
-      
+
       # プレイヤーを作成
       _players = create_players(game_session.id, user_ids)
-      
+
       # 初期プロジェクトをセットアップ
       setup_initial_projects(game_session)
-      
+
       # 最初のターンを開始
       {:ok, _turn_state} = start_new_turn(game_session)
-      
+
       # ゲームセッションを再取得（関連データをpreload）
       get_game_session!(game_session.id)
     end)
@@ -142,9 +144,15 @@ defmodule Shinkanki.Games do
         is_ai: false
       }
 
-      %Player{}
-      |> Player.changeset(player_attrs)
-      |> Repo.insert()
+      {:ok, player} =
+        %Player{}
+        |> Player.changeset(player_attrs)
+        |> Repo.insert()
+
+      # プレイヤーにタレントカードを割り当て（役割に応じて2枚）
+      assign_talents_to_player(player)
+
+      {:ok, player}
     end)
   end
 
@@ -386,6 +394,119 @@ defmodule Shinkanki.Games do
 
       # アクション履歴記録
       record_action(updated_session, player, card, "play_card")
+
+      # ゲーム終了チェック
+      case check_game_end(updated_session) do
+        {:immediate_loss, reason} ->
+          {:ok, final_session} = update_game_session(updated_session, %{status: "failed"})
+          GamePubSub.broadcast_game_end(final_session.id, reason)
+          {:ok, final_session}
+
+        {:completed, ending} ->
+          {:ok, final_session} = update_game_session(updated_session, %{status: "completed"})
+          GamePubSub.broadcast_game_end(final_session.id, ending)
+          {:ok, final_session}
+
+        {:continue, _} ->
+          # 状態更新をブロードキャスト
+          GamePubSub.broadcast_state_update(updated_session.id, updated_session)
+          {:ok, updated_session}
+      end
+    else
+      {:error, :insufficient_resources}
+    end
+  end
+
+  @doc """
+  タレント付きでアクションカードを実行
+  talent_ids: 使用するタレントのPlayerTalent IDリスト（最大2枚）
+  """
+  def execute_action_card_with_talents(
+        %Player{} = player,
+        %ActionCard{} = card,
+        %GameSession{} = game_session,
+        talent_ids \\ []
+      ) do
+    # タレントを取得
+    talents =
+      talent_ids
+      |> Enum.take(2)
+      |> Enum.map(fn id ->
+        pt = Repo.get!(PlayerTalent, id) |> Repo.preload(:talent_card)
+        pt.talent_card
+      end)
+
+    # コスト削減を計算
+    base_costs = %{
+      akasha: card.cost_akasha,
+      forest: card.cost_forest,
+      culture: card.cost_culture,
+      social: card.cost_social
+    }
+
+    final_costs =
+      Enum.reduce(talents, base_costs, fn talent, acc ->
+        if talent.effect_type == "cost_reduction" do
+          TalentCard.apply_effect(talent, acc, card.category)
+        else
+          acc
+        end
+      end)
+
+    # コストチェック（削減後のコストで）
+    can_afford =
+      player.akasha >= final_costs.akasha and
+        game_session.forest >= final_costs.forest and
+        game_session.culture >= final_costs.culture and
+        game_session.social >= final_costs.social
+
+    if can_afford do
+      # 役割ボーナス計算
+      role_bonus = Player.role_bonus(player.role, card.category)
+
+      # 基本効果
+      base_effects = %{
+        forest: card.effect_forest + role_bonus_for(:forest, card.category, role_bonus),
+        culture: card.effect_culture + role_bonus_for(:culture, card.category, role_bonus),
+        social: card.effect_social + role_bonus_for(:social, card.category, role_bonus)
+      }
+
+      # タレント効果を適用（bonus系）
+      final_effects =
+        Enum.reduce(talents, base_effects, fn talent, acc ->
+          if talent.effect_type != "cost_reduction" do
+            TalentCard.apply_effect(talent, acc, card.category)
+          else
+            acc
+          end
+        end)
+
+      # 効果適用
+      new_forest = clamp(game_session.forest + final_effects.forest - final_costs.forest, 0, 20)
+      new_culture = clamp(game_session.culture + final_effects.culture - final_costs.culture, 0, 20)
+      new_social = clamp(game_session.social + final_effects.social - final_costs.social, 0, 20)
+
+      # プレイヤーのAkasha更新
+      {:ok, _updated_player} = update_player_akasha(player, -final_costs.akasha)
+
+      # タレントを使用済みにする
+      Enum.each(talent_ids, fn id ->
+        use_talent_by_id(id)
+      end)
+
+      # ゲームセッション更新
+      {:ok, updated_session} =
+        update_game_session(game_session, %{
+          forest: new_forest,
+          culture: new_culture,
+          social: new_social
+        })
+
+      # 生命指数を更新
+      {:ok, updated_session} = update_life_index(updated_session)
+
+      # アクション履歴記録
+      record_action(updated_session, player, card, "play_card_with_talents")
 
       # ゲーム終了チェック
       case check_game_end(updated_session) do
@@ -694,6 +815,134 @@ defmodule Shinkanki.Games do
     |> max(min_val)
     |> min(max_val)
   end
+
+  # ===================
+  # タレントカード管理
+  # ===================
+
+  @doc """
+  役割に応じたタレントカードを取得
+  """
+  def get_talents_for_role(role) do
+    category = role_to_category(role)
+
+    TalentCard
+    |> where([t], t.category == ^category)
+    |> Repo.all()
+  end
+
+  @doc """
+  全てのタレントカードを取得
+  """
+  def list_talent_cards do
+    Repo.all(TalentCard)
+  end
+
+  @doc """
+  タレントカードを取得
+  """
+  def get_talent_card!(id) do
+    Repo.get!(TalentCard, id)
+  end
+
+  @doc """
+  プレイヤーにタレントを割り当て
+  各プレイヤーは役割に応じたタレントから2枚をランダムに取得
+  """
+  def assign_talents_to_player(%Player{} = player) do
+    talents = get_talents_for_role(player.role)
+
+    # 2枚をランダムに選択
+    selected_talents =
+      talents
+      |> Enum.shuffle()
+      |> Enum.take(2)
+
+    Enum.each(selected_talents, fn talent ->
+      %PlayerTalent{}
+      |> PlayerTalent.changeset(%{
+        player_id: player.id,
+        talent_card_id: talent.id,
+        is_used: false
+      })
+      |> Repo.insert!()
+    end)
+
+    selected_talents
+  end
+
+  @doc """
+  プレイヤーのタレントを取得（使用状態含む）
+  """
+  def get_player_talents(%Player{} = player) do
+    player = Repo.preload(player, player_talents: :talent_card)
+
+    Enum.map(player.player_talents, fn pt ->
+      %{
+        id: pt.talent_card.id,
+        name: pt.talent_card.name,
+        description: pt.talent_card.description,
+        category: pt.talent_card.category,
+        compatible_tags: pt.talent_card.compatible_tags,
+        effect_type: pt.talent_card.effect_type,
+        effect_value: pt.talent_card.effect_value,
+        is_used: pt.is_used,
+        player_talent_id: pt.id
+      }
+    end)
+  end
+
+  @doc """
+  タレントを使用
+  """
+  def use_talent(%PlayerTalent{} = player_talent) do
+    player_talent
+    |> PlayerTalent.changeset(%{is_used: true})
+    |> Repo.update()
+  end
+
+  @doc """
+  タレントIDで使用済みにする
+  """
+  def use_talent_by_id(player_talent_id) do
+    player_talent = Repo.get!(PlayerTalent, player_talent_id)
+    use_talent(player_talent)
+  end
+
+  @doc """
+  タレントがアクションカードと互換性があるかチェック
+  """
+  def talent_compatible_with_action?(%TalentCard{} = talent, %ActionCard{} = action_card) do
+    TalentCard.compatible_with?(talent, action_card.category)
+  end
+
+  @doc """
+  プレイヤーの未使用タレントで互換性のあるものを取得
+  """
+  def get_compatible_talents(%Player{} = player, %ActionCard{} = action_card) do
+    player = Repo.preload(player, player_talents: :talent_card)
+
+    player.player_talents
+    |> Enum.filter(fn pt ->
+      not pt.is_used and TalentCard.compatible_with?(pt.talent_card, action_card.category)
+    end)
+    |> Enum.map(fn pt ->
+      %{
+        id: pt.talent_card.id,
+        name: pt.talent_card.name,
+        description: pt.talent_card.description,
+        effect_type: pt.talent_card.effect_type,
+        effect_value: pt.talent_card.effect_value,
+        player_talent_id: pt.id
+      }
+    end)
+  end
+
+  defp role_to_category("forest_guardian"), do: "forest"
+  defp role_to_category("heritage_weaver"), do: "culture"
+  defp role_to_category("community_keeper"), do: "social"
+  defp role_to_category("akasha_architect"), do: "akasha"
+  defp role_to_category(_), do: "universal"
 
   defp record_action(
          %GameSession{} = game_session,

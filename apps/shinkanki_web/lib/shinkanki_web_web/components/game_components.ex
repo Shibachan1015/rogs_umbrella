@@ -23,7 +23,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "ofuda-card relative w-24 h-36 flex flex-col items-center p-2 transition-all select-none state-layer focus-ring",
+        "ofuda-card relative w-24 h-36 flex flex-col items-center p-2 transition-all select-none state-layer focus-ring bg-washi border border-sumi/30 rounded-lg shadow-md",
         if(@disabled,
           do: "ofuda-card--disabled cursor-not-allowed",
           else: "cursor-pointer hover:-translate-y-2 active:scale-95"

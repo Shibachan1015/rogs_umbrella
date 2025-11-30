@@ -263,671 +263,200 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def render(assigns) do
     ~H"""
-    <div class="landing-body min-h-screen flex flex-col text-[var(--color-landing-text-primary)]">
-      <div class="torii-lines pointer-events-none hidden lg:block"></div>
-      <div class="flex-1 flex overflow-hidden relative landing-container px-0">
-        <!-- Sidebar -->
-        <aside
-          class="fixed lg:static inset-y-0 left-0 w-72 sm:w-80 bg-[rgba(15,20,25,0.9)] border-r border-[var(--color-landing-gold)]/15 text-[var(--color-landing-text-primary)] flex flex-col z-20 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:translate-x-0 -translate-x-full transition-transform duration-300"
-          id="sidebar"
-          role="complementary"
-          aria-label="ゲーム情報とチャット"
-          aria-hidden="false"
-        >
-          <button
-            class="lg:hidden fixed left-0 top-4 z-30 w-10 h-10 bg-shu text-washi rounded-r-lg flex items-center justify-center shadow-md"
-            phx-click={JS.toggle_class("translate-x-0 -translate-x-full", to: "#sidebar")}
-            aria-label="サイドバーを開く"
-            aria-expanded="false"
-            id="sidebar-toggle"
-          >
-            <.icon name="hero-bars-3" class="w-5 h-5" />
-          </button>
-          <button
-            class="lg:hidden absolute top-4 right-4 w-8 h-8 bg-sumi/20 text-sumi rounded-full flex items-center justify-center hover:bg-sumi/30"
-            phx-click={JS.toggle_class("translate-x-0 -translate-x-full", to: "#sidebar")}
-            aria-label="サイドバーを閉じる"
-          >
-            <.icon name="hero-x-mark" class="w-4 h-4" />
-          </button>
-
-          <div class="hud-panel text-center space-y-4 mb-4">
-            <div class="hud-section-title" aria-label="ルーム名">Room</div>
-            <div
-              class="text-2xl font-bold tracking-[0.45em] text-[var(--color-landing-gold)] drop-shadow"
-              aria-label={"ルーム: #{@game_state[:room_id] || @game_state.room_id || "UNKNOWN"}"}
-            >
-              {@game_state[:room_id] || @game_state.room_id || "UNKNOWN"}
-            </div>
-            <div class="hud-panel-divider" aria-hidden="true"></div>
-            <div class="w-full space-y-3">
-              <% max_turns = 20
-              remaining_turns = max(0, max_turns - (@game_state[:turn] || @game_state.turn || 1))
-              progress_percentage = trunc((@game_state[:turn] || @game_state.turn || 1) / max_turns * 100)
-              is_warning = remaining_turns <= 5
-              is_critical = remaining_turns <= 3
-              demurrage_value = 0 %>
-              <div class="flex justify-between items-baseline text-[var(--color-landing-text-secondary)]">
-                <span class="text-xs uppercase tracking-[0.3em]" aria-label="ターン: {@game_state.turn} / {@game_state.max_turns}">
-                  Turn {@game_state.turn} / {@game_state.max_turns}
-                </span>
-                <span class="text-[10px]">
-                  ({progress_percentage}%)
-                </span>
-                <div class={["flex items-baseline gap-1", if(is_critical, do: "turn-remaining-warning", else: "")]}>
-                  <span class={[
-                    "text-lg sm:text-xl font-bold font-serif",
-                    if(is_critical,
-                      do: "text-shu",
-                      else: if(is_warning, do: "text-kohaku", else: "text-matsu")
-                    )
-                  ]}>
-                    {remaining_turns}
-                  </span>
-                  <span class={[
-                    "text-xs font-semibold",
-                    if(is_critical,
-                      do: "text-shu",
-                      else: if(is_warning, do: "text-kohaku", else: "text-sumi/60")
-                    )
-                  ]}>
-                    ターン残り
-                  </span>
-                </div>
-              </div>
-              <div class={[
-                "w-full h-3 rounded-full overflow-hidden border",
-                if(is_critical,
-                  do: "border-shu/40 turn-progress-glow bg-shu/10",
-                  else:
-                    if(is_warning,
-                      do: "border-kohaku/40 bg-kohaku/10",
-                      else: "border-[var(--color-landing-gold)]/20 bg-white/5"
-                    )
-                )
-              ]}>
-                <div class="turn-progress-bar h-full">
-                  <div
-                    class={[
-                      "h-full transition-all duration-700 ease-out rounded-full",
-                      if(is_critical,
-                        do: "bg-gradient-to-r from-shu to-shu/80",
-                        else:
-                          if(is_warning,
-                            do: "bg-gradient-to-r from-kohaku to-kohaku/80",
-                            else: "bg-gradient-to-r from-matsu to-matsu/80"
-                          )
-                      )
-                    ]}
-                    style={"width: #{progress_percentage}%"}
-                    role="progressbar"
-                    aria-valuenow={@game_state.turn}
-                    aria-valuemin="1"
-                    aria-valuemax={@game_state.max_turns}
-                    aria-label={"ターン進行: #{@game_state.turn}/#{@game_state.max_turns} (#{progress_percentage}%)"}
-                  >
-                  </div>
-                </div>
-              </div>
-              <%= if is_critical do %>
-                <div class="text-center">
-                  <span class="text-xs font-semibold text-shu animate-pulse">
-                    ⚠ 残りターンが少なくなっています
-                  </span>
-                </div>
-              <% else %>
-                <%= if is_warning do %>
-                  <div class="text-center">
-                    <span class="text-xs text-kohaku">
-                      残りターンに注意
-                    </span>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-            <div class="hud-info-grid mt-4 text-left">
-              <div class="hud-info-card">
-                <span class="hud-info-card-label">AKASHA</span>
-                <span class="hud-info-card-value">{@game_state[:currency] || @game_state.currency || 0}</span>
-                <span class="hud-info-card-subtle">空環ポイント</span>
-              </div>
-              <div class="hud-info-card">
-                <span class="hud-info-card-label">DEMURRAGE</span>
-                <span class="hud-info-card-value">{demurrage_value}</span>
-                <span class="hud-info-card-subtle">減衰量</span>
-                <span class="hud-info-card-diff">
-                  <%= if demurrage_value >= 0, do: "+", else: "-" %>{abs(demurrage_value)}
-                </span>
-              </div>
-            </div>
+    <div class="min-h-screen flex flex-col bg-[var(--color-midnight)] text-[var(--color-landing-text-primary)]">
+      <!-- Compact Top Bar -->
+      <header class="flex items-center justify-between px-4 py-2 bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20">
+        <!-- Left: Turn & Phase -->
+        <div class="flex items-center gap-4">
+          <div class="text-sm font-bold text-[var(--color-landing-gold)]">
+            T{@game_state.turn}/{@game_state.max_turns}
           </div>
-
-          <div class="flex-1 overflow-y-auto px-3 sm:px-4 space-y-4 pb-6 sidebar-scroll">
-            <div class="hud-panel-light">
-              <.phase_indicator current_phase={@current_phase} />
-            </div>
-
-            <%= if @current_phase == :discussion && @game_status == :playing do %>
-              <div class="hud-panel-light text-center space-y-2">
-                <div class="text-xs text-[var(--color-landing-text-secondary)]">
-                  相談フェーズ - 準備ができたらボタンを押してください
-                </div>
-                <%= if get_player_ready_status(@players, @user_id) do %>
-                  <div class="text-xs text-matsu font-semibold">
-                    ✓ 準備完了
-                  </div>
-                <% else %>
-                  <button
-                    class="cta-button cta-outline w-full justify-center tracking-[0.3em]"
-                    phx-click="execute_action"
-                    phx-value-action="mark_discussion_ready"
-                    aria-label="準備完了"
-                  >
-                    準備完了
-                  </button>
-                <% end %>
-              </div>
-            <% end %>
-
-            <%= if @current_phase == :action && @game_status == :playing do %>
-              <div class="hud-panel-light text-center space-y-2">
-                <div class="hud-section-title">現在のターン</div>
-                <div class="text-sm font-bold text-[var(--color-landing-pale)]">
-                  {get_current_player_name(@game_state, @players) || "プレイヤー"}
-                </div>
-                <%= if is_current_player_turn(@game_state, @user_id) do %>
-                  <div class="text-xs text-matsu font-semibold">
-                    ← あなたのターンです
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-
-            <%= if @game_status == :waiting do %>
-              <div class="hud-panel-light space-y-3">
-                <div class="space-y-2">
-                  <div class="hud-section-title text-center">
-                    参加プレイヤー
-                  </div>
-                  <div class="space-y-1 max-h-32 overflow-y-auto">
-                    <%= for player <- @players do %>
-                      <% player_id = player[:id] || player["id"] || player.id %>
-                      <div class="text-xs text-[var(--color-landing-text-secondary)] px-2 py-1 bg-white/5 rounded border border-white/10">
-                        <span class="font-semibold text-[var(--color-landing-pale)]">
-                          {player[:name] || player["name"] || player.name || "Player"}
-                        </span>
-                        <%= if player_id == @user_id do %>
-                          <span class="text-[var(--color-landing-text-secondary)] ml-1">(あなた)</span>
-                        <% end %>
-                      </div>
-                    <% end %>
-                  </div>
-                  <div class="text-xs text-[var(--color-landing-text-secondary)] text-center">
-                    {length(@players)} / 4 プレイヤー
-                  </div>
-                </div>
-                <div class="pt-2 border-t border-white/10">
-                  <%= if @can_start do %>
-                    <button
-                      class="cta-button cta-solid w-full justify-center tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
-                      phx-click="execute_action"
-                      phx-value-action="start_game"
-                      aria-label="ゲームを開始"
-                    >
-                      ゲームを開始
-                    </button>
-                  <% else %>
-                    <div class="text-xs text-[var(--color-landing-text-secondary)] text-center py-2">
-                      最小プレイヤー数（1人）に達していません
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-
-            <div class="hud-panel-light">
-              <div class="hud-section-title mb-2">プレイヤー</div>
-              <div class="space-y-2">
-                <.player_info_card
-                  :for={player <- @players}
-                  player_id={player[:id] || player["id"]}
-                  player_name={player[:name] || player["name"] || "プレイヤー"}
-                  role={player[:role] || player["role"]}
-                  is_current_player={(player[:id] || player["id"]) == @user_id}
-                  is_ready={player[:is_ready] || player["is_ready"] || false}
-                  is_current_turn={is_current_player_turn(@game_state, player[:id] || player["id"])}
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <div
-              class="hud-panel hud-chat-card p-4 space-y-3 scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent"
-              id="chat-container"
-              phx-hook="ChatScroll"
-              role="log"
-              aria-label="チャットログ"
-              aria-live="polite"
-              aria-atomic="false"
-            >
-              <div class="hud-section-title">Chat Log</div>
-              <div id="chat-messages" phx-update="stream" class="space-y-3">
-                <div
-                  :for={{id, msg} <- @streams.chat_messages}
-                  id={id}
-                  class="chat-message border border-white/10 rounded-lg bg-white/5 p-3 shadow-sm"
-                  phx-mounted={
-                    JS.add_class("new-message", to: "##{id}")
-                    |> JS.remove_class("new-message", time: 2000, to: "##{id}")
-                  }
-                  role="article"
-                  aria-label={"メッセージ from #{msg.user_email || msg.author}"}
-                >
-                  <div class="flex justify-between text-[10px] uppercase tracking-[0.4em] text-[var(--color-landing-text-secondary)]">
-                    <span class="font-semibold text-[var(--color-landing-pale)]" aria-label="送信者">
-                      {msg.user_email || msg.author}
-                    </span>
-                    <time
-                      class="text-[var(--color-landing-text-secondary)]"
-                      datetime={if msg.inserted_at, do: DateTime.to_iso8601(msg.inserted_at), else: ""}
-                      aria-label="送信時刻"
-                    >
-                      {format_time(msg.inserted_at || msg.sent_at)}
-                    </time>
-                  </div>
-                  <p class="text-sm text-[var(--color-landing-text-primary)] mt-2 leading-relaxed">
-                    {msg.content || msg.body}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="hud-panel-light space-y-3" role="region" aria-label="メッセージ送信">
-              <div class="hud-section-title">Send Message</div>
-              <.form
-                for={@chat_form}
-                id="chat-form"
-                phx-submit="send_chat"
-                phx-change="validate_chat"
-                class="space-y-3"
-                role="form"
-                aria-label="チャットメッセージ送信フォーム"
-              >
-                <.input
-                  field={@chat_form[:body]}
-                  type="textarea"
-                  placeholder="想いを紡ぐ..."
-                  class="hud-chat-input min-h-20 text-sm"
-                  phx-hook="ChatInput"
-                  autofocus
-                  aria-label="メッセージ本文"
-                  aria-describedby="chat-body-help"
-                />
-                <p id="chat-body-help" class="sr-only">
-                  メッセージを入力してください。Enterキーで送信、Shift+Enterで改行します。
-                </p>
-                <div class="flex items-center gap-2">
-                  <.input
-                    field={@chat_form[:author]}
-                    type="text"
-                    class="hud-chat-input text-xs uppercase tracking-[0.3em]"
-                    placeholder="署名"
-                    aria-label="送信者名"
-                  />
-                  <button
-                    type="submit"
-                    class="cta-button cta-solid h-10 px-4 flex items-center gap-2 tracking-[0.3em] disabled:opacity-50 disabled:cursor-not-allowed"
-                    phx-disable-with="送信中..."
-                    aria-label="メッセージを送信"
-                  >
-                    <span class="phx-submit-loading:hidden">送信</span>
-                    <span class="hidden phx-submit-loading:inline-flex items-center gap-2">
-                      <svg
-                        class="animate-spin h-3 w-3"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          class="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          stroke-width="4"
-                        >
-                        </circle>
-                        <path
-                          class="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        >
-                        </path>
-                      </svg>
-                      送信中...
-                    </span>
-                  </button>
-                </div>
-              </.form>
-            </div>
+          <div class="text-xs px-2 py-1 rounded bg-white/10 text-[var(--color-landing-pale)]">
+            {phase_name(@current_phase)}
           </div>
-        </aside>
-
-    <!-- Main Board -->
-        <main
-          class="flex-1 relative overflow-hidden flex flex-col items-center p-4 sm:p-8 md:p-10 lg:ml-0 resonance-shell"
-          role="main"
-          aria-label="ゲームボード"
-        >
-          <div class="resonance-board w-full max-w-6xl flex flex-col items-center gap-8 p-4 sm:p-8 md:p-10">
-          <!-- Phase Indicator (Top of Main Board) -->
-          <%= if @game_status == :playing do %>
-            <div class="w-full max-w-4xl mb-4 sm:mb-6 animate-fade-in">
-              <.phase_indicator current_phase={@current_phase} />
-            </div>
-          <% end %>
-
-    <!-- Event Card Display (Event Phase) -->
-          <%= if @current_phase == :event && @current_event do %>
-            <div class="w-full max-w-md mx-auto animate-fade-in hud-panel text-[var(--color-landing-text-primary)]">
-              <div class="hud-section-title mb-3 text-center">現在のイベント</div>
-              <.event_card
-                title={@current_event[:title] || @current_event["title"] || "イベント"}
-                description={@current_event[:description] || @current_event["description"] || ""}
-                effect={@current_event[:effect] || @current_event["effect"] || %{}}
-                category={@current_event[:category] || @current_event["category"] || :neutral}
-                phx-click="show_event_modal"
-                class="cursor-pointer hover:scale-105 transition-transform"
-              />
-            </div>
-          <% else %>
-            <!-- Active Projects Display -->
-            <%= if length(@active_projects) > 0 && @game_status == :playing do %>
-              <section class="project-stage" aria-label="共創プロジェクト">
-                <div class="project-stage-header">
-                  <div>
-                    <p class="stage-label">共創プロジェクト</p>
-                    <p class="stage-subtitle">才能を捧げ、森と文化とつながりを再構築</p>
-                  </div>
-                  <div class="project-metrics">
-                    <div class="project-metric">
-                      <span class="metric-label">ACTIVE</span>
-                      <span class="metric-value">{length(@active_projects)}</span>
-                    </div>
-                    <div class="project-metric">
-                      <span class="metric-label">AKASHA φ</span>
-                      <span class="metric-value">{@game_state[:currency] || @game_state.currency || 0}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="project-grid">
-                  <%= for project <- @active_projects do %>
-                    <div
-                      class="cursor-pointer transition-transform"
-                      phx-click="open_project_contribute"
-                      phx-value-project-id={project[:id] || project["id"]}
-                    >
-                      <.project_card
-                        title={project[:name] || project["name"] || "プロジェクト"}
-                        description={project[:description] || project["description"] || ""}
-                        cost={
-                          project[:required_progress] || project["required_progress"] ||
-                            project[:cost] || 0
-                        }
-                        progress={project[:progress] || project["progress"] || 0}
-                        effect={project[:effect] || project["effect"] || %{}}
-                        unlock_condition={
-                          project[:unlock_condition] || project["unlock_condition"] || %{}
-                        }
-                        is_unlocked={project[:is_unlocked] || project["is_unlocked"] || true}
-                        is_completed={project[:is_completed] || project["is_completed"] || false}
-                        contributed_talents={
-                          project[:contributed_talents] || project["contributed_talents"] || []
-                        }
-                        class="h-full"
-                      />
-                    </div>
-                  <% end %>
-                </div>
-              </section>
-            <% end %>
-            <!-- Game Stats Panel -->
-            <div class="game-stats-container" role="region" aria-label="ゲーム状況">
-              <!-- Gauges Row -->
-              <div class="gauges-row" role="group" aria-label="パラメータゲージ">
-                <div class="gauge-card gauge-card--forest" role="group" aria-label="Forest (F) ゲージ">
-                  <span class="gauge-label text-matsu">
-                    <span class="gauge-icon">🌲</span> Forest (F)
-                  </span>
-                  <div
-                    class="gauge-track"
-                    role="progressbar"
-                    aria-valuenow={@game_state.forest}
-                    aria-valuemin="0"
-                    aria-valuemax="20"
-                    aria-label={"Forest: #{@game_state.forest}"}
-                  >
-                    <div
-                      id="forest-gauge-bar"
-                      class="gauge-fill bg-matsu"
-                      style={"width: #{gauge_width(@game_state.forest)}%"}
-                      phx-update="ignore"
-                    >
-                    </div>
-                    <span class="gauge-value">{@game_state.forest}</span>
-                  </div>
-                </div>
-
-                <div class="gauge-card gauge-card--culture" role="group" aria-label="Culture (K) ゲージ">
-                  <span class="gauge-label text-sakura">
-                    <span class="gauge-icon">🎭</span> Culture (K)
-                  </span>
-                  <div
-                    class="gauge-track"
-                    role="progressbar"
-                    aria-valuenow={@game_state[:culture] || @game_state.culture || 0}
-                    aria-valuemin="0"
-                    aria-valuemax="20"
-                    aria-label={"Culture: #{@game_state[:culture] || @game_state.culture || 0}"}
-                  >
-                    <div
-                      id="culture-gauge-bar"
-                      class="gauge-fill bg-sakura"
-                      style={"width: #{gauge_width(@game_state[:culture] || @game_state.culture || 0)}%"}
-                      phx-update="ignore"
-                    >
-                    </div>
-                    <span class="gauge-value">{@game_state[:culture] || @game_state.culture || 0}</span>
-                  </div>
-                </div>
-
-                <div class="gauge-card gauge-card--social" role="group" aria-label="Social (S) ゲージ">
-                  <span class="gauge-label text-kohaku">
-                    <span class="gauge-icon">🤝</span> Social (S)
-                  </span>
-                  <div
-                    class="gauge-track"
-                    role="progressbar"
-                    aria-valuenow={@game_state[:social] || @game_state.social || 0}
-                    aria-valuemin="0"
-                    aria-valuemax="20"
-                    aria-label={"Social: #{@game_state[:social] || @game_state.social || 0}"}
-                  >
-                    <div
-                      id="social-gauge-bar"
-                      class="gauge-fill bg-kohaku"
-                      style={"width: #{gauge_width(@game_state[:social] || @game_state.social || 0)}%"}
-                      phx-update="ignore"
-                    >
-                    </div>
-                    <span class="gauge-value">{@game_state[:social] || @game_state.social || 0}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Life Index Circle (Compact) -->
-              <div class="life-index-compact" role="region" aria-label="Life Index表示">
-                <div
-                  class="life-index-circle"
-                  aria-label={"Life Index: #{life_index(@game_state)}"}
-                  role="meter"
-                  aria-valuenow={life_index(@game_state)}
-                  aria-valuemin="0"
-                  aria-valuemax={@game_state[:life_index_target] || @game_state.life_index_target || 40}
-                >
-                  <svg class="life-index-svg" viewBox="0 0 120 120" aria-hidden="true">
-                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="6" />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="52"
-                      fill="none"
-                      stroke="rgba(212, 175, 55, 0.6)"
-                      stroke-width="6"
-                      stroke-dasharray={2 * :math.pi() * 52}
-                      stroke-dashoffset={
-                        2 * :math.pi() * 52 * (1 - min(life_index(@game_state) / (@game_state[:life_index_target] || @game_state.life_index_target || 40), 1.0))
-                      }
-                      stroke-linecap="round"
-                      class="life-index-progress"
-                    />
-                  </svg>
-                  <div class="life-index-content">
-                    <div class="life-index-label">L</div>
-                    <div class="life-index-value">{life_index(@game_state)}</div>
-                    <div class="life-index-target">/ {@game_state[:life_index_target] || @game_state.life_index_target || 40}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Actions Panel -->
-              <% remaining_turns = max((@game_state.max_turns || 0) - (@game_state.turn || 0), 0) %>
-              <div class="actions-panel" role="toolbar" aria-label="アクションボタン">
-                <div class="actions-header">
-                  <span class="actions-title">AKASHA ACTIONS</span>
-                  <span class="actions-turns">残り {remaining_turns} ターン</span>
-                </div>
-                <div class="actions-buttons">
-                  <.hanko_btn
-                    :for={button <- @action_buttons}
-                    label={button[:label] || button.label || button[:name] || button.name}
-                    color={button[:color] || button.color || "sumi"}
-                    class="action-hanko"
-                    aria-label={(button[:label] || button.label || button[:name] || button.name) <> "を実行"}
-                    phx-click="play_action_card"
-                    phx-value-card_id={button[:id] || button.id}
-                  />
-                </div>
-              </div>
-            </div>
-          <% end %>
-          </div>
-        </main>
-      </div>
-
-    <!-- Bottom Hand -->
-      <div
-        class="resonance-hand h-32 md:h-48 z-30 relative overflow-hidden"
-        role="region"
-        aria-label="手札"
-      >
-        <div class="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2 bg-shu text-washi px-4 md:px-6 py-1 rounded-t-lg font-bold shadow-md border-x-2 border-t-2 border-sumi text-xs md:text-base z-10">
-          手札
         </div>
-        <div
-          class="h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-4 px-4 md:px-8 overflow-x-auto scrollbar-thin scrollbar-thumb-sumi scrollbar-track-transparent pb-2"
-          role="group"
-          aria-label="手札カード"
-        >
-          <%= for card <- @hand_cards do %>
-            <% # Check if this card has talents stacked
-            card_talents = get_card_talents(card.id, assigns) %>
-            <div class="relative">
-              <%= if length(card_talents) > 0 do %>
-                <.action_card_with_talents
-                  title={card.title}
-                  cost={card.cost}
-                  type={card.type}
-                  talent_cards={card_talents}
-                  tags={card[:tags] || card["tags"] || []}
-                  phx-click="select_card"
-                  phx-dblclick="use_card"
-                  phx-value-card-id={card.id}
-                  class={
-                    [
-                      "hover:z-10 w-16 h-24 md:w-24 md:h-36",
-                      if(@selected_card_id == card.id,
-                        do: "ring-4 ring-shu/50 border-shu scale-105",
-                        else: ""
-                      ),
-                      if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
-                        do: "opacity-50 cursor-not-allowed",
-                        else: "cursor-pointer"
-                      )
-                    ]
-                    |> Enum.filter(&(&1 != ""))
-                    |> Enum.join(" ")
-                  }
-                />
-              <% else %>
-                <.ofuda_card
-                  id={card.id}
-                  title={card.title}
-                  cost={card.cost}
-                  type={card.type}
-                  phx-click="select_card"
-                  phx-dblclick="use_card"
-                  phx-value-card-id={card.id}
-                  class={
-                    [
-                      "hover:z-10 w-16 h-24 md:w-24 md:h-36",
-                      if(@selected_card_id == card.id,
-                        do: "ring-4 ring-shu/50 border-shu scale-105",
-                        else: ""
-                      ),
-                      if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
-                        do: "opacity-50 cursor-not-allowed",
-                        else: "cursor-pointer"
-                      )
-                    ]
-                    |> Enum.filter(&(&1 != ""))
-                    |> Enum.join(" ")
-                  }
-                  aria-disabled={(@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha}
-                />
-              <% end %>
-            </div>
-          <% end %>
+
+        <!-- Center: Life Index (compact) -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-[var(--color-landing-text-secondary)]">Life</span>
+          <span class="text-lg font-bold text-[var(--color-landing-gold)]">{life_index(@game_state)}</span>
+          <span class="text-xs text-[var(--color-landing-text-secondary)]">/40</span>
+        </div>
+
+        <!-- Right: Stats Button & Akasha -->
+        <div class="flex items-center gap-3">
+          <div class="text-sm">
+            <span class="text-[var(--color-landing-text-secondary)]">φ</span>
+            <span class="font-bold text-[var(--color-landing-gold)]">{@game_state[:currency] || @game_state.currency || 0}</span>
+          </div>
+          <button
+            phx-click={JS.toggle(to: "#stats-panel")}
+            class="p-2 rounded bg-white/10 hover:bg-white/20 transition-colors"
+            aria-label="詳細を表示"
+          >
+            <.icon name="hero-chart-bar" class="w-4 h-4" />
+          </button>
+          <button
+            phx-click={JS.toggle(to: "#chat-panel")}
+            class="p-2 rounded bg-white/10 hover:bg-white/20 transition-colors"
+            aria-label="チャットを表示"
+          >
+            <.icon name="hero-chat-bubble-left-right" class="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      <!-- Stats Panel (hidden by default) -->
+      <div id="stats-panel" class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-center gap-6 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="text-matsu">🌲</span>
+            <span class="text-[var(--color-landing-text-secondary)]">F:</span>
+            <span class="font-bold text-matsu">{@game_state.forest}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sakura">🎭</span>
+            <span class="text-[var(--color-landing-text-secondary)]">K:</span>
+            <span class="font-bold text-sakura">{@game_state[:culture] || @game_state.culture || 0}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-kohaku">🤝</span>
+            <span class="text-[var(--color-landing-text-secondary)]">S:</span>
+            <span class="font-bold text-kohaku">{@game_state[:social] || @game_state.social || 0}</span>
+          </div>
         </div>
       </div>
 
-    <!-- Talent Cards Area (Action Phase) -->
-      <%= if @current_phase == :action && length(@player_talents) > 0 do %>
-        <div
-          class="h-24 md:h-28 bg-kin/5 border-t-2 border-kin z-20 relative overflow-hidden"
-          role="region"
-          aria-label="才能カード"
-        >
-          <div class="absolute -top-3 md:-top-4 left-1/2 transform -translate-x-1/2 bg-kin text-washi px-3 md:px-4 py-0.5 rounded-t-lg font-bold shadow-md border-x-2 border-t-2 border-sumi text-[10px] md:text-xs z-10">
-            才能カード
-          </div>
+      <!-- Chat Panel (hidden by default) -->
+      <div id="chat-panel" class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-4 py-3 max-h-48 overflow-y-auto">
+        <div id="chat-messages" phx-update="stream" class="space-y-2 mb-3">
           <div
-            class="h-full w-full flex items-center justify-start md:justify-center gap-2 md:gap-3 px-4 md:px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-kin scrollbar-track-transparent pb-2 pt-2"
-            role="group"
-            aria-label="利用可能な才能カード"
+            :for={{id, msg} <- @streams.chat_messages}
+            id={id}
+            class="text-xs bg-white/5 rounded p-2"
           >
-            <.talent_card
-              :for={talent <- @player_talents}
-              title={talent[:name] || talent["name"] || "才能"}
-              description={talent[:description] || talent["description"]}
-              compatible_tags={talent[:compatible_tags] || talent["compatible_tags"] || []}
-              is_used={talent[:is_used] || talent["is_used"] || false}
-              is_selected={Enum.member?(@selected_talents_for_card, talent[:id] || talent["id"])}
-              class="w-14 h-18 md:w-16 md:h-20"
+            <span class="font-semibold text-[var(--color-landing-gold)]">{msg.user_email || msg.author}:</span>
+            <span class="text-[var(--color-landing-text-primary)] ml-1">{msg.content || msg.body}</span>
+          </div>
+        </div>
+        <.form for={@chat_form} id="chat-form" phx-submit="send_chat" class="flex gap-2">
+          <input
+            type="text"
+            name={@chat_form[:body].name}
+            placeholder="メッセージ..."
+            class="flex-1 bg-white/10 border border-white/20 rounded px-3 py-1 text-sm text-[var(--color-landing-text-primary)]"
+          />
+          <button type="submit" class="px-3 py-1 bg-shu text-washi rounded text-sm">送信</button>
+        </.form>
+      </div>
+
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+        <!-- Waiting State -->
+        <%= if @game_status == :waiting do %>
+          <div class="text-center space-y-4">
+            <h2 class="text-xl font-bold text-[var(--color-landing-pale)]">プレイヤー待機中</h2>
+            <div class="text-sm text-[var(--color-landing-text-secondary)]">
+              {length(@players)} / 4 人
+            </div>
+            <%= if @can_start do %>
+              <button
+                class="px-6 py-2 bg-shu text-washi rounded font-bold"
+                phx-click="execute_action"
+                phx-value-action="start_game"
+              >
+                ゲーム開始
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Event Phase -->
+        <%= if @current_phase == :event && @current_event && @game_status == :playing do %>
+          <div class="w-full max-w-md animate-fade-in">
+            <.event_card
+              title={@current_event[:title] || @current_event["title"] || "イベント"}
+              description={@current_event[:description] || @current_event["description"] || ""}
+              effect={@current_event[:effect] || @current_event["effect"] || %{}}
+              category={@current_event[:category] || @current_event["category"] || :neutral}
             />
           </div>
+        <% end %>
+
+        <!-- Action Phase: Show current player info -->
+        <%= if @current_phase == :action && @game_status == :playing do %>
+          <div class="text-center mb-4">
+            <%= if is_current_player_turn(@game_state, @user_id) do %>
+              <div class="text-matsu font-bold">あなたのターン</div>
+            <% else %>
+              <div class="text-[var(--color-landing-text-secondary)]">
+                {get_current_player_name(@game_state, @players) || "他プレイヤー"}のターン
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Discussion Phase -->
+        <%= if @current_phase == :discussion && @game_status == :playing do %>
+          <div class="text-center space-y-3">
+            <div class="text-[var(--color-landing-text-secondary)]">相談フェーズ</div>
+            <%= if get_player_ready_status(@players, @user_id) do %>
+              <div class="text-matsu">✓ 準備完了</div>
+            <% else %>
+              <button
+                class="px-4 py-2 bg-matsu text-washi rounded"
+                phx-click="execute_action"
+                phx-value-action="mark_discussion_ready"
+              >
+                準備完了
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </main>
+
+      <!-- Bottom Hand (compact) -->
+      <div class="bg-[rgba(15,20,25,0.95)] border-t border-[var(--color-landing-gold)]/20 p-3">
+        <div class="flex items-center justify-center gap-2 overflow-x-auto">
+          <%= for card <- @hand_cards do %>
+            <% card_talents = get_card_talents(card.id, assigns) %>
+            <%= if length(card_talents) > 0 do %>
+              <.action_card_with_talents
+                title={card.title}
+                cost={card.cost}
+                type={card.type}
+                talent_cards={card_talents}
+                tags={card[:tags] || card["tags"] || []}
+                phx-click="select_card"
+                phx-dblclick="use_card"
+                phx-value-card-id={card.id}
+                class={
+                  "w-16 h-24 flex-shrink-0 " <>
+                  if(@selected_card_id == card.id, do: "ring-2 ring-shu scale-105 ", else: "") <>
+                  if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
+                    do: "opacity-50", else: "cursor-pointer")
+                }
+              />
+            <% else %>
+              <.ofuda_card
+                id={card.id}
+                title={card.title}
+                cost={card.cost}
+                type={card.type}
+                phx-click="select_card"
+                phx-dblclick="use_card"
+                phx-value-card-id={card.id}
+                class={
+                  "w-16 h-24 flex-shrink-0 " <>
+                  if(@selected_card_id == card.id, do: "ring-2 ring-shu scale-105 ", else: "") <>
+                  if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
+                    do: "opacity-50", else: "cursor-pointer")
+                }
+              />
+            <% end %>
+          <% end %>
         </div>
-      <% end %>
+      </div>
 
     <!-- Talent Selector Modal -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
@@ -1614,6 +1143,9 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:game_status, updated_session.status)
       |> assign(:ending_type, get_ending_type(updated_session))
 
+    # AI自動行動をトリガー
+    schedule_ai_action_if_needed(updated_session, current_phase)
+
     {:noreply, socket}
   end
 
@@ -1685,7 +1217,70 @@ defmodule ShinkankiWebWeb.GameLive do
      update(socket, :toasts, fn toasts -> Enum.reject(toasts, &(&1.id == toast_id)) end)}
   end
 
+  # AI自動行動をスケジュール
+  def handle_info({:ai_auto_action, game_session_id}, socket) do
+    # AIが自動で行動を実行
+    game_session = Games.get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+    current_phase = if turn_state, do: turn_state.phase, else: "event"
+
+    case current_phase do
+      "discussion" ->
+        # discussionフェーズでは、AIは自動でreadyになる（既に実装済みの場合はスキップ）
+        # ここでは次のフェーズへ進めるだけ
+        if all_players_ready?(game_session) do
+          Games.advance_to_action_phase(game_session.id)
+        end
+
+      "action" ->
+        # actionフェーズでは、AIプレイヤーがアクションを実行
+        execute_ai_actions(game_session)
+
+      _ ->
+        :ok
+    end
+
+    {:noreply, socket}
+  end
+
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  # AIアクションが必要かチェックしてスケジュール
+  defp schedule_ai_action_if_needed(game_session, current_phase) do
+    has_ai_players = Enum.any?(game_session.players, fn p -> p.is_ai end)
+
+    if has_ai_players and current_phase in ["discussion", "action"] do
+      # 500ms後にAI行動をトリガー
+      Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
+    end
+  end
+
+  # 全プレイヤーがreadyかチェック
+  defp all_players_ready?(_game_session) do
+    # TODO: 実装
+    true
+  end
+
+  # AIプレイヤーのアクションを実行
+  defp execute_ai_actions(game_session) do
+    ai_players = Enum.filter(game_session.players, fn p -> p.is_ai end)
+
+    Enum.each(ai_players, fn ai_player ->
+      # ランダムにアクションカードを選択して実行
+      turn_state = get_current_turn_state(game_session)
+      available_cards = if turn_state, do: turn_state.available_cards || [], else: []
+
+      if length(available_cards) > 0 do
+        # ランダムにカードを選択
+        card_id = Enum.random(available_cards)
+        # アクションを実行
+        Games.execute_action(game_session.id, ai_player.id, card_id)
+      end
+    end)
+
+    # 全AIがアクションを完了したら次のフェーズへ
+    Games.advance_phase_if_ready(game_session.id)
+  end
 
   defp life_index(state) do
     forest = state[:forest] || state.forest || 0
@@ -1693,6 +1288,12 @@ defmodule ShinkankiWebWeb.GameLive do
     social = state[:social] || state.social || 0
     forest + culture + social
   end
+
+  defp phase_name(:event), do: "イベント"
+  defp phase_name(:discussion), do: "相談"
+  defp phase_name(:action), do: "アクション"
+  defp phase_name(:resolution), do: "解決"
+  defp phase_name(_), do: "待機"
 
   defp gauge_width(value, max \\ 20) do
     value

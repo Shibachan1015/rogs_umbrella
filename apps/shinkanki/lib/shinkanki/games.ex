@@ -215,8 +215,9 @@ defmodule Shinkanki.Games do
     ai_count = 4 - human_count
 
     if ai_count > 0 do
-      Enum.with_index(1..ai_count)
-      |> Enum.map(fn {_, idx} ->
+      1..ai_count
+      |> Enum.map(fn idx ->
+        # player_orderは1から始まるので、human_count + idx（例: 人間1人 + AI1番目 = 2）
         player_order = human_count + idx
         role = Enum.at(available_roles, idx - 1, Enum.at(roles, player_order - 1))
 
@@ -960,5 +961,108 @@ defmodule Shinkanki.Games do
       details: %{}
     })
     |> Repo.insert()
+  end
+
+  # ===================
+  # AI自動行動関連
+  # ===================
+
+  @doc """
+  discussionフェーズからactionフェーズに進む
+  """
+  def advance_to_action_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state && turn_state.phase == "discussion" do
+      turn_state
+      |> TurnState.changeset(%{phase: "action"})
+      |> Repo.update()
+      |> case do
+        {:ok, _} ->
+          updated_session = get_game_session!(game_session_id)
+          GamePubSub.broadcast_state_update(game_session_id, updated_session)
+          {:ok, updated_session}
+
+        error ->
+          error
+      end
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
+  アクションカードを取得
+  """
+  def get_action_card!(id) do
+    Repo.get!(ActionCard, id)
+  end
+
+  @doc """
+  AIプレイヤーがアクションを実行
+  """
+  def execute_action(game_session_id, player_id, action_card_id) do
+    game_session = get_game_session!(game_session_id)
+    player = Enum.find(game_session.players, fn p -> p.id == player_id end)
+    action_card = get_action_card!(action_card_id)
+
+    if player && action_card do
+      execute_action_card(player, action_card, game_session)
+    else
+      {:error, :not_found}
+    end
+  end
+
+  @doc """
+  全プレイヤーがアクション完了していたら次のフェーズへ
+  """
+  def advance_phase_if_ready(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state && turn_state.phase == "action" do
+      # actionフェーズ完了後、次のターンへ
+      advance_to_next_turn(game_session_id)
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
+  次のターンに進む
+  """
+  def advance_to_next_turn(game_session_id) do
+    # デマレージを適用
+    apply_demurrage_to_all(game_session_id)
+
+    # ゲーム終了チェック
+    updated_session = get_game_session!(game_session_id)
+    case check_game_end(updated_session) do
+      {:immediate_loss, reason} ->
+        {:ok, final_session} = update_game_session(updated_session, %{status: "failed"})
+        GamePubSub.broadcast_game_end(final_session.id, reason)
+        {:ok, final_session}
+
+      {:completed, ending} ->
+        {:ok, final_session} = update_game_session(updated_session, %{status: "completed"})
+        GamePubSub.broadcast_game_end(final_session.id, ending)
+        {:ok, final_session}
+
+      {:continue, _} ->
+        # 次のターンを開始
+        {:ok, new_turn_session} = update_game_session(updated_session, %{turn: updated_session.turn + 1})
+        {:ok, _turn_state} = start_new_turn(new_turn_session)
+
+        final_session = get_game_session!(game_session_id)
+        GamePubSub.broadcast_state_update(game_session_id, final_session)
+        {:ok, final_session}
+    end
+  end
+
+  defp get_current_turn_state(game_session) do
+    game_session.turn_states
+    |> Enum.sort_by(& &1.turn_number, :desc)
+    |> List.first()
   end
 end

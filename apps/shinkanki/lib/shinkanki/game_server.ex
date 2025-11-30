@@ -245,7 +245,127 @@ defmodule Shinkanki.GameServer do
       "shinkanki:game:#{game.room_id}",
       {:game_state_updated, game}
     )
+
+    # Trigger AI actions if it's an AI player's turn
+    maybe_trigger_ai(game)
   end
+
+  defp maybe_trigger_ai(game) do
+    if game.status == :playing do
+      case game.phase do
+        :discussion ->
+          # AI players auto-ready during discussion phase
+          trigger_ai_discussion_ready(game)
+
+        :action ->
+          # AI player takes their turn during action phase
+          trigger_ai_action(game)
+
+        _ ->
+          :ok
+      end
+    end
+  end
+
+  defp trigger_ai_discussion_ready(game) do
+    # Find AI players who are not ready yet
+    ai_not_ready =
+      game.players
+      |> Enum.filter(fn {_id, player} -> player.is_ai && !player.is_ready end)
+      |> Enum.map(fn {id, _} -> id end)
+
+    # Schedule AI players to mark ready after a short delay
+    Enum.each(ai_not_ready, fn player_id ->
+      Process.send_after(self(), {:ai_discussion_ready, player_id}, 500)
+    end)
+  end
+
+  defp trigger_ai_action(game) do
+    # Get current player
+    current_player_id = get_current_player_id(game)
+
+    if current_player_id do
+      case Map.get(game.players, current_player_id) do
+        %{is_ai: true} ->
+          # Schedule AI action after a short delay
+          Process.send_after(self(), {:ai_take_action, current_player_id}, 800)
+
+        _ ->
+          :ok
+      end
+    end
+  end
+
+  defp get_current_player_id(game) do
+    player_order = Map.keys(game.players) |> Enum.sort()
+    current_index = rem(game.current_player_index || 0, length(player_order))
+    Enum.at(player_order, current_index)
+  end
+
+  # Handle AI discussion ready
+  @impl true
+  def handle_info({:ai_discussion_ready, player_id}, game) do
+    case Game.mark_discussion_ready(game, player_id) do
+      {:ok, new_game} ->
+        log_action(new_game, "ai_discussion_ready", player_id, %{})
+        broadcast_state(new_game)
+        {:noreply, new_game}
+
+      _ ->
+        {:noreply, game}
+    end
+  end
+
+  # Handle AI taking action
+  @impl true
+  def handle_info({:ai_take_action, player_id}, game) do
+    case AI.select_action(game, player_id) do
+      {:ok, action_id, talent_ids} ->
+        case Game.play_action(game, player_id, action_id, talent_ids) do
+          {:ok, new_game} ->
+            log_action(new_game, "ai_play_action", player_id, %{
+              action_id: action_id,
+              talent_ids: talent_ids
+            })
+            broadcast_state(new_game)
+            {:noreply, new_game}
+
+          _ ->
+            # If action failed, try to skip turn or pass
+            {:noreply, game}
+        end
+
+      {:error, :no_affordable_cards} ->
+        # AI can't afford any cards, advance to next phase/player
+        case Game.next_phase(game) do
+          {:ok, new_game} ->
+            log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_affordable_cards})
+            broadcast_state(new_game)
+            {:noreply, new_game}
+
+          _ ->
+            {:noreply, game}
+        end
+
+      {:error, :no_cards} ->
+        # AI has no cards, advance to next phase
+        case Game.next_phase(game) do
+          {:ok, new_game} ->
+            log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_cards})
+            broadcast_state(new_game)
+            {:noreply, new_game}
+
+          _ ->
+            {:noreply, game}
+        end
+
+      _ ->
+        {:noreply, game}
+    end
+  end
+
+  @impl true
+  def handle_info(_msg, game), do: {:noreply, game}
 
   defp log_action(game, action, player_id, payload) do
     # Only log if Repo is available (not in test environment)

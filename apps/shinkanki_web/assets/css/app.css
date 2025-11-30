@@ -3190,6 +3190,14 @@ input[type="radio"] {
   background: rgba(255, 255, 255, 0.15);
 }
 
+.auth-form .label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-landing-text-secondary, rgba(255, 255, 255, 0.7));
+  margin-bottom: 0.5rem;
+}
+
 .lobby-container,
 .waiting-room-container {
   min-height: 100vh;

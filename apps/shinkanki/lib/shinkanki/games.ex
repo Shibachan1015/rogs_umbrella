@@ -968,6 +968,67 @@ defmodule Shinkanki.Games do
   # ===================
 
   @doc """
+  ゲームセッションIDからフェーズを進める
+  """
+  def advance_phase_by_session_id(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state do
+      next_phase = TurnState.next_phase(turn_state.phase)
+
+      turn_state
+      |> TurnState.changeset(%{phase: next_phase})
+      |> Repo.update()
+      |> case do
+        {:ok, _} ->
+          updated_session = get_game_session!(game_session_id)
+          GamePubSub.broadcast_state_update(game_session_id, updated_session)
+          {:ok, updated_session}
+
+        error ->
+          error
+      end
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
+  イベントの効果を適用する
+  """
+  def apply_event_effects(game_session_id, event_card_id) do
+    game_session = get_game_session!(game_session_id)
+    event_card = Repo.get(EventCard, event_card_id)
+
+    if event_card do
+      # イベントカードの効果を適用
+      attrs = %{
+        forest: game_session.forest + (event_card.effect_forest || 0),
+        culture: game_session.culture + (event_card.effect_culture || 0),
+        social: game_session.social + (event_card.effect_social || 0)
+      }
+
+      # 値を0〜20の範囲に制限
+      attrs = %{
+        forest: max(0, min(20, attrs.forest)),
+        culture: max(0, min(20, attrs.culture)),
+        social: max(0, min(20, attrs.social))
+      }
+
+      # 生命指数も更新
+      life_index = attrs.forest + attrs.culture + attrs.social
+      attrs = Map.put(attrs, :life_index, life_index)
+
+      {:ok, updated_session} = update_game_session(game_session, attrs)
+      GamePubSub.broadcast_state_update(game_session_id, updated_session)
+      {:ok, updated_session}
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
   discussionフェーズからactionフェーズに進む
   """
   def advance_to_action_phase(game_session_id) do

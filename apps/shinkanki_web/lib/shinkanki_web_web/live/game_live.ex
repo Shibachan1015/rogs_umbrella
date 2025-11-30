@@ -115,6 +115,10 @@ defmodule ShinkankiWebWeb.GameLive do
 
         # Load initial messages from rogs_comm
         messages = load_messages(room_id)
+
+        # AI自動行動をトリガー（ゲームにAIプレイヤーがいる場合）
+        schedule_ai_action_if_needed(game_session, current_phase)
+
         stream(socket, :chat_messages, messages, reset: true)
       else
         stream(socket, :chat_messages, [], reset: true)
@@ -1225,11 +1229,24 @@ defmodule ShinkankiWebWeb.GameLive do
     current_phase = if turn_state, do: turn_state.phase, else: "event"
 
     case current_phase do
+      "event" ->
+        # イベントフェーズでは自動でイベントを処理してdiscussionへ進める
+        # イベントがある場合は効果を適用
+        if turn_state && turn_state.current_event_id do
+          Games.apply_event_effects(game_session.id, turn_state.current_event_id)
+        end
+        # discussionフェーズへ進める
+        Games.advance_phase_by_session_id(game_session.id)
+        # 次のフェーズでもAI行動をスケジュール
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+
       "discussion" ->
         # discussionフェーズでは、AIは自動でreadyになる（既に実装済みの場合はスキップ）
         # ここでは次のフェーズへ進めるだけ
         if all_players_ready?(game_session) do
           Games.advance_to_action_phase(game_session.id)
+          # actionフェーズでもAI行動をスケジュール
+          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
         end
 
       "action" ->
@@ -1249,7 +1266,8 @@ defmodule ShinkankiWebWeb.GameLive do
   defp schedule_ai_action_if_needed(game_session, current_phase) do
     has_ai_players = Enum.any?(game_session.players, fn p -> p.is_ai end)
 
-    if has_ai_players and current_phase in ["discussion", "action"] do
+    # イベント、ディスカッション、アクションフェーズでAI自動行動をトリガー
+    if has_ai_players and current_phase in ["event", "discussion", "action"] do
       # 500ms後にAI行動をトリガー
       Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
     end

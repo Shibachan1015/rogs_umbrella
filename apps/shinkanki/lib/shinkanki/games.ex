@@ -346,6 +346,8 @@ defmodule Shinkanki.Games do
   アクションカードを実行
   - コストチェック
   - 効果適用（役割ボーナス含む）
+  - 邪気デルタ適用
+  - 方針違反チェック
   - アクション履歴記録
   """
   def execute_action_card(%Player{} = player, %ActionCard{} = card, %GameSession{} = game_session) do
@@ -389,6 +391,22 @@ defmodule Shinkanki.Games do
           culture: new_culture - card.cost_culture,
           social: new_social - card.cost_social
         })
+
+      # カードの邪気デルタを適用（evil_deltaフィールドがある場合）
+      evil_delta = Map.get(card, :evil_delta, 0) || 0
+      {:ok, updated_session} = if evil_delta != 0 do
+        add_evil(updated_session, evil_delta)
+      else
+        {:ok, updated_session}
+      end
+
+      # 方針違反チェック（方針と異なるカテゴリのカードを使用した場合）
+      {:ok, updated_session} = if check_policy_violation(game_session, card.category) do
+        # 方針違反: プレイヤーに邪気+1
+        add_player_evil(updated_session, player.id, 1)
+      else
+        {:ok, updated_session}
+      end
 
       # 生命指数を更新
       {:ok, updated_session} = update_life_index(updated_session)
@@ -502,6 +520,22 @@ defmodule Shinkanki.Games do
           culture: new_culture,
           social: new_social
         })
+
+      # カードの邪気デルタを適用（evil_deltaフィールドがある場合）
+      evil_delta = Map.get(card, :evil_delta, 0) || 0
+      {:ok, updated_session} = if evil_delta != 0 do
+        add_evil(updated_session, evil_delta)
+      else
+        {:ok, updated_session}
+      end
+
+      # 方針違反チェック（方針と異なるカテゴリのカードを使用した場合）
+      {:ok, updated_session} = if check_policy_violation(game_session, card.category) do
+        # 方針違反: プレイヤーに邪気+1
+        add_player_evil(updated_session, player.id, 1)
+      else
+        {:ok, updated_session}
+      end
 
       # 生命指数を更新
       {:ok, updated_session} = update_life_index(updated_session)
@@ -1251,6 +1285,20 @@ defmodule Shinkanki.Games do
     player
     |> Player.changeset(%{evil_tokens: new_evil})
     |> Repo.update()
+  end
+
+  @doc """
+  ゲームセッションとプレイヤーIDから、特定プレイヤーに邪気トークンを追加
+  """
+  def add_player_evil(%GameSession{} = game_session, player_id, amount) do
+    player = Enum.find(game_session.players, fn p -> p.id == player_id end)
+
+    if player do
+      {:ok, _updated_player} = add_player_evil(player, amount)
+      {:ok, get_game_session!(game_session.id)}
+    else
+      {:error, :player_not_found}
+    end
   end
 
   @doc """

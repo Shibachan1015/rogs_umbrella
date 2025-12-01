@@ -1409,7 +1409,7 @@ defmodule ShinkankiWebWeb.GameComponents do
       |> assign(:ending_data, ending_data)
 
     ~H"""
-    <%= if @show && @game_status != :playing do %>
+    <%= if @show && @game_status not in [:playing, "playing", "active"] do %>
       <div
         id={@id}
         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md"
@@ -1518,7 +1518,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     """
   end
 
-  defp determine_ending_type(:lost, _life_index, final_stats) do
+  defp determine_ending_type(status, _life_index, final_stats) when status in [:lost, "failed"] do
     # Check for instant loss (F=0, K=0, or S=0)
     forest = final_stats[:forest] || final_stats["forest"] || 0
     culture = final_stats[:culture] || final_stats["culture"] || 0
@@ -1531,7 +1531,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     end
   end
 
-  defp determine_ending_type(:won, life_index, _final_stats) do
+  defp determine_ending_type(status, life_index, _final_stats) when status in [:won, "completed"] do
     cond do
       life_index >= 40 -> :blessing
       life_index >= 30 -> :purification

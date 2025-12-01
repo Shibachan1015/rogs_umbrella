@@ -7,7 +7,12 @@ defmodule Shinkanki.Games.Player do
 
   @roles ~w(forest_guardian heritage_weaver community_keeper akasha_architect)
 
-  @titles ~w(musubibito tsuchimori yomite mitousu kowashiya hibito)
+  # 称号の定義（ゲームルールで使用）
+  # musubibito: 結び人、tsuchimori: 土守り、yomite: 読み手、
+  # mitousu: 見通す、kowashiya: 壊し屋、hibito: 火人
+  @valid_titles ~w(musubibito tsuchimori yomite mitousu kowashiya hibito)
+
+  def valid_titles, do: @valid_titles
 
   schema "players" do
     field :akasha, :integer

@@ -1154,7 +1154,8 @@ defmodule Shinkanki.Games do
   end
 
   @doc """
-  全プレイヤーがアクション完了した場合、次のターンへ進む
+  全プレイヤーがアクション完了した場合、呼吸フェーズへ進む
+  新しいフロー: action → breathing → musuhi → end → kami_hakari（次のターン）
   """
   def check_and_advance_turn(game_session_id) do
     game_session = get_game_session!(game_session_id)
@@ -1162,8 +1163,8 @@ defmodule Shinkanki.Games do
 
     if turn_state && turn_state.phase == "action" do
       if all_players_acted?(game_session_id, game_session.turn) do
-        # 全プレイヤーがアクション完了、次のターンへ
-        advance_to_next_turn(game_session_id)
+        # 全プレイヤーがアクション完了、呼吸フェーズへ移行
+        advance_phase(game_session_id)
       else
         {:ok, game_session}
       end

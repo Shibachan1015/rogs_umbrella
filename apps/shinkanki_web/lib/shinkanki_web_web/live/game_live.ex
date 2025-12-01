@@ -1952,20 +1952,6 @@ defmodule ShinkankiWebWeb.GameLive do
     forest + culture + social
   end
 
-  defp phase_name(:event), do: "イベント"
-  defp phase_name("event"), do: "イベント"
-  defp phase_name(:discussion), do: "相談"
-  defp phase_name("discussion"), do: "相談"
-  defp phase_name(:action), do: "アクション"
-  defp phase_name("action"), do: "アクション"
-  defp phase_name(:resolution), do: "解決"
-  defp phase_name("resolution"), do: "解決"
-  defp phase_name("kami_hakari"), do: "神議り"
-  defp phase_name("breathing"), do: "呼吸"
-  defp phase_name("musuhi"), do: "結び"
-  defp phase_name("end"), do: "年の終わり"
-  defp phase_name(_), do: "待機"
-
   # 方針名の取得
   defp policy_name("forest"), do: "森優先"
   defp policy_name("culture"), do: "文化優先"
@@ -1981,12 +1967,20 @@ defmodule ShinkankiWebWeb.GameLive do
   defp policy_color(_), do: "text-gray-500"
 
   # 短縮版フェーズ名（モバイル用）
+  defp phase_name_short(:kami_hakari), do: "神議"
+  defp phase_name_short("kami_hakari"), do: "神議"
   defp phase_name_short(:event), do: "イベ"
   defp phase_name_short("event"), do: "イベ"
   defp phase_name_short(:discussion), do: "相談"
   defp phase_name_short("discussion"), do: "相談"
   defp phase_name_short(:action), do: "行動"
   defp phase_name_short("action"), do: "行動"
+  defp phase_name_short(:breathing), do: "呼吸"
+  defp phase_name_short("breathing"), do: "呼吸"
+  defp phase_name_short(:musuhi), do: "結び"
+  defp phase_name_short("musuhi"), do: "結び"
+  defp phase_name_short(:end), do: "終了"
+  defp phase_name_short("end"), do: "終了"
   defp phase_name_short(:resolution), do: "解決"
   defp phase_name_short("resolution"), do: "解決"
   defp phase_name_short(_), do: "待機"

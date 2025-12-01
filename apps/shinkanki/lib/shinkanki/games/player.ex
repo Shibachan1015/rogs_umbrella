@@ -7,12 +7,18 @@ defmodule Shinkanki.Games.Player do
 
   @roles ~w(forest_guardian heritage_weaver community_keeper akasha_architect)
 
+  @titles ~w(musubibito tsuchimori yomite mitousu kowashiya hibito)
+
   schema "players" do
     field :akasha, :integer
     field :role, :string
     field :player_order, :integer
     field :is_ai, :boolean, default: false
     field :ai_name, :string
+    # 個人邪気トークン
+    field :evil_tokens, :integer, default: 0
+    # 獲得した称号
+    field :titles, {:array, :string}, default: []
 
     belongs_to :game_session, Shinkanki.Games.GameSession
     field :user_id, :binary_id
@@ -28,10 +34,11 @@ defmodule Shinkanki.Games.Player do
   @doc false
   def changeset(player, attrs) do
     player
-    |> cast(attrs, [:akasha, :role, :player_order, :game_session_id, :user_id, :is_ai, :ai_name])
+    |> cast(attrs, [:akasha, :role, :player_order, :game_session_id, :user_id, :is_ai, :ai_name, :evil_tokens, :titles])
     |> validate_required([:akasha, :role, :player_order, :game_session_id])
     |> validate_number(:akasha, greater_than_or_equal_to: 0)
     |> validate_number(:player_order, greater_than_or_equal_to: 1, less_than_or_equal_to: 4)
+    |> validate_number(:evil_tokens, greater_than_or_equal_to: 0)
     |> validate_inclusion(:role, @roles)
     |> unique_constraint([:game_session_id, :player_order])
   end
@@ -40,12 +47,13 @@ defmodule Shinkanki.Games.Player do
 
   @doc """
   AIプレイヤーを作成するための属性を生成
+  初期Akasha: 50〜100（人間プレイヤーと同様）
   """
   def ai_player_attrs(player_order, role) do
     ai_name = Enum.at(@ai_names, player_order - 1, "AI神#{player_order}")
 
     %{
-      akasha: 10,
+      akasha: Enum.random(50..100),
       role: role,
       player_order: player_order,
       is_ai: true,

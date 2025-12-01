@@ -5552,3 +5552,866 @@ kbd {
     font-size: 1.25rem;
   }
 }
+
+/* =================================================
+   MOBILE RESPONSIVE STYLES
+   ================================================= */
+
+/* Landing Page Mobile */
+@media (max-width: 640px) {
+  /* Header - Hamburger style for very small screens */
+  .landing-header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .landing-logo {
+    font-size: 1.2rem;
+    letter-spacing: 0.25em;
+  }
+
+  .landing-nav {
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .landing-nav a:not(.landing-cta) {
+    padding: 0.5rem;
+  }
+
+  .landing-cta {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  /* Hero Section */
+  .landing-hero {
+    min-height: 100svh;
+    padding: 5rem 1rem 3rem;
+  }
+
+  .hero-kicker {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 1rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1.5rem;
+  }
+
+  .cta-button {
+    padding: 0.85rem 2rem;
+    font-size: 0.85rem;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .scroll-indicator {
+    display: none;
+  }
+
+  /* Sections */
+  .landing-section {
+    padding: 3rem 1rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    letter-spacing: 0.15em;
+  }
+
+  .section-body {
+    font-size: 0.9rem;
+    line-height: 1.9;
+    margin-top: 2rem;
+  }
+
+  /* Concept Cards Grid */
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .concept-card {
+    padding: 1.5rem;
+  }
+
+  .concept-card .card-icon {
+    font-size: 2rem;
+  }
+
+  .concept-card h3 {
+    font-size: 1.1rem;
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .concept-card p {
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+
+  /* Play Grid */
+  .play-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .play-card {
+    padding: 1.5rem;
+  }
+
+  .play-step {
+    font-size: 0.7rem;
+  }
+
+  .play-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .play-card p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  /* Footer */
+  .landing-footer {
+    padding: 2rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .footer-subtext {
+    font-size: 0.7rem;
+  }
+
+  /* Ambient Audio Control */
+  .ambient-audio-shell {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .ambient-gear-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ambient-panel {
+    width: 200px;
+    padding: 0.6rem;
+  }
+}
+
+/* Lobby Page Mobile */
+@media (max-width: 640px) {
+  .lobby-container,
+  .waiting-room-container {
+    padding: 1rem;
+  }
+
+  .lobby-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .lobby-title {
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+  }
+
+  .lobby-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .lobby-user-status {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+  }
+
+  .user-logged-in,
+  .user-guest {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .user-avatar {
+    font-size: 1.25rem;
+  }
+
+  .user-name {
+    max-width: 100px;
+    font-size: 0.85rem;
+  }
+
+  .logout-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .profile-link {
+    font-size: 1rem;
+  }
+
+  /* Login Prompt */
+  .lobby-login-prompt {
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .login-prompt-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .login-btn-large,
+  .register-btn-large {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+
+  /* Create Room Button */
+  .lobby-actions {
+    margin-bottom: 1.5rem;
+  }
+
+  .create-room-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Create Room Form */
+  .create-room-form-container {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-header h3 {
+    font-size: 1rem;
+  }
+
+  .form-field label {
+    font-size: 0.75rem;
+  }
+
+  .form-field input[type="text"],
+  .form-field textarea,
+  .form-field select {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  /* Search & Filter */
+  .search-filter-section {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .search-input {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .filter-options {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .filter-checkbox {
+    font-size: 0.8rem;
+  }
+
+  /* Rooms Section */
+  .section-header {
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+  }
+
+  .room-count {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  /* Room Cards - Single column on mobile */
+  .rooms-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .room-card {
+    padding: 1rem;
+  }
+
+  .room-name {
+    font-size: 1rem;
+  }
+
+  .room-topic {
+    font-size: 0.8rem;
+  }
+
+  .room-card-info {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0;
+  }
+
+  .room-participants {
+    font-size: 0.8rem;
+  }
+
+  .room-card-actions {
+    margin-top: 0.75rem;
+  }
+
+  .join-room-btn {
+    padding: 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  /* Empty state */
+  .empty-rooms {
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .empty-rooms-hint {
+    font-size: 0.8rem;
+  }
+}
+
+/* Extra small mobile (iPhone SE etc) */
+@media (max-width: 375px) {
+  .landing-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .landing-logo {
+    font-size: 1rem;
+  }
+
+  .landing-nav {
+    gap: 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .landing-nav a:not(.landing-cta) {
+    display: none;
+  }
+
+  .landing-cta {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  .hero-title {
+    font-size: 1.8rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .cta-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.8rem;
+  }
+
+  .lobby-title {
+    font-size: 1.2rem;
+  }
+
+  .user-name {
+    max-width: 80px;
+  }
+}
+
+/* Waiting Room Mobile */
+@media (max-width: 640px) {
+  .waiting-room-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .back-link {
+    font-size: 0.8rem;
+  }
+
+  .room-info .room-name {
+    font-size: 1.2rem;
+  }
+
+  .room-info .room-topic {
+    font-size: 0.8rem;
+  }
+
+  .waiting-room-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Players Panel */
+  .players-panel {
+    padding: 1rem;
+    order: 1;
+  }
+
+  .panel-title {
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .players-list {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .player-card {
+    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .player-avatar {
+    font-size: 1.25rem;
+  }
+
+  .player-name {
+    font-size: 0.85rem;
+  }
+
+  .you-badge {
+    font-size: 0.65rem;
+  }
+
+  .ready-status {
+    font-size: 0.7rem;
+  }
+
+  .player-slot {
+    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .slot-icon {
+    font-size: 1.25rem;
+  }
+
+  .slot-text {
+    font-size: 0.8rem;
+  }
+
+  /* Friend actions */
+  .player-friend-action {
+    margin-left: auto;
+  }
+
+  .friend-request-btn,
+  .friend-status {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  /* Invite Section */
+  .invite-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .invite-friends-btn {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .invite-panel {
+    margin-top: 0.5rem;
+  }
+
+  .invite-friend-item {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .invite-avatar {
+    font-size: 1rem;
+  }
+
+  .invite-name {
+    font-size: 0.8rem;
+  }
+
+  .invite-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  /* Ready Section */
+  .ready-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .ready-btn {
+    padding: 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  /* Start Section */
+  .start-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .start-game-btn {
+    padding: 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .ai-fill-section {
+    margin-top: 0.75rem;
+  }
+
+  .ai-fill-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .ai-fill-hint {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+  }
+
+  .waiting-for-host {
+    padding: 0.75rem;
+  }
+
+  .waiting-for-host p {
+    font-size: 0.8rem;
+  }
+
+  /* Deletion Section */
+  .deletion-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .propose-delete-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .deletion-proposal-active {
+    padding: 0.75rem;
+  }
+
+  .deletion-warning {
+    font-size: 0.8rem;
+  }
+
+  .deletion-votes-count {
+    font-size: 0.75rem;
+  }
+
+  .vote-btn,
+  .cancel-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* Admin Section */
+  .admin-section {
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .admin-title {
+    font-size: 0.85rem;
+  }
+
+  .admin-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .admin-delete-btn,
+  .admin-ban-btn {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Chat Panel */
+  .chat-panel {
+    padding: 1rem;
+    height: 350px;
+    order: 2;
+  }
+
+  .chat-messages {
+    margin-bottom: 0.75rem;
+  }
+
+  .chat-message {
+    padding: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .message-author {
+    font-size: 0.7rem;
+  }
+
+  .message-time {
+    font-size: 0.6rem;
+  }
+
+  .message-body {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .chat-form {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chat-input,
+  .chat-form textarea {
+    font-size: 0.9rem;
+  }
+
+  .send-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Profile Page Mobile */
+@media (max-width: 640px) {
+  .profile-container {
+    padding: 1rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+
+  .profile-title {
+    font-size: 1.3rem;
+  }
+
+  .profile-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .profile-form {
+    padding: 1rem;
+  }
+
+  .profile-field {
+    margin-bottom: 1rem;
+  }
+
+  .profile-field label {
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .profile-field input,
+  .profile-field select,
+  .profile-field textarea {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .avatar-picker {
+    gap: 0.5rem;
+  }
+
+  .avatar-option {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .profile-save-btn,
+  .profile-cancel-btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  /* Friends List */
+  .friends-section {
+    padding: 1rem;
+  }
+
+  .friends-title {
+    font-size: 1rem;
+  }
+
+  .friend-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .friend-avatar {
+    font-size: 1.25rem;
+  }
+
+  .friend-name {
+    font-size: 0.85rem;
+  }
+
+  .friend-status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .friend-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* Auth Pages (Login/Register) Mobile */
+@media (max-width: 640px) {
+  .auth-container {
+    padding: 1rem;
+    min-height: 100svh;
+  }
+
+  .auth-card {
+    padding: 1.5rem 1rem;
+    margin: 0;
+    border-radius: 1rem;
+  }
+
+  .auth-logo {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .auth-form {
+    gap: 1rem;
+  }
+
+  .auth-field label {
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .auth-field input {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .auth-submit {
+    padding: 0.85rem;
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+  }
+
+  .auth-links {
+    margin-top: 1.5rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .auth-link {
+    font-size: 0.85rem;
+  }
+
+  .auth-divider {
+    margin: 1.25rem 0;
+  }
+
+  .social-login-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .social-btn {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* General Form Improvements for Mobile */
+@media (max-width: 640px) {
+  /* Make all inputs larger tap targets */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+
+  /* Make buttons larger tap targets */
+  button,
+  .btn,
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Improve checkbox/radio tap targets */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+}

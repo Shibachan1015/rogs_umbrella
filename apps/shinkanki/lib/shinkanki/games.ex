@@ -27,13 +27,13 @@ defmodule Shinkanki.Games do
 
   @doc """
   新しいゲームセッションを作成
-  ランダムな初期値を設定（F/K/S: 8〜12）
+  ランダムな初期値を設定（F/K/S: 3〜5、絶望的な状態からスタート）
   """
   def create_game_session(attrs \\ %{}) do
     initial_values = %{
-      forest: Enum.random(8..12),
-      culture: Enum.random(8..12),
-      social: Enum.random(8..12),
+      forest: Enum.random(3..5),
+      culture: Enum.random(3..5),
+      social: Enum.random(3..5),
       turn: 1,
       dao_pool: 0,
       status: "active",
@@ -128,7 +128,7 @@ defmodule Shinkanki.Games do
   プレイヤーを作成
   user_ids: ユーザーIDのリスト（最大4人）
   役割: forest_guardian, heritage_weaver, community_keeper, akasha_architect
-  初期Akasha: 800〜1200（ランダム）
+  初期Akasha: 50〜100（少なめ）
   """
   def create_players(game_session_id, user_ids \\ []) do
     roles = ["forest_guardian", "heritage_weaver", "community_keeper", "akasha_architect"]
@@ -138,7 +138,7 @@ defmodule Shinkanki.Games do
       player_attrs = %{
         game_session_id: game_session_id,
         user_id: user_id,
-        akasha: Enum.random(800..1200),
+        akasha: Enum.random(50..100),
         role: Enum.at(roles, index - 1),
         player_order: index,
         is_ai: false
@@ -1125,5 +1125,379 @@ defmodule Shinkanki.Games do
     game_session.turn_states
     |> Enum.sort_by(& &1.turn_number, :desc)
     |> List.first()
+  end
+
+  @doc """
+  現在のターンでプレイヤーがアクションを実行済みかチェック
+  """
+  def player_has_acted?(game_session_id, player_id, turn) do
+    from(ga in GameAction,
+      where:
+        ga.game_session_id == ^game_session_id and
+          ga.player_id == ^player_id and
+          ga.turn == ^turn
+    )
+    |> Repo.exists?()
+  end
+
+  @doc """
+  現在のターンで全プレイヤーがアクションを実行済みかチェック
+  """
+  def all_players_acted?(game_session_id, turn) do
+    game_session = get_game_session!(game_session_id)
+    player_ids = Enum.map(game_session.players, & &1.id)
+
+    # 各プレイヤーがアクションを実行済みかチェック
+    Enum.all?(player_ids, fn player_id ->
+      player_has_acted?(game_session_id, player_id, turn)
+    end)
+  end
+
+  @doc """
+  全プレイヤーがアクション完了した場合、次のターンへ進む
+  """
+  def check_and_advance_turn(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state && turn_state.phase == "action" do
+      if all_players_acted?(game_session_id, game_session.turn) do
+        # 全プレイヤーがアクション完了、次のターンへ
+        advance_to_next_turn(game_session_id)
+      else
+        {:ok, game_session}
+      end
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
+  プレイヤーがまだアクションを実行していない場合のみアクションを実行
+  """
+  def execute_action_if_not_acted(game_session_id, player_id, action_card_id) do
+    game_session = get_game_session!(game_session_id)
+
+    if player_has_acted?(game_session_id, player_id, game_session.turn) do
+      {:error, :already_acted}
+    else
+      execute_action(game_session_id, player_id, action_card_id)
+    end
+  end
+
+  @doc """
+  プレイヤーがパス（アクションをスキップ）
+  """
+  def pass_action(game_session_id, player_id) do
+    game_session = get_game_session!(game_session_id)
+    player = Enum.find(game_session.players, fn p -> p.id == player_id end)
+
+    if player && not player_has_acted?(game_session_id, player_id, game_session.turn) do
+      # パスアクションを記録
+      %GameAction{}
+      |> GameAction.changeset(%{
+        game_session_id: game_session_id,
+        player_id: player_id,
+        turn: game_session.turn,
+        action_type: "pass",
+        details: %{}
+      })
+      |> Repo.insert()
+      |> case do
+        {:ok, _} ->
+          # 全プレイヤーがアクション完了したかチェック
+          check_and_advance_turn(game_session_id)
+
+        error ->
+          error
+      end
+    else
+      {:error, :already_acted}
+    end
+  end
+
+  @doc """
+  現在のターンでアクションを実行していないプレイヤーを取得
+  """
+  def get_players_not_acted(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    game_session.players
+    |> Enum.reject(fn player ->
+      player_has_acted?(game_session_id, player.id, game_session.turn)
+    end)
+  end
+
+  # ===================
+  # 邪気・オロチシステム
+  # ===================
+
+  @doc """
+  邪気を追加（共有プールへ）
+  amount: 増減量（マイナス値も可）
+  """
+  def add_evil(%GameSession{} = game_session, amount) do
+    new_evil_pool = max(0, game_session.evil_pool + amount)
+    update_game_session(game_session, %{evil_pool: new_evil_pool})
+  end
+
+  @doc """
+  プレイヤーに邪気トークンを追加
+  """
+  def add_player_evil(%Player{} = player, amount) do
+    new_evil = max(0, player.evil_tokens + amount)
+
+    player
+    |> Player.changeset(%{evil_tokens: new_evil})
+    |> Repo.update()
+  end
+
+  @doc """
+  邪気プールからオロチへの変換をチェック・実行
+  邪気がthreshold以上になるとオロチレベルが上がる
+  """
+  def advance_orochi_if_needed(%GameSession{} = game_session) do
+    if game_session.evil_pool >= game_session.evil_threshold and game_session.orochi_level < 3 do
+      new_evil_pool = game_session.evil_pool - game_session.evil_threshold
+      new_orochi_level = game_session.orochi_level + 1
+
+      {:ok, updated} =
+        update_game_session(game_session, %{
+          evil_pool: new_evil_pool,
+          orochi_level: new_orochi_level
+        })
+
+      # 再帰的にチェック（まだ邪気がthreshold以上ならさらに進める）
+      advance_orochi_if_needed(updated)
+    else
+      {:ok, game_session}
+    end
+  end
+
+  @doc """
+  オロチレベルに応じたペナルティを適用
+  Lv1: F-1, Lv2: K-1, Lv3: S-1
+  """
+  def apply_orochi_penalty(%GameSession{} = game_session) do
+    case game_session.orochi_level do
+      1 ->
+        new_forest = max(0, game_session.forest - 1)
+        update_game_session(game_session, %{forest: new_forest})
+
+      2 ->
+        new_culture = max(0, game_session.culture - 1)
+        update_game_session(game_session, %{culture: new_culture})
+
+      3 ->
+        new_social = max(0, game_session.social - 1)
+        update_game_session(game_session, %{social: new_social})
+
+      _ ->
+        {:ok, game_session}
+    end
+  end
+
+  # ===================
+  # 神議り（方針設定）フェーズ
+  # ===================
+
+  @doc """
+  今年の方針を設定（神議りフェーズ）
+  policy: "forest" | "culture" | "community" | "purify"
+  """
+  def set_policy(game_session_id, policy) when policy in ~w(forest culture community purify) do
+    game_session = get_game_session!(game_session_id)
+
+    {:ok, updated} = update_game_session(game_session, %{current_policy: policy})
+
+    # イベントフェーズへ進める
+    turn_state = get_current_turn_state(updated)
+    if turn_state && turn_state.phase == "kami_hakari" do
+      advance_phase(turn_state)
+    end
+
+    GamePubSub.broadcast_state_update(game_session_id, updated)
+    {:ok, updated}
+  end
+
+  def set_policy(_game_session_id, _policy), do: {:error, :invalid_policy}
+
+  @doc """
+  方針違反をチェックし、邪気を追加
+  例: 方針が:forestなのにforestが減った場合
+  """
+  def check_policy_violation(%GameSession{} = game_session, old_values) do
+    case game_session.current_policy do
+      "forest" when game_session.forest < old_values.forest ->
+        add_evil(game_session, 1)
+
+      "culture" when game_session.culture < old_values.culture ->
+        add_evil(game_session, 1)
+
+      "community" when game_session.social < old_values.social ->
+        add_evil(game_session, 1)
+
+      _ ->
+        {:ok, game_session}
+    end
+  end
+
+  # ===================
+  # 呼吸フェーズ（還流・禊）
+  # ===================
+
+  @doc """
+  呼吸フェーズを実行
+  - P>=5のプレイヤーは自動還流（P-1、邪気-1）
+  - 任意で追加還流も可能
+  """
+  def execute_breathing_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    # 各プレイヤーの自動還流
+    Enum.each(game_session.players, fn player ->
+      if player.akasha >= 5 do
+        # 自動還流: P-1、邪気-1
+        {:ok, _} = update_player_akasha(player, -1)
+        {:ok, _} = add_player_evil(player, -1)
+      end
+    end)
+
+    # フェーズを進める
+    turn_state = get_current_turn_state(game_session)
+    if turn_state && turn_state.phase == "breathing" do
+      advance_phase(turn_state)
+    end
+
+    updated_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, updated_session)
+    {:ok, updated_session}
+  end
+
+  @doc """
+  プレイヤーが追加還流（任意）
+  amount: 還流するP量
+  target: "forest" | "culture" | "social"（どの基金に還流するか）
+  """
+  def voluntary_circulation(%Player{} = player, amount, target)
+      when amount > 0 and target in ~w(forest culture social) do
+    if player.akasha >= amount do
+      # Pを減らす
+      {:ok, updated_player} = update_player_akasha(player, -amount)
+      # 邪気も減らす（還流量と同じ）
+      {:ok, _} = add_player_evil(updated_player, -amount)
+
+      # 対応するパラメータを増やす（将来的に実装）
+      # 今は単に還流したことを記録
+
+      {:ok, updated_player}
+    else
+      {:error, :insufficient_akasha}
+    end
+  end
+
+  # ===================
+  # 結び（musuhi）フェーズ
+  # ===================
+
+  @doc """
+  結びフェーズを実行
+  - 称号の付与（将来実装）
+  - 感謝の表現（将来実装）
+  """
+  def execute_musuhi_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    # 将来的に称号付与ロジックを追加
+
+    # フェーズを進める
+    turn_state = get_current_turn_state(game_session)
+    if turn_state && turn_state.phase == "musuhi" do
+      advance_phase(turn_state)
+    end
+
+    updated_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, updated_session)
+    {:ok, updated_session}
+  end
+
+  @doc """
+  プレイヤーに称号を付与
+  """
+  def grant_title(%Player{} = player, title) when is_binary(title) do
+    new_titles = Enum.uniq([title | player.titles || []])
+
+    player
+    |> Player.changeset(%{titles: new_titles})
+    |> Repo.update()
+  end
+
+  # ===================
+  # ターン終了処理（年末）
+  # ===================
+
+  @doc """
+  年末処理を実行
+  - 邪気→オロチ変換チェック
+  - オロチペナルティ適用
+  - 勝敗判定
+  """
+  def execute_end_of_turn(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    # 邪気→オロチ変換
+    {:ok, game_session} = advance_orochi_if_needed(game_session)
+
+    # オロチペナルティ適用
+    {:ok, game_session} = apply_orochi_penalty(game_session)
+
+    # 生命指数更新
+    {:ok, game_session} = update_life_index(game_session)
+
+    # 方針をリセット
+    {:ok, game_session} = update_game_session(game_session, %{current_policy: nil})
+
+    # 勝敗判定
+    case check_game_end(game_session) do
+      {:immediate_loss, reason} ->
+        {:ok, final_session} = update_game_session(game_session, %{status: "failed"})
+        GamePubSub.broadcast_game_end(final_session.id, reason)
+        {:game_over, reason, final_session}
+
+      {:completed, ending} ->
+        {:ok, final_session} = update_game_session(game_session, %{status: "completed"})
+        GamePubSub.broadcast_game_end(final_session.id, ending)
+        {:game_over, ending, final_session}
+
+      {:continue, _} ->
+        # 次のターンへ
+        {:ok, new_session} = update_game_session(game_session, %{turn: game_session.turn + 1})
+        {:ok, _turn_state} = start_new_turn_with_kami_hakari(new_session)
+
+        final_session = get_game_session!(game_session_id)
+        GamePubSub.broadcast_state_update(game_session_id, final_session)
+        {:continue, final_session}
+    end
+  end
+
+  @doc """
+  神議りフェーズから始まる新しいターンを開始
+  """
+  def start_new_turn_with_kami_hakari(%GameSession{} = game_session) do
+    event_card = draw_event_card()
+    action_cards = draw_action_cards(5)
+    action_card_ids = Enum.map(action_cards, & &1.id)
+
+    turn_state_attrs = %{
+      game_session_id: game_session.id,
+      turn_number: game_session.turn,
+      phase: "kami_hakari",  # 神議りからスタート
+      available_cards: action_card_ids,
+      current_event_id: if(event_card, do: event_card.id, else: nil)
+    }
+
+    %TurnState{}
+    |> TurnState.changeset(turn_state_attrs)
+    |> Repo.insert()
   end
 end

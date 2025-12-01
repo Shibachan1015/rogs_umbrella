@@ -5,7 +5,7 @@ defmodule Shinkanki.Games.GameAction do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @action_types ~w(play_card join_project dao_vote gift_akasha)
+  @action_types ~w(play_card join_project dao_vote gift_akasha pass play_card_with_talents)
 
   schema "game_actions" do
     field :turn, :integer

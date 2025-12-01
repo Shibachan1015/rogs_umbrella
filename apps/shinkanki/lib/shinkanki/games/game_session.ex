@@ -5,6 +5,8 @@ defmodule Shinkanki.Games.GameSession do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @policies ~w(forest culture community purify)
+
   schema "game_sessions" do
     field :turn, :integer, default: 1
     field :forest, :integer
@@ -15,6 +17,13 @@ defmodule Shinkanki.Games.GameSession do
     field :status, :string, default: "active"
     field :seed, :string
     field :room_id, :binary_id
+
+    # 邪気・オロチシステム
+    field :evil_pool, :integer, default: 0
+    field :evil_threshold, :integer, default: 3
+    field :orochi_level, :integer, default: 0
+    # 神議りで決めた今年の方針
+    field :current_policy, :string
 
     has_many :players, Shinkanki.Games.Player
     has_many :game_projects, Shinkanki.Games.GameProject
@@ -36,14 +45,21 @@ defmodule Shinkanki.Games.GameSession do
       :dao_pool,
       :status,
       :seed,
-      :room_id
+      :room_id,
+      :evil_pool,
+      :evil_threshold,
+      :orochi_level,
+      :current_policy
     ])
     |> validate_required([:forest, :culture, :social, :life_index])
     |> validate_number(:forest, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
     |> validate_number(:culture, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
     |> validate_number(:social, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
     |> validate_number(:turn, greater_than_or_equal_to: 1, less_than_or_equal_to: 20)
+    |> validate_number(:evil_pool, greater_than_or_equal_to: 0)
+    |> validate_number(:orochi_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 3)
     |> validate_inclusion(:status, ["active", "completed", "failed"])
+    |> validate_inclusion(:current_policy, @policies ++ [nil])
   end
 
   @doc """

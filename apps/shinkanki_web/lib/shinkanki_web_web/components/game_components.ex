@@ -23,10 +23,10 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "ofuda-card relative w-24 h-36 flex flex-col items-center p-2 transition-all select-none state-layer focus-ring bg-washi border border-sumi/30 rounded-lg shadow-md",
+        "ofuda-card relative w-14 h-20 sm:w-20 sm:h-28 md:w-24 md:h-36 flex flex-col items-center p-1 sm:p-1.5 md:p-2 transition-all select-none state-layer focus-ring bg-washi border border-sumi/30 rounded-md sm:rounded-lg shadow-md",
         if(@disabled,
           do: "ofuda-card--disabled cursor-not-allowed",
-          else: "cursor-pointer hover:-translate-y-2 active:scale-95"
+          else: "cursor-pointer hover:-translate-y-1 sm:hover:-translate-y-2 active:scale-95"
         ),
         @class
       ]}
@@ -41,15 +41,15 @@ defmodule ShinkankiWebWeb.GameComponents do
       aria-disabled={@disabled}
       {@rest}
     >
-      <div class="w-full border-b border-sumi pb-1 text-center">
-        <span class="writing-mode-vertical text-xs font-serif font-bold text-sumi tracking-widest">
-          {@title}
+      <div class="w-full border-b border-sumi pb-0.5 sm:pb-1 text-center overflow-hidden">
+        <span class="writing-mode-vertical text-[8px] sm:text-[10px] md:text-xs font-serif font-bold text-sumi tracking-tight sm:tracking-widest line-clamp-2">
+          {String.slice(@title, 0, 4)}
         </span>
       </div>
 
-      <div class="flex-1 flex items-center justify-center py-2">
+      <div class="flex-1 flex items-center justify-center py-0.5 sm:py-1 md:py-2">
         <div class={[
-          "w-12 h-12 rounded-full border border-sumi flex items-center justify-center text-2xl font-serif",
+          "w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 rounded-full border border-sumi flex items-center justify-center text-sm sm:text-lg md:text-2xl font-serif",
           @type == :action && "text-shu bg-shu/5",
           @type == :reaction && "text-matsu bg-matsu/5",
           @type == :event && "text-sumi bg-sumi/5"
@@ -58,8 +58,8 @@ defmodule ShinkankiWebWeb.GameComponents do
         </div>
       </div>
 
-      <div class="w-full border-t border-sumi pt-1 flex justify-between items-end">
-        <span class="text-[10px] text-sumi/60 font-mono">Cost:{@cost}</span>
+      <div class="w-full border-t border-sumi pt-0.5 sm:pt-1 flex justify-center items-end">
+        <span class="text-[7px] sm:text-[8px] md:text-[10px] text-sumi/60 font-mono">{@cost}</span>
       </div>
     </div>
     """
@@ -231,7 +231,7 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       class={[
-        "resonance-card event-card relative w-full max-w-md mx-auto p-6 transition-all duration-300",
+        "resonance-card event-card relative w-full max-w-md mx-auto p-3 sm:p-6 transition-all duration-300",
         @border_color,
         @class
       ]}
@@ -239,57 +239,57 @@ defmodule ShinkankiWebWeb.GameComponents do
       aria-label={"イベントカード: #{@title}"}
       {@rest}
     >
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-sumi/30">
-        <div class="flex items-center gap-3">
-          <div class="text-3xl">{@icon}</div>
-          <h3 class="text-xl font-bold text-sumi writing-mode-vertical">
+      <!-- Header - Mobile: Compact, Desktop: Full -->
+      <div class="flex items-center justify-between mb-2 sm:mb-4 pb-2 sm:pb-3 border-b-2 border-sumi/30">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="text-xl sm:text-3xl">{@icon}</div>
+          <h3 class="text-base sm:text-xl font-bold text-sumi">
             {@title}
           </h3>
         </div>
-        <div class="text-xs uppercase tracking-[0.3em] text-sumi/50">
+        <div class="text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-sumi/50">
           イベント
         </div>
       </div>
 
-    <!-- Description -->
-      <div class="mb-4">
-        <p class="text-sm leading-relaxed text-sumi">{@description}</p>
+    <!-- Description - Mobile: Shorter, Desktop: Full -->
+      <div class="mb-2 sm:mb-4">
+        <p class="text-xs sm:text-sm leading-relaxed text-sumi line-clamp-3 sm:line-clamp-none">{@description}</p>
       </div>
 
-    <!-- Effect Display -->
+    <!-- Effect Display - Mobile: Compact grid, Desktop: Full -->
       <%= if map_size(@effect) > 0 do %>
-        <div class="mt-4 pt-4 border-t border-sumi/20">
-          <div class="text-xs uppercase tracking-[0.2em] text-sumi/60 mb-2">効果</div>
-          <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-sumi/20">
+          <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-sumi/60 mb-1.5 sm:mb-2">効果</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 text-center">
             <%= if Map.has_key?(@effect, :forest) or Map.has_key?(@effect, :f) do %>
-              <div class="bg-matsu/10 border border-matsu/30 rounded p-2">
-                <div class="text-[10px] text-matsu/70 mb-1">F (森)</div>
-                <div class="text-sm font-bold text-matsu">
+              <div class="bg-matsu/10 border border-matsu/30 rounded p-1.5 sm:p-2">
+                <div class="text-[8px] sm:text-[10px] text-matsu/70 mb-0.5 sm:mb-1">🌲 森</div>
+                <div class="text-xs sm:text-sm font-bold text-matsu">
                   {format_effect_value(@effect[:forest] || @effect[:f])}
                 </div>
               </div>
             <% end %>
             <%= if Map.has_key?(@effect, :culture) or Map.has_key?(@effect, :k) do %>
-              <div class="bg-sakura/10 border border-sakura/30 rounded p-2">
-                <div class="text-[10px] text-sakura/70 mb-1">K (文化)</div>
-                <div class="text-sm font-bold text-sakura">
+              <div class="bg-sakura/10 border border-sakura/30 rounded p-1.5 sm:p-2">
+                <div class="text-[8px] sm:text-[10px] text-sakura/70 mb-0.5 sm:mb-1">🎭 文化</div>
+                <div class="text-xs sm:text-sm font-bold text-sakura">
                   {format_effect_value(@effect[:culture] || @effect[:k])}
                 </div>
               </div>
             <% end %>
             <%= if Map.has_key?(@effect, :social) or Map.has_key?(@effect, :s) do %>
-              <div class="bg-kohaku/10 border border-kohaku/30 rounded p-2">
-                <div class="text-[10px] text-kohaku/70 mb-1">S (社会)</div>
-                <div class="text-sm font-bold text-kohaku">
+              <div class="bg-kohaku/10 border border-kohaku/30 rounded p-1.5 sm:p-2">
+                <div class="text-[8px] sm:text-[10px] text-kohaku/70 mb-0.5 sm:mb-1">🤝 社会</div>
+                <div class="text-xs sm:text-sm font-bold text-kohaku">
                   {format_effect_value(@effect[:social] || @effect[:s])}
                 </div>
               </div>
             <% end %>
             <%= if Map.has_key?(@effect, :currency) or Map.has_key?(@effect, :p) do %>
-              <div class="bg-kin/10 border border-kin/30 rounded p-2">
-                <div class="text-[10px] text-kin/70 mb-1">P (空環)</div>
-                <div class="text-sm font-bold text-kin">
+              <div class="bg-kin/10 border border-kin/30 rounded p-1.5 sm:p-2">
+                <div class="text-[8px] sm:text-[10px] text-kin/70 mb-0.5 sm:mb-1">✨ 空環</div>
+                <div class="text-xs sm:text-sm font-bold text-kin">
                   {format_effect_value(@effect[:currency] || @effect[:p])}
                 </div>
               </div>
@@ -504,34 +504,58 @@ defmodule ShinkankiWebWeb.GameComponents do
     ~H"""
     <div
       id={@id}
-      class="resonance-modal-frame border border-kin/40 p-5 max-w-md text-[var(--color-landing-text-primary)]"
+      class="resonance-modal-frame border border-kin/40 p-3 sm:p-5 max-w-md text-[var(--color-landing-text-primary)]"
       role="dialog"
       aria-label="才能カード選択"
       {@rest}
     >
-      <div class="mb-3">
-        <h3 class="text-sm font-bold mb-1 tracking-[0.2em]">
-          才能カードを選択（最大{@max_selection}枚）
+      <div class="mb-2 sm:mb-3">
+        <h3 class="text-xs sm:text-sm font-bold mb-1 tracking-[0.1em] sm:tracking-[0.2em]">
+          才能選択（最大{@max_selection}枚）
         </h3>
-        <p class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
-          アクションカードに重ねて効果を強化できます
+        <p class="text-[10px] sm:text-xs text-[var(--color-landing-text-secondary)] hidden sm:block">
+          アクションカードに重ねて効果を強化
         </p>
-        <div class="flex items-center gap-2 text-xs text-kin bg-kin/15 px-2 py-1 rounded border border-kin/30">
-          <span class="font-semibold">💡 ヒント:</span>
-          <span>最大{@max_selection}枚まで重ねてボーナスを獲得</span>
-        </div>
       </div>
 
       <%= if length(@compatible_talents) == 0 do %>
-        <div class="text-center py-4 text-sumi/50 text-sm">
+        <div class="text-center py-3 sm:py-4 text-sumi/50 text-xs sm:text-sm">
           互換性のある才能カードがありません
         </div>
       <% else %>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
+        <!-- Mobile: Simple list view, Desktop: Grid -->
+        <div class="sm:hidden space-y-1.5 max-h-40 overflow-y-auto">
           <%= for talent <- @compatible_talents do %>
             <%
-            # player_talent_idがある場合はそれを使用（DB経由のタレント）
-            # なければ通常のidを使用（フォールバック用）
+            talent_id = talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
+            is_selected = Enum.member?(@selected_talent_ids, talent_id)
+            is_used = talent[:is_used] || talent["is_used"] || false
+            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used
+            %>
+            <button
+              type="button"
+              phx-click={if can_select, do: "toggle_talent", else: nil}
+              phx-value-talent-id={talent_id}
+              disabled={not can_select}
+              class={"w-full flex items-center justify-between p-2 rounded-lg transition-all active:scale-98 " <>
+                if(is_selected, do: "bg-kin/20 ring-2 ring-kin ", else: "bg-white/5 ") <>
+                if(can_select, do: "hover:bg-white/10", else: "opacity-40")}
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-base">✨</span>
+                <span class="text-sm font-medium text-[var(--color-landing-pale)]">{talent[:name] || talent["name"] || "才能"}</span>
+              </div>
+              <%= if is_selected do %>
+                <span class="text-kin text-sm">✓</span>
+              <% end %>
+            </button>
+          <% end %>
+        </div>
+
+        <!-- Desktop: Grid view -->
+        <div class="hidden sm:grid grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
+          <%= for talent <- @compatible_talents do %>
+            <%
             talent_id = talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
             is_selected = Enum.member?(@selected_talent_ids, talent_id)
             is_used = talent[:is_used] || talent["is_used"] || false
@@ -556,27 +580,28 @@ defmodule ShinkankiWebWeb.GameComponents do
         </div>
       <% end %>
 
-      <%= if length(@selected_talent_ids) > 0 do %>
-        <div class="mt-3 pt-3 border-t border-white/10">
-          <div class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
+      <!-- Action Buttons - Large tap targets for mobile -->
+      <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/10">
+        <%= if length(@selected_talent_ids) > 0 do %>
+          <div class="text-[10px] sm:text-xs text-[var(--color-landing-text-secondary)] mb-1.5 sm:mb-2">
             選択中: {length(@selected_talent_ids)} / {@max_selection}
           </div>
-          <div class="flex gap-2">
-            <button
-              class="flex-1 cta-button cta-solid justify-center tracking-[0.3em]"
-              phx-click="confirm_talent_selection"
-            >
-              確定
-            </button>
-            <button
-              class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
-              phx-click="cancel_talent_selection"
-            >
-              キャンセル
-            </button>
-          </div>
+        <% end %>
+        <div class="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+          <button
+            class="flex-1 py-2.5 sm:py-2 px-4 rounded-lg bg-kin text-[var(--color-midnight)] font-bold text-sm sm:text-base transition-all active:scale-95"
+            phx-click="confirm_talent_selection"
+          >
+            <%= if length(@selected_talent_ids) > 0, do: "確定", else: "なしで続行" %>
+          </button>
+          <button
+            class="flex-1 py-2 sm:py-2 px-4 rounded-lg border border-white/30 text-white/80 text-sm transition-all hover:bg-white/10"
+            phx-click="cancel_talent_selection"
+          >
+            キャンセル
+          </button>
         </div>
-      <% end %>
+      </div>
     </div>
     """
   end
@@ -923,7 +948,7 @@ defmodule ShinkankiWebWeb.GameComponents do
       can_afford = @current_currency >= card_cost %>
       <div
         id={@id}
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
         phx-click="cancel_action_confirm"
         role="dialog"
         aria-modal="true"
@@ -931,21 +956,25 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="resonance-modal-frame relative border border-shu/40 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          class="resonance-modal-frame relative border-t sm:border border-shu/40 rounded-t-2xl sm:rounded-lg max-w-2xl w-full sm:mx-4 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
           phx-click-away="cancel_action_confirm"
         >
+          <!-- Drag handle for mobile -->
+          <div class="sm:hidden flex justify-center py-2">
+            <div class="w-10 h-1 bg-white/30 rounded-full"></div>
+          </div>
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            class="absolute top-2 sm:top-4 right-2 sm:right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
             phx-click="cancel_action_confirm"
             aria-label="モーダルを閉じる"
           >
             <span class="text-lg font-bold">×</span>
           </button>
 
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <h2
               id="action-confirm-title"
-              class="text-2xl font-bold text-[var(--color-landing-pale)] mb-4 tracking-[0.2em]"
+              class="text-lg sm:text-2xl font-bold text-[var(--color-landing-pale)] mb-3 sm:mb-4 tracking-[0.15em] sm:tracking-[0.2em]"
             >
               アクションの確認
             </h2>
@@ -1103,11 +1132,11 @@ defmodule ShinkankiWebWeb.GameComponents do
               </div>
             <% end %>
 
-    <!-- Action Buttons -->
-            <div class="flex gap-3 mt-6">
+    <!-- Action Buttons - Mobile: Sticky bottom, Desktop: Normal flow -->
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 pb-2 sm:pb-0">
               <button
                 class={[
-                  "flex-1 cta-button justify-center tracking-[0.3em]",
+                  "flex-1 cta-button justify-center tracking-[0.2em] sm:tracking-[0.3em] py-3 sm:py-2 text-sm sm:text-base",
                   if(can_afford, do: "cta-solid", else: "cta-outline opacity-60 cursor-not-allowed")
                 ]}
                 phx-click={if can_afford, do: "confirm_action", else: nil}
@@ -1117,7 +1146,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 実行する
               </button>
               <button
-                class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
+                class="flex-1 cta-button cta-outline justify-center tracking-[0.2em] sm:tracking-[0.3em] py-3 sm:py-2 text-sm sm:text-base"
                 phx-click="cancel_action_confirm"
                 aria-label="キャンセル"
               >
@@ -1159,7 +1188,7 @@ defmodule ShinkankiWebWeb.GameComponents do
       can_afford = @current_currency >= card_cost %>
       <div
         id={@id}
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
         phx-click="close_card_detail"
         role="dialog"
         aria-modal="true"
@@ -1167,43 +1196,32 @@ defmodule ShinkankiWebWeb.GameComponents do
         {@rest}
       >
         <div
-          class="resonance-modal-frame relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-slide-in-up"
+          class="resonance-modal-frame relative max-w-md sm:max-w-lg w-full mx-0 sm:mx-4 max-h-[85vh] overflow-y-auto animate-slide-in-up rounded-t-xl sm:rounded-xl"
           phx-click-away="close_card_detail"
           phx-window-keydown={
             JS.push("close_card_detail") |> JS.dispatch("keydown", detail: %{key: "Escape"})
           }
         >
           <button
-            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+            class="absolute top-2 sm:top-4 right-2 sm:right-4 w-6 h-6 sm:w-8 sm:h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
             phx-click="close_card_detail"
             aria-label="モーダルを閉じる"
           >
-            <span class="text-lg font-bold">×</span>
+            <span class="text-sm sm:text-lg font-bold">×</span>
           </button>
 
-          <div class="p-6">
+          <div class="p-3 sm:p-6">
             <h2
               id="card-detail-title"
-              class="text-2xl font-bold text-[var(--color-landing-pale)] mb-4 tracking-[0.2em]"
+              class="text-base sm:text-xl font-bold text-[var(--color-landing-pale)] mb-2 sm:mb-4 tracking-[0.1em] sm:tracking-[0.2em]"
             >
-              カード詳細
+              {@card[:title] || @card["title"] || "カード"}
             </h2>
 
-    <!-- Card Preview -->
-            <div class="mb-6 flex justify-center">
-              <.ofuda_card
-                title={@card[:title] || @card["title"] || "カード"}
-                description={card_description}
-                cost={card_cost}
-                type={card_type}
-                class="scale-125"
-              />
-            </div>
-
-    <!-- Card Type Badge -->
-            <div class="mb-4 flex items-center gap-2">
+    <!-- Card Type Badge & Tags - Inline -->
+            <div class="mb-2 sm:mb-4 flex flex-wrap items-center gap-1 sm:gap-2">
               <span class={[
-                "px-3 py-1 rounded-full text-xs font-semibold border",
+                "px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border",
                 case card_type do
                   :action -> "bg-shu/20 text-shu border-shu/40"
                   :reaction -> "bg-matsu/20 text-matsu border-matsu/40"
@@ -1212,53 +1230,48 @@ defmodule ShinkankiWebWeb.GameComponents do
                 end
               ]}>
                 {case card_type do
-                  :action -> "アクションカード"
-                  :reaction -> "リアクションカード"
-                  :event -> "イベントカード"
+                  :action -> "アクション"
+                  :reaction -> "リアクション"
+                  :event -> "イベント"
                   _ -> "カード"
                 end}
               </span>
               <%= if length(card_tags) > 0 do %>
-                <div class="flex gap-1">
-                  <%= for tag <- card_tags do %>
-                    <span class="px-2 py-1 bg-kin/10 text-kin border border-kin/30 rounded text-xs">
-                      {tag}
-                    </span>
-                  <% end %>
-                </div>
+                <%= for tag <- card_tags do %>
+                  <span class="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-kin/10 text-kin border border-kin/30 rounded text-[10px] sm:text-xs">
+                    {tag}
+                  </span>
+                <% end %>
               <% end %>
             </div>
 
     <!-- Description -->
             <%= if card_description != "" do %>
-              <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
-                <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
-                  説明
-                </div>
-                <p class="text-sm text-[var(--color-landing-text-primary)] leading-relaxed">
+              <div class="mb-2 sm:mb-4 p-2 sm:p-3 bg-white/5 border border-white/10 rounded">
+                <p class="text-xs sm:text-sm text-[var(--color-landing-text-primary)] leading-relaxed">
                   {card_description}
                 </p>
               </div>
             <% end %>
 
-    <!-- Cost Display -->
-            <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+    <!-- Cost Display - Compact -->
+            <div class="mb-2 sm:mb-4 p-2 sm:p-3 bg-white/5 border border-white/10 rounded">
               <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-[var(--color-landing-text-secondary)]">
-                  コスト（空環）
+                <span class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)]">
+                  コスト
                 </span>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 sm:gap-2">
                   <span class={[
-                    "text-lg font-bold",
+                    "text-sm sm:text-lg font-bold",
                     if(can_afford, do: "text-kin", else: "text-shu")
                   ]}>
-                    {card_cost}
+                    φ{card_cost}
                   </span>
-                  <span class="text-sm text-[var(--color-landing-text-secondary)]">
-                    （現在: {@current_currency}）
+                  <span class="text-[10px] sm:text-sm text-[var(--color-landing-text-secondary)]">
+                    / φ{@current_currency}
                   </span>
                   <%= if not can_afford do %>
-                    <span class="text-xs text-shu">（不足）</span>
+                    <span class="text-[10px] sm:text-xs text-shu">不足</span>
                   <% end %>
                 </div>
               </div>
@@ -1307,8 +1320,8 @@ defmodule ShinkankiWebWeb.GameComponents do
               </div>
             <% end %>
 
-    <!-- Usage Conditions -->
-            <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+    <!-- Usage Conditions - Hidden on mobile for simplicity -->
+            <div class="hidden sm:block mb-4 p-3 bg-white/5 border border-white/10 rounded">
               <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
                 使用条件
               </div>
@@ -1336,10 +1349,28 @@ defmodule ShinkankiWebWeb.GameComponents do
               </ul>
             </div>
 
-    <!-- Close Button -->
-            <div class="flex justify-end mt-6">
+    <!-- Action Buttons - Larger tap targets for mobile -->
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
+              <%= if can_afford do %>
+                <button
+                  class="w-full sm:w-auto order-1 sm:order-2 py-3 sm:py-2 px-6 rounded-lg bg-matsu hover:bg-matsu/80 text-white font-bold text-base sm:text-sm tracking-[0.1em] sm:tracking-[0.3em] transition-all active:scale-95"
+                  phx-click="use_card_from_detail"
+                  phx-value-card-id={@card[:id] || @card["id"]}
+                  aria-label="このカードを使用する"
+                >
+                  🃏 使用する
+                </button>
+              <% else %>
+                <button
+                  class="w-full sm:w-auto order-1 sm:order-2 py-3 sm:py-2 px-6 rounded-lg bg-gray-600 cursor-not-allowed opacity-50 text-white font-bold text-base sm:text-sm"
+                  disabled
+                  aria-label="空環が不足しています"
+                >
+                  空環不足
+                </button>
+              <% end %>
               <button
-                class="cta-button cta-outline tracking-[0.3em]"
+                class="w-full sm:w-auto order-2 sm:order-1 py-2.5 sm:py-2 px-4 rounded-lg border border-white/30 text-white/80 hover:bg-white/10 text-sm transition-all"
                 phx-click="close_card_detail"
                 aria-label="閉じる"
               >
@@ -1381,95 +1412,99 @@ defmodule ShinkankiWebWeb.GameComponents do
     <%= if @show && @game_status != :playing do %>
       <div
         id={@id}
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ending-title"
         {@rest}
       >
-        <div class="resonance-modal-frame relative max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div class="resonance-modal-frame relative max-w-4xl w-full sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-fade-in rounded-t-2xl sm:rounded-lg">
+          <!-- Drag handle for mobile -->
+          <div class="sm:hidden flex justify-center py-2 sticky top-0 bg-inherit z-10">
+            <div class="w-10 h-1 bg-white/30 rounded-full"></div>
+          </div>
           <!-- Ending Header -->
           <div class={[
-            "p-8 text-center border-b border-white/10",
+            "p-4 sm:p-8 text-center border-b border-white/10",
             @ending_type == :blessing && "bg-kin/20 border-kin/30",
             @ending_type == :purification && "bg-matsu/20 border-matsu/30",
             @ending_type == :uncertain && "bg-kohaku/20 border-kohaku/30",
             @ending_type == :lament && "bg-shu/20 border-shu/30",
             @ending_type == :instant_loss && "bg-white/10 border-white/20"
           ]}>
-            <div class="text-6xl mb-4 drop-shadow-lg">{@ending_data.icon}</div>
+            <div class="text-4xl sm:text-6xl mb-2 sm:mb-4 drop-shadow-lg">{@ending_data.icon}</div>
             <h1
               id="ending-title"
-              class="text-3xl md:text-4xl font-bold mb-2 writing-mode-vertical tracking-[0.3em]"
+              class="text-xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 tracking-[0.2em] sm:tracking-[0.3em]"
             >
               {@ending_data.title}
             </h1>
-            <p class="text-lg text-[var(--color-landing-text-secondary)] mt-4">
+            <p class="text-sm sm:text-lg text-[var(--color-landing-text-secondary)] mt-2 sm:mt-4">
               {@ending_data.subtitle}
             </p>
           </div>
 
     <!-- Ending Description -->
-          <div class="p-6 md:p-8">
-            <div class="prose prose-invert max-w-none mb-6">
-              <p class="text-base leading-relaxed text-[var(--color-landing-text-primary)]">
+          <div class="p-4 sm:p-6 md:p-8">
+            <div class="prose prose-invert max-w-none mb-4 sm:mb-6">
+              <p class="text-sm sm:text-base leading-relaxed text-[var(--color-landing-text-primary)]">
                 {@ending_data.description}
               </p>
             </div>
 
-    <!-- Final Statistics -->
-            <div class="mb-6 p-4 bg-white/5 border border-white/10 rounded-lg">
-              <h2 class="text-lg font-bold text-[var(--color-landing-pale)] mb-4">
+    <!-- Final Statistics - Mobile optimized grid -->
+            <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-lg">
+              <h2 class="text-base sm:text-lg font-bold text-[var(--color-landing-pale)] mb-3 sm:mb-4">
                 最終結果
               </h2>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
-                    Life Index
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                <div class="text-center p-2 sm:p-0 bg-white/5 sm:bg-transparent rounded">
+                  <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-0.5 sm:mb-1">
+                    生命指数
                   </div>
-                  <div class="text-2xl font-bold text-shu">{@life_index}</div>
+                  <div class="text-xl sm:text-2xl font-bold text-shu">{@life_index}</div>
                 </div>
-                <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
-                    F (森)
+                <div class="text-center p-2 sm:p-0 bg-matsu/10 sm:bg-transparent rounded">
+                  <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-0.5 sm:mb-1">
+                    🌲 森
                   </div>
-                  <div class="text-xl font-bold text-matsu">
+                  <div class="text-lg sm:text-xl font-bold text-matsu">
                     {@final_stats[:forest] || @final_stats["forest"] || 0}
                   </div>
                 </div>
-                <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
-                    K (文化)
+                <div class="text-center p-2 sm:p-0 bg-sakura/10 sm:bg-transparent rounded">
+                  <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-0.5 sm:mb-1">
+                    🎭 文化
                   </div>
-                  <div class="text-xl font-bold text-sakura">
+                  <div class="text-lg sm:text-xl font-bold text-sakura">
                     {@final_stats[:culture] || @final_stats["culture"] || 0}
                   </div>
                 </div>
-                <div class="text-center">
-                  <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-1">
-                    S (社会)
+                <div class="text-center p-2 sm:p-0 bg-kohaku/10 sm:bg-transparent rounded">
+                  <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-0.5 sm:mb-1">
+                    🤝 社会
                   </div>
-                  <div class="text-xl font-bold text-kohaku">
+                  <div class="text-lg sm:text-xl font-bold text-kohaku">
                     {@final_stats[:social] || @final_stats["social"] || 0}
                   </div>
                 </div>
               </div>
-              <div class="mt-4 text-center text-sm text-[var(--color-landing-text-secondary)]">
+              <div class="mt-3 sm:mt-4 text-center text-xs sm:text-sm text-[var(--color-landing-text-secondary)]">
                 ターン数: {@turn} / {@max_turns}
               </div>
             </div>
 
-    <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3 mt-6">
+    <!-- Action Buttons - Mobile: Full width stacked -->
+            <div class="flex flex-col gap-2 sm:flex-row sm:gap-3 mt-4 sm:mt-6 pb-4 sm:pb-0">
               <button
-                class="flex-1 cta-button cta-solid justify-center tracking-[0.3em]"
+                class="flex-1 cta-button cta-solid justify-center tracking-[0.2em] sm:tracking-[0.3em] py-3 sm:py-2"
                 phx-click="restart_game"
                 aria-label="新しいゲームを開始"
               >
                 新しいゲームを開始
               </button>
               <button
-                class="flex-1 cta-button cta-outline justify-center tracking-[0.3em]"
+                class="flex-1 cta-button cta-outline justify-center tracking-[0.2em] sm:tracking-[0.3em] py-3 sm:py-2"
                 phx-click="close_ending"
                 aria-label="閉じる"
               >

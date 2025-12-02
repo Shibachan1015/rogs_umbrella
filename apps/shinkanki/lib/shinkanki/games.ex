@@ -288,6 +288,18 @@ defmodule Shinkanki.Games do
     |> Repo.update()
   end
 
+  # game_session_idからターンのフェーズを進める
+  def advance_phase(game_session_id) when is_binary(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state do
+      advance_phase(turn_state)
+    else
+      {:error, :no_turn_state}
+    end
+  end
+
   @doc """
   ターンを終了して次のターンへ
   - 減衰処理

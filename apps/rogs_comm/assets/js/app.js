@@ -22,7 +22,8 @@ import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
-import {hooks as colocatedHooks} from "phoenix-colocated/rogs_comm"
+// import {hooks as colocatedHooks} from "phoenix-colocated/rogs_comm"
+const colocatedHooks = {} // Placeholder until phoenix-colocated is properly configured
 import topbar from "../vendor/topbar"
 import ChatRealtime from "./chat_channel"
 import WebRTCHook from "./webrtc_hook"

@@ -289,7 +289,10 @@ defmodule ShinkankiWebWeb.LobbyLive do
          |> push_navigate(to: ~p"/room/#{room.slug}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+        {:noreply,
+         socket
+         |> put_flash(:error, "ルームの作成に失敗しました。同じ名前のルームが既に存在する可能性があります。")
+         |> assign(form: to_form(changeset))}
     end
   end
 end

@@ -8,7 +8,15 @@ defmodule Rogs.Umbrella.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      releases: [
+        rogs_umbrella: [
+          applications: [
+            shinkanki: :permanent,
+            shinkanki_web: :permanent
+          ]
+        ]
+      ]
     ]
   end
 

@@ -1,0 +1,42 @@
+# Ignore .fetch files
+.fetch
+
+# Ignore dialyzer plt files
+*.plt
+*.plt.hash
+
+# Ignore Elixir build folder
+_build/
+
+# Ignore node_modules
+**/node_modules/
+
+# Ignore compiled js
+apps/shinkanki_web/priv/static/assets/
+
+# Ignore coverage data
+cover/
+
+# Ignore deps
+deps/
+
+# Ignore development/test artifacts
+*.tar
+*.ez
+
+# Ignore generated files
+/doc
+.elixir_ls/
+
+# Ignore test coverage reports
+coverage/
+/tmp/
+
+# Ignore git
+.git
+.gitignore
+
+# Ignore Docker and Fly files
+Dockerfile*
+docker-compose*
+fly.toml

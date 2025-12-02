@@ -1,108 +1,91 @@
-# ROGs Identity
+# 神環記 (Shinkanki)
 
-ROGs Umbrellaプロジェクトの認証システムです。
+**空環 Akasha 年代記** - 森・文化・社会・通貨の4つのパラメータを操り、文明の循環を司るカードゲーム
 
 ## デザインシステム
 
 このリポジトリのUI実装は **Torii Resonance Design System (TRDS)** を基準にしています。色やタイポグラフィ、コンポーネント規約については [`docs/torii_resonance_design_system.md`](docs/torii_resonance_design_system.md) を参照してください。
-Quick Reference / クイックガイド (token / Tailwind / CoreComponents への導線) も同ドキュメントに追記済みです。UIタスクを始める前に必ず確認してください。
 
 ## 概要
 
-`rogs_identity`は、ROGs Umbrellaプロジェクト全体で使用される認証システムです。以下の機能を提供します：
+神環記は、Phoenix LiveViewで構築されたリアルタイムマルチプレイヤーカードゲームです。
 
-- ユーザー登録・ログイン
-- パスワードリセット
-- メール確認
-- セッション管理
-- API認証
-- 他のアプリケーションとの認証連携
+### ゲームの特徴
+
+- **4つのパラメータ**: 森（自然）、文化、社会、通貨のバランスを管理
+- **3つのフェーズ**: 季節フェーズ → 行動フェーズ → 精算フェーズ
+- **邪気システム**: パラメータの極端な偏りが邪気を生み、文明崩壊へ導く
+- **リアルタイム対戦**: WebSocketによるリアルタイムな状態同期
+
+## プロジェクト構造
+
+Umbrellaプロジェクトとして構成されています：
+
+```
+apps/
+├── shinkanki/          # ゲームロジック（コアドメイン）
+├── shinkanki_web/      # Phoenix LiveView（WebUI）
+├── rogs_comm/          # 共通ユーティリティ（ルーム管理等）
+└── rogs_identity/      # 認証システム
+```
 
 ## クイックスタート
 
 ### 前提条件
 
-- Elixir 1.19以上
+- Elixir 1.17以上
+- Erlang/OTP 27以上
 - PostgreSQL
-- 環境変数の設定（オプション）
+- Node.js 20以上（アセットビルド用）
 
 ### セットアップ
 
-1. **依存関係のインストール**
-
 ```bash
+# 依存関係のインストール
 mix deps.get
-```
 
-2. **データベースのセットアップ**
+# アセットのセットアップ
+cd apps/shinkanki_web/assets && npm install && cd ../../..
 
-```bash
-# 環境変数の設定（オプション）
-export ROGS_DB_USER=your_username
-export ROGS_DB_PASS=your_password
-export ROGS_DB_HOST=localhost
-
-# データベースの作成とマイグレーション
+# データベースのセットアップ
 mix ecto.create
 mix ecto.migrate
-```
 
-3. **サーバーの起動**
-
-```bash
+# サーバーの起動
 mix phx.server
 ```
 
 サーバーは `http://localhost:4000` で起動します。
 
-## ドキュメント
+## 開発
 
-詳細なドキュメントは `apps/rogs_identity/docs/` ディレクトリにあります：
-
-- [統合ガイド](apps/rogs_identity/docs/INTEGRATION_GUIDE.md) - 他のアプリからの利用方法
-- [アーキテクチャドキュメント](apps/rogs_identity/docs/ARCHITECTURE.md) - システムの内部構造
-- [API仕様書](apps/rogs_identity/docs/API_SPEC.md) - RESTful APIの仕様
-- [環境設定ガイド](apps/rogs_identity/docs/ENVIRONMENT_SETUP.md) - 環境変数の設定方法
-
-## 環境変数
-
-### データベース設定
-
-- `ROGS_DB_USER`: データベースユーザー名（デフォルト: `takashiba`）
-- `ROGS_DB_PASS`: データベースパスワード（デフォルト: `postgres`）
-- `ROGS_DB_HOST`: データベースホスト（デフォルト: `localhost`）
-
-詳細は [環境設定ガイド](apps/rogs_identity/docs/ENVIRONMENT_SETUP.md) を参照してください。
-
-## テスト
+### テスト
 
 ```bash
 # すべてのテストを実行
 mix test
 
 # 特定のアプリのテストを実行
-mix test apps/rogs_identity
-
-# 特定のテストファイルを実行
-mix test apps/rogs_identity/test/rogs_identity_web/integration_test.exs
+mix test apps/shinkanki
+mix test apps/shinkanki_web
 ```
 
-## プロジェクト構造
+### コード品質
 
+```bash
+# precommitチェック（コンパイル警告、フォーマット、テスト）
+mix precommit
 ```
-apps/rogs_identity/
-├── lib/
-│   ├── rogs_identity/          # コアコンテキスト
-│   │   ├── accounts.ex         # ユーザー管理
-│   │   └── plug.ex             # 他のアプリ向けPlug
-│   └── rogs_identity_web/      # Webレイヤー
-│       ├── controllers/        # コントローラー
-│       ├── live/               # LiveView
-│       └── router.ex           # ルーティング
-├── test/                       # テスト
-└── docs/                       # ドキュメント
+
+## デプロイ
+
+Fly.ioへのデプロイに対応しています：
+
+```bash
+# Fly.ioにデプロイ
+fly deploy
 ```
 
 ## ライセンス
 
-このプロジェクトはROGs Umbrellaプロジェクトの一部です。
+All rights reserved.

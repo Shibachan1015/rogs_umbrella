@@ -320,19 +320,19 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                   </button>
                 <% end %>
 
-                <!-- AIで補完してスタート（4人未満の場合） -->
+                <!-- CPUで補完してスタート（4人未満の場合） -->
                 <%= if length(@players) < 4 && length(@players) >= 1 do %>
                   <div class="ai-fill-section">
                     <button
                       type="button"
                       class="ai-fill-btn"
                       phx-click="start_with_ai"
-                      data-confirm={"AIプレイヤー#{4 - length(@players)}人を追加してゲームを開始しますか？"}
+                      data-confirm={"CPUプレイヤー#{4 - length(@players)}人を追加してゲームを開始しますか？"}
                     >
-                      🤖 AIで補完して開始（{4 - length(@players)}人追加）
+                      🤖 CPUで補完して開始（{4 - length(@players)}人追加）
                     </button>
                     <p class="ai-fill-hint">
-                      人間{length(@players)}人 + AI{4 - length(@players)}人 = 4人でゲーム開始
+                      人間{length(@players)}人 + CPU{4 - length(@players)}人 = 4人でゲーム開始
                     </p>
                   </div>
                 <% end %>
@@ -592,7 +592,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
             {:noreply,
              socket
-             |> put_flash(:info, "AIプレイヤー#{ai_count}人を追加してゲームを開始しました")
+             |> put_flash(:info, "CPUプレイヤー#{ai_count}人を追加してゲームを開始しました")
              |> push_navigate(to: ~p"/game/#{room_id}")}
 
           {:error, reason} ->

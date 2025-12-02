@@ -1161,7 +1161,27 @@ defmodule ShinkankiWebWeb.GameComponents do
   end
 
   defp calculate_new_params(current_params, effect) do
-    Map.merge(current_params, effect, fn _key, current_val, effect_val ->
+    # Normalize effect keys to atoms (handles both atom and string keys)
+    normalized_effect =
+      Map.new(effect, fn {key, val} ->
+        atom_key =
+          case key do
+            k when is_atom(k) -> k
+            "forest" -> :forest
+            "f" -> :forest
+            "culture" -> :culture
+            "k" -> :culture
+            "social" -> :social
+            "s" -> :social
+            "currency" -> :currency
+            "p" -> :currency
+            k when is_binary(k) -> String.to_existing_atom(k)
+          end
+
+        {atom_key, val}
+      end)
+
+    Map.merge(current_params, normalized_effect, fn _key, current_val, effect_val ->
       current_val + effect_val
     end)
   end

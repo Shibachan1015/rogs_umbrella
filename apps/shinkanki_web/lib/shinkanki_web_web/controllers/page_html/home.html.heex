@@ -3,14 +3,6 @@
 <div class="landing-body">
   <header class="landing-header" id="landing-header" phx-hook="NavbarScroll">
     <div class="landing-logo" aria-label="神環記">神環記</div>
-    <nav class="landing-nav" aria-label="メインナビゲーション">
-      <a href="#about">世界観</a>
-      <a href="#concept">循環思想</a>
-      <a href="#play">遊び方</a>
-      <.link navigate={~p"/lobby"} class="landing-cta">
-        ゲームを開始
-      </.link>
-    </nav>
   </header>
 
   <main class="landing-container" role="main">
@@ -26,7 +18,7 @@
           <.link navigate={~p"/lobby"} class="cta-button cta-solid">
             体験する
           </.link>
-          <a href="#about" class="cta-button cta-outline">世界観を見る</a>
+          <a href="#akasha" class="cta-button cta-outline">年代記を見る</a>
         </div>
       </div>
       <div
@@ -79,68 +71,130 @@
           </div>
         </div>
       </div>
-      <div class="scroll-indicator" aria-hidden="true"></div>
     </section>
 
-    <section id="about" class="landing-section" aria-labelledby="about-title">
-      <h2 id="about-title" class="section-title">世界観</h2>
-      <div class="section-body">
-        <p>
-          経済と効率と利子に支配された文明は、森を削り、文化を忘れ、人のつながりを弱らせてしまいました。
-        </p>
-        <p>
-          神々は嘆きつつも、まだ希望を捨ててはいません。そこで呼ばれたのが、あなたたちです。
-        </p>
-        <p>
-          プレイヤーはそれぞれの神格として行動しながら、森・文化・人のつながりを取り戻し、自らの中に眠る「神の働き」を思い出していきます。
+    <!-- 空環 Akasha 年代記セクション -->
+    <section id="akasha" class="akasha-chronicle" aria-labelledby="akasha-title">
+      <div class="akasha-header">
+        <p class="akasha-kicker">RESONANT TALES</p>
+        <h2 id="akasha-title" class="akasha-title">空環 Akasha 年代記</h2>
+        <p class="akasha-lede">
+          邪気レベル 6 から始まる壊れかけた地球。森・文化・コミュニティを守りながら、
+          呼吸するお金「空環」を巡らせ、20年後に訪れる世界の姿を書き換えていく協力型ボードゲームです。
         </p>
       </div>
-    </section>
 
-    <section id="concept" class="landing-section" aria-labelledby="concept-title">
-      <h2 id="concept-title" class="section-title">循環の思想</h2>
-      <div class="cards-grid" role="list">
-        <article class="concept-card" role="listitem">
-          <div class="card-icon">⛩</div>
-          <h3>空環</h3>
-          <p>使うほど循環し、貯めこむと減衰する新しい通貨。生命と調和を育てるために設計されたマネー。</p>
-        </article>
-        <article class="concept-card" role="listitem">
-          <div class="card-icon">🌲</div>
-          <h3>森の再生</h3>
-          <p>失われた森を取り戻し、自然との調和を回復します。木々は静かに、しかし確実に世界を変えていきます。</p>
-        </article>
-        <article class="concept-card" role="listitem">
-          <div class="card-icon">🎋</div>
-          <h3>文化の継承</h3>
-          <p>忘れられた伝統と知恵を次世代へ。文化は人々をつなぎ、意味と美を世界にもたらします。</p>
-        </article>
-        <article class="concept-card" role="listitem">
-          <div class="card-icon">🤝</div>
-          <h3>つながりの回復</h3>
-          <p>分断された人々の心を再び結びます。真の豊かさは、共に生きる喜びの中にあります。</p>
-        </article>
+      <!-- 邪気トラック -->
+      <div class="akasha-panel" id="jaki-panel">
+        <div class="akasha-gauge-wrapper">
+          <div class="akasha-gauge-label">
+            <span>邪気トラック</span>
+            <span>現在値：<strong id="jaki-value">0</strong> / 8</span>
+          </div>
+          <div class="akasha-gauge-bar">
+            <div class="akasha-gauge-fill" id="jaki-fill"></div>
+          </div>
+          <div class="akasha-gauge-markers">
+            <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span>
+          </div>
+        </div>
+        <p class="akasha-note">
+          邪気が高いほど、現代社会の歪みを象徴する「人代カード」の枚数や影響が増幅します。
+        </p>
       </div>
-    </section>
 
-    <section id="play" class="landing-section" aria-labelledby="play-title">
-      <h2 id="play-title" class="section-title">神々と歩む遊び方</h2>
-      <div class="play-grid">
-        <article class="play-card">
-          <span class="play-step">01</span>
-          <h3>役割を授かる</h3>
-          <p>森・文化・コミュニティ・空環、4つの役割から自身の神性を選択します。</p>
-        </article>
-        <article class="play-card">
-          <span class="play-step">02</span>
-          <h3>巡るフェーズ</h3>
-          <p>イベント → 相談 → アクション → 減衰 → 生命更新。世界の循環を体験します。</p>
-        </article>
-        <article class="play-card">
-          <span class="play-step">03</span>
-          <h3>循環を整える</h3>
-          <p>F（森）K（文化）S（社会）P（空環）を整え、Life Indexを40以上に導きます。</p>
-        </article>
+      <!-- 6つのフェイズ -->
+      <div class="akasha-flow-section">
+        <h3 class="akasha-section-title">1年のめぐり：6つのフェイズ</h3>
+        <p class="akasha-section-lede">
+          1年＝1ターン。神議りから結びまで、呼吸のように繰り返されるフェイズが世界の状態を左右します。
+        </p>
+        <ol class="akasha-flow-steps">
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">1</div>
+            <div class="akasha-step-body">
+              <h4>人代フェイズ（妨害）</h4>
+              <p>邪気値に応じた枚数の人代カードが公開され、今年の世界に立ち塞がる圧力が示されます。</p>
+            </div>
+          </li>
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">2</div>
+            <div class="akasha-step-body">
+              <h4>神議り（かみはかり）</h4>
+              <p>森・文化・浄化など、守る優先順位を語り合い、神々の方針を一致させます。</p>
+            </div>
+          </li>
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">3</div>
+            <div class="akasha-step-body">
+              <h4>営み（いとなみ）</h4>
+              <p>才能カードや空環Pを重ねて行動。F・K・Sの指標を守りながら邪気を削っていきます。</p>
+            </div>
+          </li>
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">4</div>
+            <div class="akasha-step-body">
+              <h4>呼吸（こきゅう）</h4>
+              <p>過剰に貯めた空環Pを手放し、誰かのケアや森へと還流させる浄化フェイズ。</p>
+            </div>
+          </li>
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">5</div>
+            <div class="akasha-step-body">
+              <h4>結び（むすひ）</h4>
+              <p>「助かった」と感じた仲間へ Thanksチップを手渡し、見えない働きを可視化します。</p>
+            </div>
+          </li>
+          <li class="akasha-flow-step">
+            <div class="akasha-step-index">6</div>
+            <div class="akasha-step-body">
+              <h4>年末処理</h4>
+              <p>森・文化・コミュニティの指標を確認し、生命指数 L = F + K + S を記録。</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- カード紹介 -->
+      <div class="akasha-cards-section">
+        <h3 class="akasha-section-title">人代カード vs 磨きカード</h3>
+        <p class="akasha-section-lede">
+          世界を蝕むカードと、それを浄化し循環へ変えるカード。ふたつの流れを行き来しながら物語が進みます。
+        </p>
+        <div class="akasha-cards-grid">
+          <article class="akasha-card-stack" data-type="hitoyo">
+            <h4 class="akasha-card-title">人代カード（ひとよ）</h4>
+            <p class="akasha-card-sub">環境破壊 / 分断 / 誘惑など</p>
+            <ul class="akasha-tag-list">
+              <li>底なしセール：Pは増えるが、森やコミュニティを削る。</li>
+              <li>山肌むき出しメガプロジェクト：Fを大きく減らす。</li>
+              <li>中止される小さな祭り：KとSを徐々に失わせる。</li>
+            </ul>
+          </article>
+          <article class="akasha-card-stack" data-type="migaki">
+            <h4 class="akasha-card-title">磨きカード（MIGAKI）</h4>
+            <p class="akasha-card-sub">丁寧な暮らし / 祭り / 台所仕事など</p>
+            <ul class="akasha-tag-list">
+              <li>手前味噌を仕込む：F+1 / K+1 / 邪気−1。</li>
+              <li>野菜を育てて食卓にのせる：F+2 / S+1 / 邪気−1。</li>
+              <li>鎮守の森 手入れの日：F+2 / S+1 / 邪気−1。</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+
+      <!-- エンディング -->
+      <div class="akasha-ending-panel">
+        <h3>20年後、どんな世界を迎えますか？</h3>
+        <p>
+          森 (F)・文化 (K)・コミュニティ (S) を守りながら邪気を沈める二十年。
+          最後に訪れるエンディングは、あなたたちが巡らせた呼吸と感謝の総量で描かれます。
+        </p>
+        <div class="akasha-cta-row">
+          <.link navigate={~p"/lobby"} class="cta-button cta-solid">
+            プロトタイプを遊ぶ
+          </.link>
+        </div>
       </div>
     </section>
   </main>

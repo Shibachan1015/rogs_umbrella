@@ -286,11 +286,29 @@ defmodule ShinkankiWebWeb.GameLive do
           </span>
         </div>
 
-        <!-- Center: Life Index - Always visible, very compact -->
-        <div class="flex items-center gap-0.5 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded">
-          <span class="text-[9px] sm:text-xs text-[var(--color-landing-gold)]">L</span>
-          <span class="text-xs sm:text-base font-bold text-[var(--color-landing-gold)]">{life_index(@game_state)}</span>
-          <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">/40</span>
+        <!-- Center: World Stats - Always visible -->
+        <div class="flex items-center gap-2 sm:gap-4">
+          <!-- 森・文化・絆 -->
+          <div class="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-sm">
+            <div class="flex items-center gap-0.5" title="森">
+              <span>🌲</span>
+              <span class="font-bold text-matsu">{@game_state.forest}</span>
+            </div>
+            <div class="flex items-center gap-0.5" title="文化">
+              <span>🎭</span>
+              <span class="font-bold text-sakura">{@game_state[:culture] || @game_state.culture || 0}</span>
+            </div>
+            <div class="flex items-center gap-0.5" title="絆">
+              <span>🤝</span>
+              <span class="font-bold text-kohaku">{@game_state[:social] || @game_state.social || 0}</span>
+            </div>
+          </div>
+          <!-- Life Index -->
+          <div class="flex items-center gap-0.5 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded" title="生命指数">
+            <span class="text-[9px] sm:text-xs text-[var(--color-landing-gold)]">L</span>
+            <span class="text-xs sm:text-base font-bold text-[var(--color-landing-gold)]">{life_index(@game_state)}</span>
+            <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">/40</span>
+          </div>
         </div>
 
         <!-- Right: Akasha & Toggle buttons -->

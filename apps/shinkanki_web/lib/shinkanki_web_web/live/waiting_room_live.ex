@@ -106,6 +106,12 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       :ok ->
         # プレイヤーとして参加（表示名とアバターを使用）
         Shinkanki.join_player(room_id, user_id, display_name, avatar)
+
+        # 参加者数を更新（RoomCleanerによる削除を防ぐため）
+        game_state = Shinkanki.get_current_state(room_id) || %{}
+        player_count = length(Map.get(game_state, :player_order, []))
+        Rooms.update_participant_count(room.id, max(player_count, 1))
+
         continue_mount_with_room(room, current_user, socket)
     end
   end
@@ -540,6 +546,10 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
         # メモリベースのゲームも起動（後方互換性のため）
         case Shinkanki.start_game(room_id) do
           {:ok, _game} ->
+            # 参加者数を更新（ゲーム中は4人）
+            room = socket.assigns.room
+            Rooms.update_participant_count(room.id, 4)
+
             # ゲーム画面に遷移
             {:noreply, push_navigate(socket, to: ~p"/game/#{room_id}")}
 
@@ -575,6 +585,10 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
             # AIプレイヤーを追加
             human_players = Games.get_game_session!(game_session.id) |> Map.get(:players, [])
             Games.fill_with_ai_players(game_session.id, human_players)
+
+            # 参加者数を更新（ゲーム中は4人）
+            room = socket.assigns.room
+            Rooms.update_participant_count(room.id, 4)
 
             {:noreply,
              socket

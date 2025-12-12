@@ -15,12 +15,13 @@ RUN apt-get update -y && apt-get install -y build-essential git \
 # prepare build dir
 WORKDIR /app
 
-# install hex + rebar
+# install hex + rebar with longer timeout
 RUN mix local.hex --force && \
     mix local.rebar --force
 
 # set build ENV
 ENV MIX_ENV="prod"
+ENV HEX_HTTP_TIMEOUT=300
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
@@ -30,7 +31,8 @@ COPY apps/shinkanki/mix.exs apps/shinkanki/
 COPY apps/shinkanki_web/mix.exs apps/shinkanki_web/
 COPY config config
 
-RUN mix deps.get --only $MIX_ENV
+# deps.get with retry
+RUN mix deps.get --only $MIX_ENV || mix deps.get --only $MIX_ENV || mix deps.get --only $MIX_ENV
 RUN mkdir -p config
 
 # copy compile-time config files

@@ -6,6 +6,7 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     test "player can mark themselves as ready in discussion phase" do
       game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
       {:ok, game} = Game.join(game, "p1", "Player 1")
+      {:ok, game} = Game.join(game, "p2", "Player 2")
 
       player = Map.get(game.players, "p1")
       assert player.is_ready == false
@@ -64,6 +65,9 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
 
       {:ok, final_game} = Game.mark_discussion_ready(game, "p1")
       assert final_game.phase == :action
+
+      player = Map.get(final_game.players, "p1")
+      assert player.is_ready == false
     end
 
     test "returns error if player not found" do

@@ -28,7 +28,15 @@ defmodule RogsIdentity.Messages.RoomInvitation do
   @doc false
   def changeset(invitation, attrs) do
     invitation
-    |> cast(attrs, [:sender_id, :receiver_id, :room_id, :room_name, :room_slug, :status, :expires_at])
+    |> cast(attrs, [
+      :sender_id,
+      :receiver_id,
+      :room_id,
+      :room_name,
+      :room_slug,
+      :status,
+      :expires_at
+    ])
     |> validate_required([:sender_id, :receiver_id, :room_id, :room_name, :room_slug])
     |> validate_inclusion(:status, @statuses)
     |> set_default_expiration()

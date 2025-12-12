@@ -48,6 +48,14 @@ defmodule RogsIdentityWeb.Router do
     get "/", PageController, :home
   end
 
+  # OAuth routes
+  scope "/auth", RogsIdentityWeb do
+    pipe_through :browser
+
+    get "/:provider", OAuthController, :request
+    get "/:provider/callback", OAuthController, :callback
+  end
+
   # API routes
   scope "/api/auth", RogsIdentityWeb.Api do
     pipe_through [:api, :rate_limit_login]

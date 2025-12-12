@@ -5,7 +5,10 @@ defmodule Shinkanki.Repo.Migrations.CreatePlayerTalents do
     create table(:player_talents, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :player_id, references(:players, on_delete: :delete_all, type: :binary_id), null: false
-      add :talent_card_id, references(:talent_cards, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :talent_card_id, references(:talent_cards, on_delete: :delete_all, type: :binary_id),
+        null: false
+
       add :is_used, :boolean, default: false
 
       timestamps()

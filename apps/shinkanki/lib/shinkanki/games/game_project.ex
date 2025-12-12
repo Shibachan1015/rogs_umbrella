@@ -26,7 +26,13 @@ defmodule Shinkanki.Games.GameProject do
   @doc false
   def changeset(game_project, attrs) do
     game_project
-    |> cast(attrs, [:game_session_id, :project_template_id, :started_turn, :status, :completed_turn])
+    |> cast(attrs, [
+      :game_session_id,
+      :project_template_id,
+      :started_turn,
+      :status,
+      :completed_turn
+    ])
     |> validate_required([:game_session_id, :project_template_id, :started_turn])
     |> validate_inclusion(:status, @statuses)
     |> foreign_key_constraint(:game_session_id)
@@ -36,7 +42,8 @@ defmodule Shinkanki.Games.GameProject do
   @doc """
   参加者数を取得
   """
-  def participant_count(%__MODULE__{project_participations: participations}) when is_list(participations) do
+  def participant_count(%__MODULE__{project_participations: participations})
+      when is_list(participations) do
     participations
     |> Enum.map(& &1.player_id)
     |> Enum.uniq()

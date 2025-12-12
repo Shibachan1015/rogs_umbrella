@@ -139,6 +139,13 @@ config :shinkanki, Shinkanki.Repo,
 config :esbuild, :version, "0.17.11"
 config :tailwind, :version, "3.4.3"
 
+# --- OAuth認証設定 (Ueberauth) ---
+config :ueberauth, Ueberauth,
+  providers: [
+    google: {Ueberauth.Strategy.Google, [default_scope: "email profile"]},
+    github: {Ueberauth.Strategy.Github, [default_scope: "user:email"]}
+  ]
+
 # --- 3.1. アセット設定 (shinkanki_web) ---
 config :esbuild,
   shinkanki_web: [

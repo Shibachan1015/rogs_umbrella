@@ -251,16 +251,20 @@ defmodule ShinkankiWebWeb.GameComponents do
           イベント
         </div>
       </div>
-
+      
     <!-- Description - Mobile: Shorter, Desktop: Full -->
       <div class="mb-2 sm:mb-4">
-        <p class="text-xs sm:text-sm leading-relaxed text-sumi line-clamp-3 sm:line-clamp-none">{@description}</p>
+        <p class="text-xs sm:text-sm leading-relaxed text-sumi line-clamp-3 sm:line-clamp-none">
+          {@description}
+        </p>
       </div>
-
+      
     <!-- Effect Display - Mobile: Compact grid, Desktop: Full -->
       <%= if map_size(@effect) > 0 do %>
         <div class="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-sumi/20">
-          <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-sumi/60 mb-1.5 sm:mb-2">効果</div>
+          <div class="text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-sumi/60 mb-1.5 sm:mb-2">
+            効果
+          </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 text-center">
             <%= if Map.has_key?(@effect, :forest) or Map.has_key?(@effect, :f) do %>
               <div class="bg-matsu/10 border border-matsu/30 rounded p-1.5 sm:p-2">
@@ -320,40 +324,131 @@ defmodule ShinkankiWebWeb.GameComponents do
     <%= if @show && @event do %>
       <div
         id={@id}
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-        phx-click="close_event_modal"
+        class="hitoyo-overlay"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="event-modal-title"
+        aria-labelledby="hitoyo-modal-title"
         {@rest}
       >
-        <div
-          class="resonance-modal-frame relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-          phx-click-away="close_event_modal"
-          phx-window-keydown={
-            JS.push("close_event_modal") |> JS.dispatch("keydown", detail: %{key: "Escape"})
-          }
-        >
-          <button
-            class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
-            phx-click="close_event_modal"
-            aria-label="モーダルを閉じる"
-          >
-            <span class="text-lg font-bold">×</span>
-          </button>
-          <div class="p-6">
-            <.event_card
-              title={@event[:title] || @event["title"] || "イベント"}
-              description={@event[:description] || @event["description"] || ""}
-              effect={@event[:effect] || @event["effect"] || %{}}
-              category={@event[:category] || @event["category"] || :neutral}
-            />
+        <div class="hitoyo-mist"></div>
+        <div class="hitoyo-card-container">
+          <div class="hitoyo-card">
+            <div class="hitoyo-header">
+              <div class="hitoyo-label">人代カード</div>
+              <div class="hitoyo-icon">{get_hitoyo_icon(@event)}</div>
+              <h2 id="hitoyo-modal-title" class="hitoyo-title">
+                {@event[:title] || @event["title"] || "災厄"}
+              </h2>
+            </div>
+
+            <div class="hitoyo-description">
+              {@event[:description] || @event["description"] || "世界に災いが降りかかる..."}
+            </div>
+
+            <div class="hitoyo-effects">
+              <%= if get_effect_value(@event, :forest) || get_effect_value(@event, :f) do %>
+                <div class="hitoyo-effect">
+                  <span class="hitoyo-effect-label">森</span>
+                  <span class={[
+                    "hitoyo-effect-value",
+                    if((get_effect_value(@event, :forest) || get_effect_value(@event, :f) || 0) > 0,
+                      do: "positive"
+                    )
+                  ]}>
+                    {format_hitoyo_effect(
+                      get_effect_value(@event, :forest) || get_effect_value(@event, :f)
+                    )}
+                  </span>
+                </div>
+              <% end %>
+              <%= if get_effect_value(@event, :culture) || get_effect_value(@event, :k) do %>
+                <div class="hitoyo-effect">
+                  <span class="hitoyo-effect-label">文化</span>
+                  <span class={[
+                    "hitoyo-effect-value",
+                    if((get_effect_value(@event, :culture) || get_effect_value(@event, :k) || 0) > 0,
+                      do: "positive"
+                    )
+                  ]}>
+                    {format_hitoyo_effect(
+                      get_effect_value(@event, :culture) || get_effect_value(@event, :k)
+                    )}
+                  </span>
+                </div>
+              <% end %>
+              <%= if get_effect_value(@event, :social) || get_effect_value(@event, :s) do %>
+                <div class="hitoyo-effect">
+                  <span class="hitoyo-effect-label">社会</span>
+                  <span class={[
+                    "hitoyo-effect-value",
+                    if((get_effect_value(@event, :social) || get_effect_value(@event, :s) || 0) > 0,
+                      do: "positive"
+                    )
+                  ]}>
+                    {format_hitoyo_effect(
+                      get_effect_value(@event, :social) || get_effect_value(@event, :s)
+                    )}
+                  </span>
+                </div>
+              <% end %>
+              <%= if get_effect_value(@event, :evil) || get_effect_value(@event, :jaki) do %>
+                <div class="hitoyo-effect">
+                  <span class="hitoyo-effect-label">邪気</span>
+                  <span class={[
+                    "hitoyo-effect-value",
+                    if((get_effect_value(@event, :evil) || get_effect_value(@event, :jaki) || 0) < 0,
+                      do: "positive"
+                    )
+                  ]}>
+                    {format_hitoyo_effect(
+                      get_effect_value(@event, :evil) || get_effect_value(@event, :jaki)
+                    )}
+                  </span>
+                </div>
+              <% end %>
+            </div>
+
+            <button
+              class="hitoyo-confirm-btn"
+              phx-click="close_event_modal"
+            >
+              受け入れる
+            </button>
           </div>
         </div>
       </div>
     <% end %>
     """
   end
+
+  defp get_hitoyo_icon(event) do
+    category = event[:category] || event["category"] || :disaster
+
+    case category do
+      :disaster -> "💀"
+      "disaster" -> "💀"
+      :temptation -> "🐍"
+      "temptation" -> "🐍"
+      :division -> "⚔️"
+      "division" -> "⚔️"
+      :corruption -> "🕷️"
+      "corruption" -> "🕷️"
+      _ -> "👹"
+    end
+  end
+
+  defp get_effect_value(event, key) do
+    effect = event[:effect] || event["effect"] || %{}
+    effect[key] || effect[to_string(key)]
+  end
+
+  defp format_hitoyo_effect(nil), do: ""
+
+  defp format_hitoyo_effect(value) when is_integer(value) do
+    if value >= 0, do: "+#{value}", else: "#{value}"
+  end
+
+  defp format_hitoyo_effect(value), do: to_string(value)
 
   @doc """
   Renders a talent card - a smaller card that can be stacked on action cards.
@@ -440,7 +535,7 @@ defmodule ShinkankiWebWeb.GameComponents do
         type={@type}
         class="relative z-0"
       />
-
+      
     <!-- Talent Cards Stacked -->
       <%= if @talent_count > 0 do %>
         <div class="absolute -top-2 -right-2 z-10 flex flex-col gap-0.5">
@@ -466,13 +561,13 @@ defmodule ShinkankiWebWeb.GameComponents do
             </div>
           <% end %>
         </div>
-
+        
     <!-- Bonus Indicator with Animation -->
         <div class="absolute -bottom-1 -left-1 w-7 h-7 bg-kin rounded-full border-2 border-sumi flex items-center justify-center text-xs font-bold text-sumi shadow-lg animate-pulse">
           <span class="relative z-10">+{@bonus}</span>
           <div class="absolute inset-0 bg-kin/30 rounded-full animate-ping"></div>
         </div>
-
+        
     <!-- Talent Stack Indicator -->
         <div class="absolute top-1 left-1 bg-kin/90 text-washi text-[8px] px-1.5 py-0.5 rounded-full font-bold shadow-md">
           {if @talent_count >= 2, do: "最大", else: ""}才能{@talent_count}枚
@@ -526,12 +621,12 @@ defmodule ShinkankiWebWeb.GameComponents do
         <!-- Mobile: Simple list view, Desktop: Grid -->
         <div class="sm:hidden space-y-1.5 max-h-40 overflow-y-auto">
           <%= for talent <- @compatible_talents do %>
-            <%
-            talent_id = talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
+            <% talent_id =
+              talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
+
             is_selected = Enum.member?(@selected_talent_ids, talent_id)
             is_used = talent[:is_used] || talent["is_used"] || false
-            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used
-            %>
+            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used %>
             <button
               type="button"
               phx-click={if can_select, do: "toggle_talent", else: nil}
@@ -543,7 +638,9 @@ defmodule ShinkankiWebWeb.GameComponents do
             >
               <div class="flex items-center gap-2">
                 <span class="text-base">✨</span>
-                <span class="text-sm font-medium text-[var(--color-landing-pale)]">{talent[:name] || talent["name"] || "才能"}</span>
+                <span class="text-sm font-medium text-[var(--color-landing-pale)]">
+                  {talent[:name] || talent["name"] || "才能"}
+                </span>
               </div>
               <%= if is_selected do %>
                 <span class="text-kin text-sm">✓</span>
@@ -551,16 +648,16 @@ defmodule ShinkankiWebWeb.GameComponents do
             </button>
           <% end %>
         </div>
-
-        <!-- Desktop: Grid view -->
+        
+    <!-- Desktop: Grid view -->
         <div class="hidden sm:grid grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
           <%= for talent <- @compatible_talents do %>
-            <%
-            talent_id = talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
+            <% talent_id =
+              talent[:player_talent_id] || talent["player_talent_id"] || talent[:id] || talent["id"]
+
             is_selected = Enum.member?(@selected_talent_ids, talent_id)
             is_used = talent[:is_used] || talent["is_used"] || false
-            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used
-            %>
+            can_select = (length(@selected_talent_ids) < @max_selection || is_selected) && not is_used %>
             <.talent_card
               title={talent[:name] || talent["name"] || "才能"}
               description={talent[:description] || talent["description"]}
@@ -579,22 +676,24 @@ defmodule ShinkankiWebWeb.GameComponents do
           <% end %>
         </div>
       <% end %>
-
-      <!-- Action Buttons - Large tap targets for mobile -->
+      
+    <!-- Action Buttons - Large tap targets for mobile -->
       <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/10">
         <%= if length(@selected_talent_ids) > 0 do %>
           <div class="text-[10px] sm:text-xs text-[var(--color-landing-text-secondary)] mb-1.5 sm:mb-2">
             選択中: {length(@selected_talent_ids)} / {@max_selection}
           </div>
         <% end %>
-        <div class="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+        <div class="flex flex-col sm:flex-row gap-1.5 sm:gap-2" phx-click-stop>
           <button
+            type="button"
             class="flex-1 py-2.5 sm:py-2 px-4 rounded-lg bg-kin text-[var(--color-midnight)] font-bold text-sm sm:text-base transition-all active:scale-95"
             phx-click="confirm_talent_selection"
           >
-            <%= if length(@selected_talent_ids) > 0, do: "確定", else: "なしで続行" %>
+            {if length(@selected_talent_ids) > 0, do: "確定", else: "なしで続行"}
           </button>
           <button
+            type="button"
             class="flex-1 py-2 sm:py-2 px-4 rounded-lg border border-white/30 text-white/80 text-sm transition-all hover:bg-white/10"
             phx-click="cancel_talent_selection"
           >
@@ -659,7 +758,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           プロジェクト
         </div>
       </div>
-
+      
     <!-- Status Badge -->
       <%= if @is_completed do %>
         <div class="absolute top-2 right-2 bg-kin text-washi text-[10px] px-2 py-1 rounded-full font-bold shadow-md tracking-[0.2em]">
@@ -672,14 +771,14 @@ defmodule ShinkankiWebWeb.GameComponents do
           </div>
         <% end %>
       <% end %>
-
+      
     <!-- Description -->
       <div class="mb-3">
         <p class="text-sm leading-relaxed text-[var(--color-landing-text-secondary)]">
           {@description}
         </p>
       </div>
-
+      
     <!-- Unlock Condition -->
       <%= if not @is_unlocked && map_size(@unlock_condition) > 0 do %>
         <div class="mb-3 p-2 bg-white/5 border border-white/10 rounded">
@@ -705,7 +804,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Progress Bar -->
       <%= if @is_unlocked && not @is_completed do %>
         <div class="mb-3">
@@ -724,8 +823,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             aria-valuemin="0"
             aria-valuemax={@cost}
           >
-            <div class="project-progress-fill" style={"width: #{@progress_percentage}%"}>
-            </div>
+            <div class="project-progress-fill" style={"width: #{@progress_percentage}%"}></div>
             <span class="project-progress-value">
               {@progress_percentage}%
             </span>
@@ -739,7 +837,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           <% end %>
         </div>
       <% end %>
-
+      
     <!-- Contributed Talents -->
       <%= if length(@contributed_talents) > 0 do %>
         <div class="mb-3 pt-2 border-t border-white/10">
@@ -755,7 +853,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           </div>
         </div>
       <% end %>
-
+      
     <!-- Effect (Completed) -->
       <%= if @is_completed && map_size(@effect) > 0 do %>
         <div class="mt-3 pt-3 border-t border-kin/30">
@@ -978,7 +1076,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             >
               アクションの確認
             </h2>
-
+            
     <!-- Card Preview -->
             <div class="mb-4">
               <.ofuda_card
@@ -989,7 +1087,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 class="mx-auto"
               />
             </div>
-
+            
     <!-- Talent Cards (if any) -->
             <%= if length(@talent_cards) > 0 do %>
               <div class="mb-4 p-3 bg-kin/10 border border-kin/30 rounded">
@@ -1006,7 +1104,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Cost Display -->
             <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
               <div class="flex justify-between items-center">
@@ -1031,7 +1129,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               <% end %>
             </div>
-
+            
     <!-- Effect Preview -->
             <div class="mb-4">
               <div class="text-sm font-semibold text-[var(--color-landing-text-secondary)] mb-2">
@@ -1072,7 +1170,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <% end %>
               </div>
             </div>
-
+            
     <!-- Parameter Change Preview -->
             <%= if map_size(new_params) > 0 do %>
               <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
@@ -1083,7 +1181,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <%= if Map.has_key?(@current_params, :forest) or Map.has_key?(@current_params, :f) do %>
                     <div class="flex justify-between">
                       <span class="text-matsu">F (森)</span>
-                      <span class="text-sumi">
+                      <span class="text-gray-200">
                         {Map.get(@current_params, :forest, Map.get(@current_params, :f, 0))} → {Map.get(
                           new_params,
                           :forest,
@@ -1095,7 +1193,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <%= if Map.has_key?(@current_params, :culture) or Map.has_key?(@current_params, :k) do %>
                     <div class="flex justify-between">
                       <span class="text-sakura">K (文化)</span>
-                      <span class="text-sumi">
+                      <span class="text-gray-200">
                         {Map.get(@current_params, :culture, Map.get(@current_params, :k, 0))} → {Map.get(
                           new_params,
                           :culture,
@@ -1107,7 +1205,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <%= if Map.has_key?(@current_params, :social) or Map.has_key?(@current_params, :s) do %>
                     <div class="flex justify-between">
                       <span class="text-kohaku">S (社会)</span>
-                      <span class="text-sumi">
+                      <span class="text-gray-200">
                         {Map.get(@current_params, :social, Map.get(@current_params, :s, 0))} → {Map.get(
                           new_params,
                           :social,
@@ -1119,7 +1217,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <%= if Map.has_key?(@current_params, :currency) or Map.has_key?(@current_params, :p) do %>
                     <div class="flex justify-between">
                       <span class="text-kin">P (空環)</span>
-                      <span class="text-sumi">
+                      <span class="text-gray-200">
                         {Map.get(@current_params, :currency, Map.get(@current_params, :p, 0))} → {Map.get(
                           new_params,
                           :currency,
@@ -1131,7 +1229,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Action Buttons - Mobile: Sticky bottom, Desktop: Normal flow -->
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 pb-2 sm:pb-0">
               <button
@@ -1237,7 +1335,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             >
               {@card[:title] || @card["title"] || "カード"}
             </h2>
-
+            
     <!-- Card Type Badge & Tags - Inline -->
             <div class="mb-2 sm:mb-4 flex flex-wrap items-center gap-1 sm:gap-2">
               <span class={[
@@ -1264,7 +1362,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <% end %>
               <% end %>
             </div>
-
+            
     <!-- Description -->
             <%= if card_description != "" do %>
               <div class="mb-2 sm:mb-4 p-2 sm:p-3 bg-white/5 border border-white/10 rounded">
@@ -1273,7 +1371,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </p>
               </div>
             <% end %>
-
+            
     <!-- Cost Display - Compact -->
             <div class="mb-2 sm:mb-4 p-2 sm:p-3 bg-white/5 border border-white/10 rounded">
               <div class="flex justify-between items-center">
@@ -1296,7 +1394,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             </div>
-
+            
     <!-- Effects Display -->
             <%= if map_size(card_effect) > 0 do %>
               <div class="mb-4 p-3 bg-white/5 border border-white/10 rounded">
@@ -1339,7 +1437,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             <% end %>
-
+            
     <!-- Usage Conditions - Hidden on mobile for simplicity -->
             <div class="hidden sm:block mb-4 p-3 bg-white/5 border border-white/10 rounded">
               <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
@@ -1368,7 +1466,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <% end %>
               </ul>
             </div>
-
+            
     <!-- Action Buttons - Larger tap targets for mobile -->
             <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
               <%= if can_afford do %>
@@ -1463,7 +1561,7 @@ defmodule ShinkankiWebWeb.GameComponents do
               {@ending_data.subtitle}
             </p>
           </div>
-
+          
     <!-- Ending Description -->
           <div class="p-4 sm:p-6 md:p-8">
             <div class="prose prose-invert max-w-none mb-4 sm:mb-6">
@@ -1471,7 +1569,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 {@ending_data.description}
               </p>
             </div>
-
+            
     <!-- Final Statistics - Mobile optimized grid -->
             <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-lg">
               <h2 class="text-base sm:text-lg font-bold text-[var(--color-landing-pale)] mb-3 sm:mb-4">
@@ -1513,7 +1611,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 ターン数: {@turn} / {@max_turns}
               </div>
             </div>
-
+            
     <!-- Action Buttons - Mobile: Full width stacked -->
             <div class="flex flex-col gap-2 sm:flex-row sm:gap-3 mt-4 sm:mt-6 pb-4 sm:pb-0">
               <button
@@ -1551,7 +1649,8 @@ defmodule ShinkankiWebWeb.GameComponents do
     end
   end
 
-  defp determine_ending_type(status, life_index, _final_stats) when status in [:won, "completed"] do
+  defp determine_ending_type(status, life_index, _final_stats)
+       when status in [:won, "completed"] do
     cond do
       life_index >= 40 -> :blessing
       life_index >= 30 -> :purification
@@ -1707,7 +1806,7 @@ defmodule ShinkankiWebWeb.GameComponents do
             <p class="text-sm md:text-base text-sumi/70 mb-2">あなたの専門性を選んで、チームに貢献しましょう</p>
             <p class="text-xs text-sumi/50">4つの役割から1つを選択してください</p>
           </div>
-
+          
     <!-- Role Cards -->
           <div class="p-6 md:p-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
@@ -1764,7 +1863,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   <!-- Background Gradient -->
                   <div class={["absolute inset-0 bg-gradient-to-br", role.bg_gradient, "opacity-50"]}>
                   </div>
-
+                  
     <!-- Content -->
                   <div class="relative z-10">
                     <%= if is_selected do %>
@@ -1772,7 +1871,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         ✓
                       </div>
                     <% end %>
-
+                    
     <!-- Icon and Title -->
                     <div class="text-center mb-6">
                       <div class={[
@@ -1791,7 +1890,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.name_en}
                       </p>
                     </div>
-
+                    
     <!-- Focus -->
                     <div class="mb-4 p-3 rounded-lg bg-washi/80 border border-sumi/20">
                       <div class="text-xs font-semibold text-sumi/80 mb-1 uppercase tracking-wider">
@@ -1801,7 +1900,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.focus}
                       </p>
                     </div>
-
+                    
     <!-- Description -->
                     <div class="mb-4">
                       <div class="text-xs font-semibold text-sumi/80 mb-2 uppercase tracking-wider">
@@ -1811,7 +1910,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                         {role.description}
                       </p>
                     </div>
-
+                    
     <!-- Detailed Description (shown when selected) -->
                     <%= if is_selected do %>
                       <div class="mt-4 p-4 rounded-lg bg-washi/90 border-2 border-sumi/30 animate-fade-in">
@@ -1840,7 +1939,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               <% end %>
             </div>
-
+            
     <!-- Action Buttons -->
             <%= if @selected_role do %>
               <div class="mt-8 pt-6 border-t-4 border-double border-sumi">
@@ -1916,7 +2015,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           <span class="text-xs font-bold text-sumi">⚡</span>
         </div>
       <% end %>
-
+      
     <!-- Header -->
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2 flex-1">
@@ -1949,7 +2048,7 @@ defmodule ShinkankiWebWeb.GameComponents do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Role Information -->
       <%= if @role_data do %>
         <div class="mt-2 pt-2 border-t border-sumi/20">
@@ -2074,7 +2173,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 空環ポイントが減衰しました
               </p>
             </div>
-
+            
     <!-- Currency Display with Animation -->
             <div class="space-y-4 mb-6">
               <!-- Before -->
@@ -2085,7 +2184,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
                 <div class="text-xs text-kin/60 mt-1">空環ポイント</div>
               </div>
-
+              
     <!-- Arrow -->
               <div class="flex items-center justify-center">
                 <div class="w-12 h-0.5 bg-kin/50 relative">
@@ -2098,7 +2197,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                   </div>
                 </div>
               </div>
-
+              
     <!-- After -->
               <div class="bg-shu/10 border border-shu/30 rounded-lg p-4 text-center animate-pulse">
                 <div class="text-xs uppercase tracking-[0.3em] text-shu/70 mb-2">減衰後</div>
@@ -2108,7 +2207,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 <div class="text-xs text-shu/60 mt-1">空環ポイント</div>
               </div>
             </div>
-
+            
     <!-- Demurrage Amount -->
             <div class="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
               <div class="flex justify-between items-center">
@@ -2127,7 +2226,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 </div>
               </div>
             </div>
-
+            
     <!-- Explanation -->
             <div class="bg-white/5 border border-white/10 rounded-lg p-4 mb-6">
               <div class="text-xs uppercase tracking-[0.2em] text-[var(--color-landing-text-secondary)] mb-2">
@@ -2137,7 +2236,7 @@ defmodule ShinkankiWebWeb.GameComponents do
                 空環マネーは貯め込むと価値が減ります。積極的に使って循環させることが重要です。
               </p>
             </div>
-
+            
     <!-- Close Button -->
             <button
               class="w-full cta-button cta-solid justify-center tracking-[0.3em]"

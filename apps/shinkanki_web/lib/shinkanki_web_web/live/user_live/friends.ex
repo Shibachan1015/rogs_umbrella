@@ -131,10 +131,20 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
                     <span class="inv-room">「{inv.room_name}」に招待しています</span>
                   </div>
                   <div class="inv-actions">
-                    <.link navigate={~p"/room/#{inv.room_slug}"} class="inv-accept-btn" phx-click="accept_invitation" phx-value-id={inv.id}>
+                    <.link
+                      navigate={~p"/room/#{inv.room_slug}"}
+                      class="inv-accept-btn"
+                      phx-click="accept_invitation"
+                      phx-value-id={inv.id}
+                    >
                       参加
                     </.link>
-                    <button type="button" class="inv-decline-btn" phx-click="decline_invitation" phx-value-id={inv.id}>
+                    <button
+                      type="button"
+                      class="inv-decline-btn"
+                      phx-click="decline_invitation"
+                      phx-value-id={inv.id}
+                    >
                       辞退
                     </button>
                   </div>
@@ -148,13 +158,11 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
             <%= case @tab do %>
               <% :friends -> %>
                 <.friends_list friends={@friends} online_ids={@online_ids} />
-
               <% :requests -> %>
                 <.requests_panel
                   pending_requests={@pending_requests}
                   sent_requests={@sent_requests}
                 />
-
               <% :recent -> %>
                 <.recent_players_list players={@recent_players} current_user_id={@current_user.id} />
             <% end %>

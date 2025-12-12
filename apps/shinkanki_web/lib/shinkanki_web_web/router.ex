@@ -25,6 +25,13 @@ defmodule ShinkankiWebWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/rulebook", PageController, :rulebook
+    get "/cards/talent", PageController, :talent_cards
+    get "/cards/cocreation", PageController, :cocreation_cards
+    get "/cards/action", PageController, :action_cards
+    get "/cards/hitoyo", PageController, :hitoyo_cards
+    get "/cards/migaki", PageController, :migaki_cards
+    get "/kuukan", PageController, :kuukan
 
     # 認証ルート（未ログイン用）
     live "/users/log-in", UserLive.Login, :new

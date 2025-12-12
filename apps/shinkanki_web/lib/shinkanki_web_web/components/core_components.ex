@@ -208,10 +208,13 @@ defmodule ShinkankiWebWeb.CoreComponents do
 
   def input(%{type: "checkbox"} = assigns) do
     error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
-    aria_attrs = [
-      if(error_id, do: {"aria-describedby", error_id}, else: nil),
-      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil)
-    ] |> Enum.reject(&is_nil/1)
+
+    aria_attrs =
+      [
+        if(error_id, do: {"aria-describedby", error_id}, else: nil),
+        if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil)
+      ]
+      |> Enum.reject(&is_nil/1)
 
     assigns =
       assigns
@@ -245,11 +248,14 @@ defmodule ShinkankiWebWeb.CoreComponents do
 
   def input(%{type: "select"} = assigns) do
     error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
-    aria_attrs = [
-      if(error_id, do: {"aria-describedby", error_id}, else: nil),
-      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
-    ] |> Enum.reject(&is_nil/1)
+
+    aria_attrs =
+      [
+        if(error_id, do: {"aria-describedby", error_id}, else: nil),
+        if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+        if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
+      ]
+      |> Enum.reject(&is_nil/1)
 
     assigns =
       assigns
@@ -283,11 +289,14 @@ defmodule ShinkankiWebWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
-    aria_attrs = [
-      if(error_id, do: {"aria-describedby", error_id}, else: nil),
-      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
-    ] |> Enum.reject(&is_nil/1)
+
+    aria_attrs =
+      [
+        if(error_id, do: {"aria-describedby", error_id}, else: nil),
+        if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+        if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
+      ]
+      |> Enum.reject(&is_nil/1)
 
     assigns =
       assigns
@@ -318,11 +327,14 @@ defmodule ShinkankiWebWeb.CoreComponents do
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     error_id = if assigns.errors != [], do: "#{assigns.id}-error", else: nil
-    aria_attrs = [
-      if(error_id, do: {"aria-describedby", error_id}, else: nil),
-      if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
-      if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
-    ] |> Enum.reject(&is_nil/1)
+
+    aria_attrs =
+      [
+        if(error_id, do: {"aria-describedby", error_id}, else: nil),
+        if(assigns.errors != [], do: {"aria-invalid", "true"}, else: nil),
+        if(assigns[:label], do: {"aria-label", assigns[:label]}, else: nil)
+      ]
+      |> Enum.reject(&is_nil/1)
 
     assigns =
       assigns
@@ -608,7 +620,8 @@ defmodule ShinkankiWebWeb.CoreComponents do
       phx-click-away={JS.hide(to: "##{@id}")}
       {@rest}
     >
-      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" aria-hidden="true">
+      </div>
       <div class="flex min-h-full items-center justify-center p-4">
         <div
           class={[
@@ -622,29 +635,38 @@ defmodule ShinkankiWebWeb.CoreComponents do
         >
           <div class="px-6 py-4">
             <div :if={@title != []} class="mb-4">
-              <h3 id={"#{@id}-title"} class={[
-                "text-lg font-semibold",
-                if(@variant == "trds",
-                  do: "text-trds-text-primary tracking-[0.2em] uppercase",
-                  else: "text-base-content"
-                )
-              ]}>
+              <h3
+                id={"#{@id}-title"}
+                class={[
+                  "text-lg font-semibold",
+                  if(@variant == "trds",
+                    do: "text-trds-text-primary tracking-[0.2em] uppercase",
+                    else: "text-base-content"
+                  )
+                ]}
+              >
                 {render_slot(@title)}
               </h3>
             </div>
-            <div id={"#{@id}-body"} class={[
-              if(@variant == "trds", do: "text-trds-text-secondary", else: "text-base-content")
-            ]}>
+            <div
+              id={"#{@id}-body"}
+              class={[
+                if(@variant == "trds", do: "text-trds-text-secondary", else: "text-base-content")
+              ]}
+            >
               {render_slot(@body)}
             </div>
           </div>
-          <div :if={@footer != []} class={[
-            "px-6 py-4 border-t",
-            if(@variant == "trds",
-              do: "border-trds-outline-soft bg-trds-surface/50",
-              else: "border-base-300 bg-base-200"
-            )
-          ]}>
+          <div
+            :if={@footer != []}
+            class={[
+              "px-6 py-4 border-t",
+              if(@variant == "trds",
+                do: "border-trds-outline-soft bg-trds-surface/50",
+                else: "border-base-300 bg-base-200"
+              )
+            ]}
+          >
             <div class="flex justify-end gap-2">
               {render_slot(@footer)}
             </div>

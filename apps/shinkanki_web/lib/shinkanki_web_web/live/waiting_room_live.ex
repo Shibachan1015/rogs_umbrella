@@ -226,8 +226,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                   friendship_status={get_friendship_status(@user_id, player.id)}
                 />
               <% end %>
-
-              <!-- 空きスロット（最大4人、既にいるプレイヤー分を除く） -->
+              
+    <!-- 空きスロット（最大4人、既にいるプレイヤー分を除く） -->
               <% empty_slots = max(0, min(4, @room.max_participants) - length(@players)) %>
               <%= if empty_slots > 0 do %>
                 <%= for _i <- 1..empty_slots do %>
@@ -291,8 +291,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 </button>
               <% end %>
             </div>
-
-            <!-- ゲーム開始ボタン（ホストのみ） -->
+            
+    <!-- ゲーム開始ボタン（ホストのみ） -->
             <%= if @is_host do %>
               <div class="start-section">
                 <%= if @can_start && @all_ready do %>
@@ -319,8 +319,24 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                     <% end %>
                   </button>
                 <% end %>
-
-                <!-- CPUで補完してスタート（4人未満の場合） -->
+                
+    <!-- 一人で始める（ソロプレイ） -->
+                <%= if length(@players) == 1 do %>
+                  <div class="solo-section">
+                    <button
+                      type="button"
+                      class="solo-btn"
+                      phx-click="start_solo"
+                    >
+                      🎮 一人で始める
+                    </button>
+                    <p class="solo-hint">
+                      CPUなしで一人でプレイ
+                    </p>
+                  </div>
+                <% end %>
+                
+    <!-- CPUで補完してスタート（4人未満の場合） -->
                 <%= if length(@players) < 4 && length(@players) >= 1 do %>
                   <div class="ai-fill-section">
                     <button
@@ -342,8 +358,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 <p>ホストがゲーム開始を押すまでお待ちください</p>
               </div>
             <% end %>
-
-            <!-- 削除提案セクション -->
+            
+    <!-- 削除提案セクション -->
             <div class="deletion-section">
               <%= if @deletion_proposed do %>
                 <div class="deletion-proposal-active">
@@ -381,8 +397,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
                 <% end %>
               <% end %>
             </div>
-
-            <!-- 管理者セクション -->
+            
+    <!-- 管理者セクション -->
             <%= if @is_admin do %>
               <div class="admin-section">
                 <h3 class="admin-title">🛡️ 管理者メニュー</h3>
@@ -416,8 +432,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
               </div>
             <% end %>
           </aside>
-
-          <!-- 右カラム: チャット -->
+          
+    <!-- 右カラム: チャット -->
           <section class="chat-panel">
             <h2 class="panel-title">チャット</h2>
 
@@ -478,7 +494,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
           <% end %>
         </span>
         <span class={["ready-status", @player.is_ready && "ready-status--ready"]}>
-          <%= if @player.is_ready, do: "✓ 準備完了", else: "準備中..." %>
+          {if @player.is_ready, do: "✓ 準備完了", else: "準備中..."}
         </span>
       </div>
       <%!-- フレンド申請ボタン（自分以外） --%>
@@ -524,7 +540,11 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
       {:error, reason} ->
         require Logger
-        Logger.error("toggle_ready failed: #{inspect(reason)} for room_id=#{inspect(room_id)}, user_id=#{inspect(user_id)}")
+
+        Logger.error(
+          "toggle_ready failed: #{inspect(reason)} for room_id=#{inspect(room_id)}, user_id=#{inspect(user_id)}"
+        )
+
         {:noreply, socket}
     end
   end
@@ -548,10 +568,44 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
           {:ok, _game} ->
             # 参加者数を更新（ゲーム中は4人）
             room = socket.assigns.room
-            Rooms.update_participant_count(room.id, 4)
+            Rooms.update_participant_count(room.id, length(user_ids))
 
-            # ゲーム画面に遷移
-            {:noreply, push_navigate(socket, to: ~p"/game/#{room_id}")}
+            # PubSubでgame_state_updatedが送信されるので、handle_infoで遷移する
+            {:noreply, socket}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
+        end
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "ゲームセッション作成エラー: #{inspect(reason)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("start_solo", _params, socket) do
+    room_id = socket.assigns.room_id
+    game_state = socket.assigns.game_state
+
+    # プレイヤーのuser_idリストを取得（一人だけ）
+    user_ids =
+      game_state
+      |> Map.get(:player_order, [])
+      |> Enum.map(fn player_id -> player_id end)
+
+    # DBにゲームセッションを作成（AIなし）
+    case Games.create_game_session_from_room(room_id, user_ids) do
+      {:ok, _game_session} ->
+        # メモリベースのゲームも起動
+        case Shinkanki.start_game(room_id) do
+          {:ok, _game} ->
+            # 参加者数を更新（ソロプレイは1人）
+            room = socket.assigns.room
+            Rooms.update_participant_count(room.id, 1)
+
+            # PubSubでgame_state_updatedが送信されるので、handle_infoで遷移する
+            # ここではフラッシュメッセージだけ設定
+            {:noreply, put_flash(socket, :info, "ソロプレイを開始しました")}
 
           {:error, reason} ->
             {:noreply, put_flash(socket, :error, "ゲーム開始エラー: #{inspect(reason)}")}
@@ -590,10 +644,8 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
             room = socket.assigns.room
             Rooms.update_participant_count(room.id, 4)
 
-            {:noreply,
-             socket
-             |> put_flash(:info, "CPUプレイヤー#{ai_count}人を追加してゲームを開始しました")
-             |> push_navigate(to: ~p"/game/#{room_id}")}
+            # PubSubでgame_state_updatedが送信されるので、handle_infoで遷移する
+            {:noreply, put_flash(socket, :info, "CPUプレイヤー#{ai_count}人を追加してゲームを開始しました")}
 
           {:error, reason} ->
             {:noreply, put_flash(socket, :error, "ゲームセッション作成エラー: #{inspect(reason)}")}
@@ -818,7 +870,9 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
     # ゲームが開始されたら遷移
     if game.status == :playing do
-      {:noreply, push_navigate(socket, to: ~p"/game/#{socket.assigns.room_id}")}
+      # roomのslugを使用（URLルートは/game/:room_idだがslugを渡す）
+      room = socket.assigns.room
+      {:noreply, push_navigate(socket, to: ~p"/game/#{room.slug}")}
     else
       {:noreply,
        socket

@@ -252,27 +252,40 @@ defmodule Shinkanki.Game do
          {:talent, true} <- {:talent, Enum.member?(player.talents, talent_id)},
          {:not_used, true} <- {:not_used, not Enum.member?(player.used_talents, talent_id)},
          {:not_completed, true} <- {:not_completed, not is_project_completed?(game, project_id)} do
-      # Add progress to project
       new_progress = get_project_progress(game, project_id) + 1
 
-      updated_progress =
-        Map.put(game.project_progress, project_id, %{
-          progress: new_progress,
-          contributors: get_project_contributors(game, project_id) ++ [player_id]
-        })
+      progress_entry = %{
+        progress: new_progress,
+        contributors: get_project_contributors(game, project_id) ++ [player_id]
+      }
 
-      new_game =
-        %{game | project_progress: updated_progress}
-        |> mark_player_used_talents(player_id, [talent_id])
-        |> add_log(
-          "#{player.name} contributed talent to #{project.name} (#{new_progress}/#{project.required_progress})"
-        )
+      cond do
+        new_progress < project.required_progress ->
+          updated_progress = Map.put(game.project_progress, project_id, progress_entry)
 
-      # Check if project is completed
-      if new_progress >= project.required_progress do
-        complete_project(new_game, project_id, project)
-      else
-        {:ok, new_game}
+          new_game =
+            %{game | project_progress: updated_progress}
+            |> mark_player_used_talents(player_id, [talent_id])
+            |> add_log(
+              "#{player.name} contributed talent to #{project.name} (#{new_progress}/#{project.required_progress})"
+            )
+
+          {:ok, new_game}
+
+        game.currency < project.cost ->
+          {:error, :not_enough_currency}
+
+        true ->
+          updated_progress = Map.put(game.project_progress, project_id, progress_entry)
+
+          new_game =
+            %{game | project_progress: updated_progress}
+            |> mark_player_used_talents(player_id, [talent_id])
+            |> add_log(
+              "#{player.name} contributed talent to #{project.name} (#{new_progress}/#{project.required_progress})"
+            )
+
+          complete_project(new_game, project_id, project)
       end
     else
       {:player, nil} -> {:error, :player_not_found}
@@ -311,7 +324,7 @@ defmodule Shinkanki.Game do
             if all_players_discussion_ready?(new_game) do
               new_game
               |> add_log("All players ready - advancing to action phase")
-              |> set_phase(:action)
+              |> prepare_action_phase()
             else
               new_game
             end
@@ -345,8 +358,10 @@ defmodule Shinkanki.Game do
         new_game =
           game
           |> Map.put(:status, :playing)
+          |> reset_player_state()
           |> add_log("Game started with #{player_count} player(s)")
-          |> execute_phase() # Trigger the first phase (Event)
+          # Trigger the first phase (Event)
+          |> execute_phase()
 
         {:ok, new_game}
     end
@@ -373,8 +388,10 @@ defmodule Shinkanki.Game do
       new_game =
         game_with_ai
         |> Map.put(:status, :playing)
+        |> reset_player_state()
         |> add_log("Game started with #{human_count} human(s) and #{ai_count} AI player(s)")
-        |> execute_phase() # Trigger the first phase (Event)
+        # Trigger the first phase (Event)
+        |> execute_phase()
 
       {:ok, new_game}
     end
@@ -390,9 +407,10 @@ defmodule Shinkanki.Game do
     roles = [:forest_guardian, :heritage_weaver, :community_keeper, :akasha_architect]
 
     # 既に使われている役割を除外
-    used_roles = Enum.map(game.player_order, fn player_id ->
-      Map.get(game.players, player_id, %{}) |> Map.get(:role)
-    end)
+    used_roles =
+      Enum.map(game.player_order, fn player_id ->
+        Map.get(game.players, player_id, %{}) |> Map.get(:role)
+      end)
 
     available_roles = Enum.reject(roles, &(&1 in used_roles))
 
@@ -956,22 +974,13 @@ defmodule Shinkanki.Game do
     if all_players_discussion_ready?(game) do
       game
       |> add_log("All players ready - advancing to action phase")
-      |> set_phase(:action)
+      |> prepare_action_phase()
     else
       game
     end
   end
 
-  defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game) do
-    # Action phase - players can play cards
-    # Initialize current player index to first player
-    if game.current_player_index == 0 and game.player_order != [] do
-      %{game | current_player_index: 0}
-      |> add_log("Action phase started - #{get_current_player_name(game)}'s turn")
-    else
-      game
-    end
-  end
+  defp execute_phase(%__MODULE__{status: :playing, phase: :action} = game), do: game
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :demurrage} = game) do
     game
@@ -1006,6 +1015,29 @@ defmodule Shinkanki.Game do
 
   defp execute_phase(game), do: game
 
+  defp prepare_action_phase(%__MODULE__{} = game) do
+    game
+    |> reset_action_phase_readiness()
+    |> Map.put(:current_player_index, 0)
+    |> set_phase(:action)
+    |> log_action_phase_start()
+  end
+
+  defp reset_action_phase_readiness(%__MODULE__{} = game) do
+    players =
+      Enum.into(game.players, %{}, fn {id, player} ->
+        {id, %{player | is_ready: false}}
+      end)
+
+    %{game | players: players}
+  end
+
+  defp log_action_phase_start(%__MODULE__{player_order: []} = game), do: game
+
+  defp log_action_phase_start(%__MODULE__{} = game) do
+    add_log(game, "Action phase started - #{get_current_player_name(game)}'s turn")
+  end
+
   # === Project Progress Management ===
 
   defp get_project_progress(game, project_id) do
@@ -1027,6 +1059,11 @@ defmodule Shinkanki.Game do
   defp is_project_completed?(game, project_id) do
     # Check if project is in completed_projects list
     project_id in game.completed_projects
+  end
+
+  defp complete_project(%__MODULE__{currency: currency}, _project_id, %Card{cost: cost})
+       when currency < cost do
+    {:error, :not_enough_currency}
   end
 
   defp complete_project(game, project_id, %Card{} = project) do

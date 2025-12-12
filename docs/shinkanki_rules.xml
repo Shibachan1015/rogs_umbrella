@@ -1,115 +1,525 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <game_rules>
-    <title>神環記 : Record of the Gods</title>
-    <version>1.0.0</version>
-    <description>八百万の神々となって、森・文化・コミュニティを育て、空環マネーを使って20年間で世界を立て直す協力型シミュレーションボードゲーム。</description>
+    <title>神環記（しんかんき）: Record of the Gods</title>
+    <subtitle>空環（くうかん） Akasha 年代記</subtitle>
+    <version>0.3</version>
+    <description>
+        壊れかけた世界を「みんなで20年かけて立て直す」協力型ボードゲーム。
+        プレイヤーはそれぞれ、ちがう「才能」を持った存在として世界に降り立ちます。
+        世界はすでに邪気レベル6（0〜8段階中）。森・文化・コミュニティはかなり弱っています。
+        毎年ふってくる「人代（ひとよ）カード」が、環境を壊し、文化を切り捨て、人を分断しようとしてきます。
+        プレイヤーは「営み」と「みがきカード」を使って、森（F）・文化（K）・コミュニティ（S）を守り育てながら、邪気を少しずつ下げていきます。
+        20年後、F + K + S の合計（いのち指数）によって、世界のエンディングが変わります。
+    </description>
 
     <parameters>
         <param id="F">
             <name>森 (Forest)</name>
-            <description>自然環境の豊かさ。0になるとゲームオーバー。</description>
+            <range>0〜10</range>
+            <initial_value>5</initial_value>
+            <description>自然環境の豊かさ。0より下がるとゲームオーバー。</description>
         </param>
         <param id="K">
             <name>文化 (Culture)</name>
-            <description>伝統、芸術、知恵の豊かさ。0になるとゲームオーバー。</description>
+            <range>0〜10</range>
+            <initial_value>5</initial_value>
+            <description>伝統、芸術、知恵の豊かさ。0より下がるとゲームオーバー。</description>
         </param>
         <param id="S">
             <name>コミュニティ (Social)</name>
-            <description>人々のつながり、信頼関係。0になるとゲームオーバー。</description>
+            <range>0〜10</range>
+            <initial_value>5</initial_value>
+            <description>人々のつながり、信頼関係。0より下がるとゲームオーバー。</description>
+        </param>
+        <param id="jaki">
+            <name>邪気トラック</name>
+            <range>0〜8</range>
+            <initial_value>6</initial_value>
+            <description>世界の歪みの度合い。邪気が高いほど人代カードの枚数が増える。</description>
+            <hitoyo_cards_by_jaki>
+                <rule jaki="0-2">人代カード 1枚</rule>
+                <rule jaki="3-5">人代カード 2枚</rule>
+                <rule jaki="6-8">人代カード 3枚</rule>
+            </hitoyo_cards_by_jaki>
         </param>
         <param id="P">
-            <name>空環 (Akasha Point)</name>
+            <name>空環（くうかん）/ Akasha Point</name>
+            <initial_value>3</initial_value>
             <description>
-                循環する通貨。使うほど循環し、貯め込むと減衰する。
-                単位は 1 Akasha。
+                プレイヤーが持つ「呼吸するお金」。
+                行動に使うと世界にめぐり、貯め込みすぎると身が重くなる。
+                5以上持っていると呼吸フェイズで還流が必要。
             </description>
-            <rule type="demurrage">
-                ターン終了時（または特定フェーズ）に減衰処理が行われる。
+            <rule type="kokyu">
+                Pが5以上あるプレイヤーは、必ず1つ以上のPを還流しなければならない。
+                還流したP1つにつき：自分のP−1、F/K/Sのどれか1つを+1。
             </rule>
         </param>
         <param id="L">
-            <name>生命指数 (Life Index)</name>
+            <name>いのち指数 (Life Index)</name>
             <formula>L = F + K + S</formula>
             <description>世界の生命力。エンディング分岐の基準となる。</description>
+        </param>
+        <param id="year">
+            <name>年トラック</name>
+            <range>1〜20</range>
+            <description>ゲームの進行を表す。20年目の年送りフェイズまで終わったらゲーム終了。</description>
         </param>
     </parameters>
 
     <game_settings>
-        <duration>20 years (20 turns)</duration>
-        <players>1-4 (Recommended: 4)</players>
-        <endings>
-            <ending condition="L >= 40">🌈 神々の祝福エンディング</ending>
-            <ending condition="30 <= L < 40">🌿 浄化の兆しエンディング</ending>
-            <ending condition="20 <= L < 30">🌙 揺らぎの未来エンディング</ending>
-            <ending condition="L <= 19">🔥 神々の嘆き（文明崩壊）</ending>
-            <ending condition="F=0 or K=0 or S=0">💀 即時ゲームオーバー</ending>
-        </endings>
+        <duration>20年（20ターン）</duration>
+        <players>2〜4人（推奨: 3〜4人）</players>
+        <gameover_conditions>
+            <condition>森（F）が0より下がった</condition>
+            <condition>文化（K）が0より下がった</condition>
+            <condition>コミュニティ（S）が0より下がった</condition>
+        </gameover_conditions>
+        <simple_version>
+            <description>最初に遊ぶときの「かんたん版」</description>
+            <year_count>10年（年トラック1〜10で終了）</year_count>
+            <hitoyo_cards>各カテゴリから1〜2枚ずつ、合計8〜10枚</hitoyo_cards>
+            <migaki_cards>台所系、森・祭り系から合計5〜6枚程度</migaki_cards>
+            <special_events>邪気イベント（八岐大蛇など）はナシ</special_events>
+        </simple_version>
     </game_settings>
 
-    <roles>
-        <role id="forest_guardian">
-            <name>森の守り手</name>
-            <focus>F (Forest) の保護と育成</focus>
-        </role>
-        <role id="culture_keeper">
-            <name>文化の継承者</name>
-            <focus>K (Culture) の継承と発展</focus>
-        </role>
-        <role id="community_light">
-            <name>コミュニティの灯火</name>
-            <focus>S (Social) の結束と強化</focus>
-        </role>
-        <role id="akasha_engineer">
-            <name>空環エンジニア</name>
-            <focus>P (Akasha) の循環と技術</focus>
-        </role>
-    </roles>
-
     <turn_flow>
-        <phase sequence="1">イベントフェーズ: イベントカードを1枚めくり、効果を適用する。</phase>
-        <phase sequence="2">相談フェーズ: プレイヤー全員で方針を相談する。</phase>
-        <phase sequence="3">アクションフェーズ: アクションカードを選択し、実行する（才能カードでのボーナスあり）。</phase>
-        <phase sequence="4">減衰フェーズ: 空環ポイント(P)の減衰（デミュレージ）処理。</phase>
-        <phase sequence="5">生命更新フェーズ: L = F + K + S を再計算。</phase>
-        <phase sequence="6">判定フェーズ: ゲームオーバー条件のチェック。</phase>
+        <description>1年 ＝ 1ターンとして、1〜20年を同じ流れでくり返す。</description>
+        <phase sequence="1" id="hitoyo">
+            <name>人代（ひとよ）フェイズ</name>
+            <description>
+                いまの社会の流れが、その年も世界にふってくるフェイズ。
+                邪気トラックの値を確認し、その年に公開する人代カードの枚数を決める。
+                人代カードを引き、表向きにして場に並べ、効果を解決する。
+            </description>
+        </phase>
+        <phase sequence="2" id="kamihakari">
+            <name>神議り（かみはかり）フェイズ</name>
+            <description>
+                「今年をどう過ごすか」を全員で話し合うフェイズ。
+                人代カードとF/K/Sの状態を見ながら、今年の方針をざっくり1つ決める。
+            </description>
+            <policies>
+                <policy icon="🌳">森を守る年（F優先）</policy>
+                <policy icon="🎎">文化を守る年（K優先）</policy>
+                <policy icon="🤝">コミュニティを立て直す年（S優先）</policy>
+                <policy icon="🧹">邪気をできるだけ減らす年（浄化優先）</policy>
+            </policies>
+        </phase>
+        <phase sequence="3" id="itonami">
+            <name>営み（いとなみ）フェイズ</name>
+            <description>
+                メインアクションフェイズ。営みカードやみがきカードを使って、世界に働きかける。
+            </description>
+            <steps>
+                <step>アクションカードを選ぶ（営みカード山札から3枚程度引いて公開）</step>
+                <step>空環（P）を出し合う（必要Pを複数プレイヤーで分担可能）</step>
+                <step>才能カードを重ねる（タグが一致すれば+1ボーナス）</step>
+                <step>アクションの解決（F/K/S/邪気への効果を適用）</step>
+            </steps>
+        </phase>
+        <phase sequence="4" id="kokyu">
+            <name>呼吸（こきゅう）フェイズ</name>
+            <description>
+                たまりすぎた空環（P）を世界に返し、めぐりを取り戻すフェイズ。
+                Pが5以上あるプレイヤーは、必ず1つ以上のPを還流しなければならない。
+            </description>
+            <optional_rule name="身削ぎトリガー">
+                その年いちばん多くPを手放したプレイヤーは、次の年に才能カードを獲得できる。
+            </optional_rule>
+        </phase>
+        <phase sequence="5" id="musuhi">
+            <name>結び（むすひ）フェイズ</name>
+            <description>
+                その年の「ありがとう」と「結び」を見える形にするフェイズ。
+                各プレイヤーはむすひチップを1枚受け取り、「今年たすかった」と感じた仲間に渡す。
+            </description>
+            <talent_trigger>
+                その年にむすひチップを2枚以上もらったプレイヤーは、次の年のはじめに才能カードを獲得できる。
+            </talent_trigger>
+        </phase>
+        <phase sequence="6" id="toshiokuri">
+            <name>年送り（としおくり）フェイズ</name>
+            <description>
+                その年の世界の状態を見届けて、次の年へ送り出すフェイズ。
+                F/K/Sの値を確認し、どれか1つでも0より下がっていたらゲームオーバー。
+                いのち指数 L = F + K + S をメモしておく。
+            </description>
+        </phase>
     </turn_flow>
 
     <card_types>
-        <type id="event">
-            <name>イベントカード</name>
-            <count>25</count>
-            <description>災害、祭り、神々の加護、旧経済の誘惑など、ターン開始時に発生する事象。</description>
+        <type id="hitoyo">
+            <name>人代（ひとよ）カード</name>
+            <description>
+                現代社会の流れ（環境破壊・物理的誘惑・文化の切り捨て・分断など）を表すカード。
+                引かれると、F/K/Sが減ったり、邪気が増えたりする。
+            </description>
+            <timing_types>
+                <timing type="即時">引いた瞬間にF/K/Sや邪気が変化する</timing>
+                <timing type="猶予">条件を満たさないと年末にペナルティが発生する</timing>
+            </timing_types>
+            <cards>
+                <card category="環境破壊">
+                    <name>山肌むき出しメガプロジェクト</name>
+                    <flavor>開発という名の暴力が、山を削り取る。</flavor>
+                    <timing>即時</timing>
+                    <effect>F−3, 邪気+1</effect>
+                </card>
+                <card category="環境破壊">
+                    <name>農薬散布の季節</name>
+                    <flavor>虫を殺し、土を殺し、やがて人を蝕む。</flavor>
+                    <timing>即時</timing>
+                    <effect>F−2</effect>
+                </card>
+                <card category="環境破壊">
+                    <name>プラスチックの海</name>
+                    <flavor>便利の果てに、海が窒息していく。</flavor>
+                    <timing>即時</timing>
+                    <effect>F−2, 邪気+1</effect>
+                </card>
+                <card category="文化の切り捨て">
+                    <name>中止される小さな祭り</name>
+                    <flavor>「採算が取れない」その一言で、百年が消える。</flavor>
+                    <timing>即時</timing>
+                    <effect>K−2, S−1</effect>
+                </card>
+                <card category="文化の切り捨て">
+                    <name>効率化の波</name>
+                    <flavor>手間のかかることが、次々と切り捨てられる。</flavor>
+                    <timing>即時</timing>
+                    <effect>K−2</effect>
+                </card>
+                <card category="分断">
+                    <name>炎上するSNS</name>
+                    <flavor>正義の名のもとに、人と人が引き裂かれる。</flavor>
+                    <timing>即時</timing>
+                    <effect>S−2, 邪気+1</effect>
+                </card>
+                <card category="分断">
+                    <name>世代間の断絶</name>
+                    <flavor>「最近の若者は」「老害が」憎み合う構造。</flavor>
+                    <timing>即時</timing>
+                    <effect>S−2, K−1</effect>
+                </card>
+                <card category="物理的誘惑">
+                    <name>底なしセール</name>
+                    <flavor>安い。だから買う。だからまた作る。終わらない。</flavor>
+                    <timing>猶予</timing>
+                    <condition>今年中にF+1できなければ…</condition>
+                    <effect>全員P+1、ただし年末にF−1, S−1</effect>
+                </card>
+                <card category="物理的誘惑">
+                    <name>24時間営業の罠</name>
+                    <flavor>便利は、誰かの犠牲の上に成り立っている。</flavor>
+                    <timing>即時</timing>
+                    <effect>S−1, 邪気+1</effect>
+                </card>
+                <card category="邪気">
+                    <name>無関心の蔓延</name>
+                    <flavor>「自分には関係ない」その言葉が、世界を蝕む。</flavor>
+                    <timing>即時</timing>
+                    <effect>邪気+2</effect>
+                </card>
+            </cards>
         </type>
+
         <type id="action">
-            <name>アクションカード</name>
-            <count>20</count>
-            <description>プレイヤーが実行できる行動。コスト(P)と効果(F,K,Sへの増減)を持つ。</description>
+            <name>アクションカード（営みカード）</name>
+            <description>
+                その年に世界で起こす行動のカード。
+                ものづくり、祭り、仕組みづくり、対話などが書かれている。
+            </description>
+            <cards>
+                <card>
+                    <name>小さな祭りを開く</name>
+                    <flavor>顔を合わせる。それだけで、何かが動き出す。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>祭り, コミュニティ</tags>
+                    <effect>K+1, S+2</effect>
+                </card>
+                <card>
+                    <name>対話の場をひらく</name>
+                    <flavor>聴くことから、すべてが始まる。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>対話, コミュニティ</tags>
+                    <effect>S+2</effect>
+                </card>
+                <card>
+                    <name>森の手入れをする</name>
+                    <flavor>下草を刈り、光を入れる。森が息を吹き返す。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>森</tags>
+                    <effect>F+3</effect>
+                </card>
+                <card>
+                    <name>伝承を記録する</name>
+                    <flavor>おじいちゃん、おばあちゃんの話を聴いて、書き残す。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>文化, 対話</tags>
+                    <effect>K+2</effect>
+                </card>
+                <card>
+                    <name>助け合いの仕組みをつくる</name>
+                    <flavor>困ったときは、お互いさま。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>仕組み, コミュニティ</tags>
+                    <effect>S+3</effect>
+                </card>
+                <card>
+                    <name>畑を始める</name>
+                    <flavor>土に触れる。種をまく。待つ。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>農, 森</tags>
+                    <effect>F+2, S+1</effect>
+                </card>
+                <card>
+                    <name>工房を開く</name>
+                    <flavor>手を動かす場所が、人を集める。</flavor>
+                    <cost>P: 3</cost>
+                    <tags>てしごと, ものづくり, コミュニティ</tags>
+                    <effect>K+2, S+2</effect>
+                </card>
+                <card>
+                    <name>お年寄りの話を聴く会</name>
+                    <flavor>昔の暮らしには、今に活きる知恵がある。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>ケア, 文化, 対話</tags>
+                    <effect>K+1, S+1</effect>
+                </card>
+            </cards>
         </type>
+
+        <type id="migaki">
+            <name>磨きカード</name>
+            <description>
+                世界を「きれいにしていく」行動のカード。
+                森・文化・コミュニティを回復させつつ、邪気を下げる効果を持つ。
+                一部の人代カードの効果を軽減・無効化できる。
+            </description>
+            <cards>
+                <card category="台所">
+                    <name>手前味噌を仕込む</name>
+                    <flavor>大豆を煮て、潰して、塩と麹を混ぜる。一年後の食卓を想いながら。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>台所, 発酵, てしごと</tags>
+                    <effect>F+1, K+1, 邪気−1</effect>
+                </card>
+                <card category="台所">
+                    <name>糠床を育てる</name>
+                    <flavor>毎日、手を入れる。菌と対話する。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>台所, 発酵</tags>
+                    <effect>K+1, 邪気−1</effect>
+                </card>
+                <card category="台所">
+                    <name>野菜を育てて食卓にのせる</name>
+                    <flavor>種を蒔いて、水をやって、収穫して、料理する。一連の営み。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>台所, 農, 森</tags>
+                    <effect>F+2, S+1, 邪気−1</effect>
+                </card>
+                <card category="台所">
+                    <name>出汁をひく</name>
+                    <flavor>昆布を水に浸し、鰹節を削る。この手間が、味を変える。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>台所, てしごと</tags>
+                    <effect>K+1, 邪気−1</effect>
+                </card>
+                <card category="森">
+                    <name>鎮守の森のお手入れ</name>
+                    <flavor>落ち葉を掃き、枝を払い、神域を清める。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>森, コミュニティ</tags>
+                    <effect>F+2, S+1, 邪気−1</effect>
+                </card>
+                <card category="森">
+                    <name>薪を割る</name>
+                    <flavor>パカン、と割れる音。からだが温まる仕事。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>森, てしごと</tags>
+                    <effect>F+1, 邪気−1</effect>
+                </card>
+                <card category="祭り">
+                    <name>小さな祭りを続ける</name>
+                    <flavor>人が減っても、やめない。続けることに意味がある。</flavor>
+                    <cost>P: 2</cost>
+                    <tags>祭り, 文化, コミュニティ</tags>
+                    <effect>K+2, S+1, 邪気−1</effect>
+                    <special>「中止される小さな祭り」の効果を無効化</special>
+                </card>
+                <card category="ケア">
+                    <name>お裾分けをする</name>
+                    <flavor>「これ、うちで採れたから」その一言が、つながりを紡ぐ。</flavor>
+                    <cost>P: 1</cost>
+                    <tags>ケア, コミュニティ</tags>
+                    <effect>S+2, 邪気−1</effect>
+                </card>
+                <card category="ケア">
+                    <name>井戸端会議</name>
+                    <flavor>立ち話のなかに、大切な情報が流れている。</flavor>
+                    <cost>P: 0</cost>
+                    <tags>ケア, 対話, コミュニティ</tags>
+                    <effect>S+1, 邪気−1</effect>
+                </card>
+                <card category="大技">
+                    <name>大祓（おおはらえ）</name>
+                    <flavor>半年分の穢れを、すべて祓い清める。</flavor>
+                    <cost>P: 4</cost>
+                    <tags>祭り, 文化</tags>
+                    <effect>K+2, 邪気−2</effect>
+                </card>
+            </cards>
+        </type>
+
         <type id="talent">
             <name>才能カード</name>
-            <count>20</count>
             <description>
-                各プレイヤーが持つ特殊能力。
-                アクションカードに重ねることで、効果に+1ボーナスを与える。
-                最大2枚重ねて+2まで可能。
+                プレイヤーそれぞれの得意・役割・癖を表すカード。
+                営みやみがきカードに重ねることで、その行動の効果を少しだけ強くする。
             </description>
+            <rules>
+                <rule>ゲーム開始時、各プレイヤーは才能カードを3枚引き、その中から1枚を選んで自分の前に置く</rule>
+                <rule>アクションカードのタグと才能カードのタグが1つでも一致すれば、+1ボーナスを与えられる</rule>
+                <rule>1つのアクションに対して、1人のプレイヤーが発揮できる才能ボーナスは+1まで</rule>
+                <rule>むすひチップを2枚以上もらったプレイヤーは、次の年に才能カードを獲得できる</rule>
+                <rule>1人が持てる才能カードは最大3枚</rule>
+            </rules>
+            <cards>
+                <card>
+                    <name>聴く</name>
+                    <flavor>耳を澄ませば、世界が語りかけてくる。</flavor>
+                    <tags>対話, ケア</tags>
+                    <effect>対話・ケア系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>てしごと</name>
+                    <flavor>手が覚えていることを、手に委ねる。</flavor>
+                    <tags>台所, 発酵, ものづくり</tags>
+                    <effect>台所・発酵・ものづくり系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>育てる</name>
+                    <flavor>芽が出るまで待つことを知っている。</flavor>
+                    <tags>森, 農, 発酵</tags>
+                    <effect>森・農・発酵系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>段取り</name>
+                    <flavor>見えない準備が、見える結果をつくる。</flavor>
+                    <tags>祭り, 仕組み, コミュニティ</tags>
+                    <effect>祭り・仕組み・コミュニティ系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>場をあたためる</name>
+                    <flavor>いるだけで、そこが居心地よくなる。</flavor>
+                    <tags>コミュニティ, 対話, 祭り</tags>
+                    <effect>コミュニティ・対話・祭り系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>つなぐ</name>
+                    <flavor>人と人、場と場をむすぶ。</flavor>
+                    <tags>コミュニティ, 仕組み</tags>
+                    <effect>コミュニティ・仕組み系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>語る</name>
+                    <flavor>物語は、人を動かす力を持つ。</flavor>
+                    <tags>文化, 対話, 祭り</tags>
+                    <effect>文化・対話・祭り系のアクションに+1</effect>
+                </card>
+                <card>
+                    <name>見守る</name>
+                    <flavor>余計な手出しをせず、信じて待つ。</flavor>
+                    <tags>森, ケア, 発酵</tags>
+                    <effect>森・ケア・発酵系のアクションに+1</effect>
+                </card>
+            </cards>
         </type>
-        <type id="project">
-            <name>共創プロジェクトカード</name>
+
+        <type id="cocreation">
+            <name>共創カード</name>
             <description>
-                全員で協力して達成を目指す長期プロジェクト。
-                才能カードを捧げることで進行し、完成すると大きな恩恵がある。
+                複数のプレイヤーが協力して達成する大きなプロジェクト。
+                完了すると強力な効果を発揮しますが、空環（P）と時間を要します。
+                達成には複数ターンにわたって空環（P）を蓄積する必要があります。
             </description>
+            <cards>
+                <card>
+                    <name>里山再生プロジェクト</name>
+                    <flavor>放置された山を、人と森が共に生きる場所へ。</flavor>
+                    <cost>P: 12</cost>
+                    <duration>3年以上</duration>
+                    <tags>森, コミュニティ</tags>
+                    <effect>完了時: F+4, S+2, 邪気−2</effect>
+                </card>
+                <card>
+                    <name>伝統工芸の復興</name>
+                    <flavor>途絶えかけた技を、次の世代へ。</flavor>
+                    <cost>P: 10</cost>
+                    <duration>2年以上</duration>
+                    <tags>文化, てしごと</tags>
+                    <effect>完了時: K+4, S+1, 邪気−2</effect>
+                </card>
+                <card>
+                    <name>地域通貨の立ち上げ</name>
+                    <flavor>めぐるお金が、人をつなぐ。</flavor>
+                    <cost>P: 8</cost>
+                    <duration>2年以上</duration>
+                    <tags>コミュニティ, 仕組み</tags>
+                    <effect>完了時: S+3, 全員P+1, 邪気−1</effect>
+                </card>
+                <card>
+                    <name>年中行事の再構築</name>
+                    <flavor>季節のめぐりを、暮らしに取り戻す。</flavor>
+                    <cost>P: 9</cost>
+                    <duration>2年以上</duration>
+                    <tags>文化, 祭り, コミュニティ</tags>
+                    <effect>完了時: K+3, S+2, 邪気−2</effect>
+                </card>
+                <card>
+                    <name>森の幼稚園</name>
+                    <flavor>子どもたちが森で育ち、森が子どもで育つ。</flavor>
+                    <cost>P: 11</cost>
+                    <duration>3年以上</duration>
+                    <tags>森, ケア, コミュニティ</tags>
+                    <effect>完了時: F+2, S+3, 邪気−2</effect>
+                </card>
+                <card>
+                    <name>発酵文化の学校</name>
+                    <flavor>味噌、醤油、酒。菌と暮らす知恵を伝える。</flavor>
+                    <cost>P: 10</cost>
+                    <duration>2年以上</duration>
+                    <tags>発酵, 文化, 台所</tags>
+                    <effect>完了時: K+3, F+1, 邪気−2</effect>
+                </card>
+            </cards>
         </type>
     </card_types>
 
+    <tokens>
+        <token id="kuukan">
+            <name>空環（くうかん）トークン</name>
+            <description>プレイヤーが持つ「呼吸するお金」。行動に使うと世界にめぐり、貯め込みすぎると身が重くなる。</description>
+        </token>
+        <token id="musuhi">
+            <name>むすひチップ</name>
+            <description>年の終わりに、「今年たすかった」と思う仲間に渡すチップ。その年に起きた「ありがとう」と「結び」を見える形にする。</description>
+        </token>
+    </tokens>
+
     <concepts>
-        <concept name="Demurrage (減衰)">
-            お金（空環）は貯め込むと価値が減るため、積極的に使って循環させることが推奨されるシステム。
+        <concept name="空環（くうかん）/ Breathing Currency">
+            お金は「ありがとう」のしるしだったはず。空環は、その原点に立ち返ろうとする試み。
+            めぐらせる。とどめない。軽やかに、手放す。それが、世界を循環させる力になる。
         </concept>
-        <concept name="Divinity (神性)">
-            「人間もまた八百万の神の一柱である」というテーマ。プレイヤーは神格を通じてそれを思い出す。
+        <concept name="神性 (Divinity)">
+            「人もまた、八百万の神々の一柱である。ただ、その『神性』を忘れているだけなのだ。」
+            プレイヤーは才能カードを通じて、自分の中にある神性を思い出す。
+        </concept>
+        <concept name="むすひ（結び）">
+            見えない働きを可視化する。「助かった」と感じた仲間へのありがとうの形。
         </concept>
     </concepts>
 </game_rules>
-

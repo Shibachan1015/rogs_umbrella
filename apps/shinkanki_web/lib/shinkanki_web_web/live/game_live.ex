@@ -51,14 +51,30 @@ defmodule ShinkankiWebWeb.GameLive do
               # ゲーム状態をフォーマット
               game_state = format_game_session(game_session, user_id)
 
-              mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state)
+              mount_with_game_session(
+                socket,
+                room_id,
+                user_id,
+                user_email,
+                current_user,
+                game_session,
+                game_state
+              )
             end
         end
       end
     end
   end
 
-  defp mount_with_game_session(socket, room_id, user_id, user_email, current_user, game_session, game_state) do
+  defp mount_with_game_session(
+         socket,
+         room_id,
+         user_id,
+         user_email,
+         current_user,
+         game_session,
+         game_state
+       ) do
     # 現在のターン状態を取得
     turn_state = get_current_turn_state(game_session)
     current_phase = if turn_state, do: turn_state.phase, else: "event"
@@ -102,8 +118,12 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:previous_currency, 0)
       |> assign(:show_card_detail, false)
       |> assign(:detail_card, nil)
-      |> assign(:can_start, false) # ゲームは既に開始されている
+      # ゲームは既に開始されている
+      |> assign(:can_start, false)
       |> assign(:action_logs, get_recent_action_logs(game_session))
+      |> assign(:migaki_cards, get_available_migaki_cards())
+      |> assign(:selected_migaki_id, nil)
+      |> assign(:show_migaki_panel, false)
 
     socket =
       if connected?(socket) do
@@ -175,13 +195,14 @@ defmodule ShinkankiWebWeb.GameLive do
       |> Enum.filter(fn card -> card.id in turn_state.available_cards end)
       |> Enum.map(fn card ->
         # カテゴリに応じた色を設定
-        color = case card.category do
-          "forest" -> "matsu"
-          "culture" -> "sakura"
-          "social" -> "kohaku"
-          "akasha" -> "kin"
-          _ -> "sumi"
-        end
+        color =
+          case card.category do
+            "forest" -> "matsu"
+            "culture" -> "sakura"
+            "social" -> "kohaku"
+            "akasha" -> "kin"
+            _ -> "sumi"
+          end
 
         %{
           id: card.id,
@@ -206,6 +227,7 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_current_event(_game_session, turn_state) do
     if turn_state && turn_state.current_event_id do
       event = Shinkanki.Repo.get!(Shinkanki.Games.EventCard, turn_state.current_event_id)
+
       %{
         id: event.id,
         name: event.name,
@@ -227,6 +249,7 @@ defmodule ShinkankiWebWeb.GameLive do
       template = project.project_template
       # current_progress is not in DB schema, calculate from participations
       progress = length(project.project_participations || [])
+
       %{
         id: project.id,
         name: template.name,
@@ -280,13 +303,15 @@ defmodule ShinkankiWebWeb.GameLive do
       <header class="flex items-center justify-between px-2 sm:px-4 py-1 sm:py-2 bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20">
         <!-- Left: Turn & Phase (super compact on mobile) -->
         <div class="flex items-center gap-1 sm:gap-3">
-          <span class="text-[10px] sm:text-sm font-bold text-[var(--color-landing-gold)]">T{@game_state.turn}</span>
+          <span class="text-[10px] sm:text-sm font-bold text-[var(--color-landing-gold)]">
+            T{@game_state.turn}
+          </span>
           <span class="text-[9px] sm:text-xs px-1 sm:px-2 py-0.5 rounded bg-white/10 text-[var(--color-landing-pale)] truncate max-w-[60px] sm:max-w-none">
             {phase_name_short(@current_phase)}
           </span>
         </div>
-
-        <!-- Center: World Stats - Always visible -->
+        
+    <!-- Center: World Stats - Always visible -->
         <div class="flex items-center gap-2 sm:gap-4">
           <!-- 森・文化・絆 -->
           <div class="flex items-center gap-1.5 sm:gap-3 text-[10px] sm:text-sm">
@@ -296,26 +321,37 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
             <div class="flex items-center gap-0.5" title="文化">
               <span>🎭</span>
-              <span class="font-bold text-sakura">{@game_state[:culture] || @game_state.culture || 0}</span>
+              <span class="font-bold text-sakura">
+                {@game_state[:culture] || @game_state.culture || 0}
+              </span>
             </div>
             <div class="flex items-center gap-0.5" title="絆">
               <span>🤝</span>
-              <span class="font-bold text-kohaku">{@game_state[:social] || @game_state.social || 0}</span>
+              <span class="font-bold text-kohaku">
+                {@game_state[:social] || @game_state.social || 0}
+              </span>
             </div>
           </div>
           <!-- Life Index -->
-          <div class="flex items-center gap-0.5 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded" title="生命指数">
+          <div
+            class="flex items-center gap-0.5 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded"
+            title="生命指数"
+          >
             <span class="text-[9px] sm:text-xs text-[var(--color-landing-gold)]">L</span>
-            <span class="text-xs sm:text-base font-bold text-[var(--color-landing-gold)]">{life_index(@game_state)}</span>
+            <span class="text-xs sm:text-base font-bold text-[var(--color-landing-gold)]">
+              {life_index(@game_state)}
+            </span>
             <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">/40</span>
           </div>
         </div>
-
-        <!-- Right: Akasha & Toggle buttons -->
+        
+    <!-- Right: Akasha & Toggle buttons -->
         <div class="flex items-center gap-1 sm:gap-2">
           <div class="flex items-center gap-0.5 text-[10px] sm:text-sm">
             <span class="text-[var(--color-landing-gold)]">φ</span>
-            <span class="font-bold text-[var(--color-landing-gold)]">{@game_state[:currency] || @game_state.currency || 0}</span>
+            <span class="font-bold text-[var(--color-landing-gold)]">
+              {@game_state[:currency] || @game_state.currency || 0}
+            </span>
           </div>
           <button
             phx-click={JS.toggle(to: "#stats-panel")}
@@ -333,9 +369,12 @@ defmodule ShinkankiWebWeb.GameLive do
           </button>
         </div>
       </header>
-
-      <!-- Stats Panel (hidden by default) - Ultra compact on mobile -->
-      <div id="stats-panel" class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-2 sm:px-4 py-1.5 sm:py-3">
+      
+    <!-- Stats Panel (hidden by default) - Ultra compact on mobile -->
+      <div
+        id="stats-panel"
+        class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-2 sm:px-4 py-1.5 sm:py-3"
+      >
         <!-- パラメータ表示 -->
         <div class="flex items-center justify-center gap-2 sm:gap-6 text-[10px] sm:text-sm mb-2">
           <div class="flex items-center gap-0.5">
@@ -344,15 +383,19 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
           <div class="flex items-center gap-0.5">
             <span>🎭</span>
-            <span class="font-bold text-sakura">{@game_state[:culture] || @game_state.culture || 0}</span>
+            <span class="font-bold text-sakura">
+              {@game_state[:culture] || @game_state.culture || 0}
+            </span>
           </div>
           <div class="flex items-center gap-0.5">
             <span>🤝</span>
-            <span class="font-bold text-kohaku">{@game_state[:social] || @game_state.social || 0}</span>
+            <span class="font-bold text-kohaku">
+              {@game_state[:social] || @game_state.social || 0}
+            </span>
           </div>
         </div>
-
-        <!-- 邪気・オロチ表示 -->
+        
+    <!-- 邪気・オロチ表示 -->
         <div class="flex items-center justify-center gap-3 sm:gap-6 text-[10px] sm:text-sm pt-2 border-t border-white/10">
           <!-- 邪気プール -->
           <div class="flex items-center gap-1">
@@ -364,8 +407,8 @@ defmodule ShinkankiWebWeb.GameLive do
               <% end %>
             </div>
           </div>
-
-          <!-- オロチレベル -->
+          
+    <!-- オロチレベル -->
           <div class="flex items-center gap-1">
             <span class="text-shu">🐍</span>
             <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">オロチ</span>
@@ -380,36 +423,45 @@ defmodule ShinkankiWebWeb.GameLive do
               </span>
             <% end %>
           </div>
-
-          <!-- 個人邪気 -->
+          
+    <!-- 個人邪気 -->
           <div class="flex items-center gap-1">
             <span class="text-purple-300">😈</span>
             <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">邪</span>
             <span class="font-bold text-purple-300">{@game_state[:player_evil] || 0}</span>
           </div>
         </div>
-
-        <!-- 今年の方針 -->
+        
+    <!-- 今年の方針 -->
         <%= if @game_state[:current_policy] do %>
           <div class="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-white/10">
-            <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">📜 今年の方針:</span>
+            <span class="text-[8px] sm:text-xs text-[var(--color-landing-text-secondary)]">
+              📜 今年の方針:
+            </span>
             <span class={"text-xs font-bold #{policy_color(@game_state[:current_policy])}"}>
               {policy_name(@game_state[:current_policy])}
             </span>
           </div>
         <% end %>
       </div>
-
-      <!-- Chat Panel (hidden by default) -->
-      <div id="chat-panel" class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-4 py-3 max-h-48 overflow-y-auto">
+      
+    <!-- Chat Panel (hidden by default) -->
+      <div
+        id="chat-panel"
+        class="hidden bg-[rgba(15,20,25,0.95)] border-b border-[var(--color-landing-gold)]/20 px-4 py-3 max-h-48 overflow-y-auto"
+      >
         <div id="chat-messages" phx-update="stream" class="space-y-2 mb-3">
           <div
             :for={{id, msg} <- @streams.chat_messages}
             id={id}
             class="text-xs bg-white/5 rounded p-2"
           >
-            <span class="font-semibold text-[var(--color-landing-gold)]">{msg.user_email || msg.author}:</span>
-            <span class="text-[var(--color-landing-text-primary)] ml-1">{msg.content || msg.body}</span>
+            <span class="font-semibold text-[var(--color-landing-gold)]">
+              {msg.user_email || msg.author}:
+            </span>
+            <span class="text-[var(--color-landing-text-primary)] ml-1">
+              {msg.content || msg.body}
+            </span>
           </div>
         </div>
         <.form for={@chat_form} id="chat-form" phx-submit="send_chat" class="flex gap-2">
@@ -422,8 +474,8 @@ defmodule ShinkankiWebWeb.GameLive do
           <button type="submit" class="px-3 py-1 bg-shu text-washi rounded text-sm">送信</button>
         </.form>
       </div>
-
-      <!-- Main Content - Mobile First Design -->
+      
+    <!-- Main Content - Mobile First Design -->
       <main class="flex-1 flex flex-col items-center justify-start p-1 sm:p-4 overflow-y-auto">
         <!-- Player List - Hidden on mobile, shown on larger screens -->
         <div class="hidden sm:block w-full max-w-2xl mb-4">
@@ -440,8 +492,8 @@ defmodule ShinkankiWebWeb.GameLive do
             <% end %>
           </div>
         </div>
-
-        <!-- Waiting State -->
+        
+    <!-- Waiting State -->
         <%= if @game_status == :waiting || @game_status == "waiting" do %>
           <div class="text-center space-y-4">
             <h2 class="text-xl font-bold text-[var(--color-landing-pale)]">プレイヤー待機中</h2>
@@ -459,19 +511,21 @@ defmodule ShinkankiWebWeb.GameLive do
             <% end %>
           </div>
         <% end %>
-
-        <!-- 神議り (Kami Hakari) Phase - 方針を決める -->
+        
+    <!-- 神議り (Kami Hakari) Phase - 方針を決める -->
         <%= if @current_phase in ["kami_hakari", :kami_hakari] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full max-w-md px-4 animate-fade-in">
             <div class="text-center mb-6">
               <div class="text-4xl mb-2">⛩️</div>
-              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">神議り</h2>
+              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">
+                神議り
+              </h2>
               <p class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)] mt-2">
                 今年の方針を決めましょう
               </p>
             </div>
-
-            <!-- 方針選択カード -->
+            
+    <!-- 方針選択カード -->
             <div class="grid grid-cols-2 gap-3">
               <!-- 森優先 -->
               <button
@@ -485,8 +539,8 @@ defmodule ShinkankiWebWeb.GameLive do
                   自然を守る年に
                 </div>
               </button>
-
-              <!-- 文化優先 -->
+              
+    <!-- 文化優先 -->
               <button
                 phx-click="set_policy"
                 phx-value-policy="culture"
@@ -498,8 +552,8 @@ defmodule ShinkankiWebWeb.GameLive do
                   伝統を育む年に
                 </div>
               </button>
-
-              <!-- コミュニティ優先 -->
+              
+    <!-- コミュニティ優先 -->
               <button
                 phx-click="set_policy"
                 phx-value-policy="community"
@@ -511,8 +565,8 @@ defmodule ShinkankiWebWeb.GameLive do
                   つながりを深める年に
                 </div>
               </button>
-
-              <!-- 祓い優先 -->
+              
+    <!-- 祓い優先 -->
               <button
                 phx-click="set_policy"
                 phx-value-policy="purify"
@@ -531,9 +585,53 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
           </div>
         <% end %>
-
-        <!-- Event Phase -->
-        <%= if @current_phase in ["event", :event] && @current_event && @game_status in ["active", :active, "playing", :playing] do %>
+        
+    <!-- 人代フェイズ (Hitoyo Phase) - 人代カード表示 -->
+        <%= if @current_phase in ["hitoyo", :hitoyo, "event", :event] && @game_status in ["active", :active, "playing", :playing] do %>
+          <div class="w-full max-w-md px-4 animate-fade-in">
+            <div class="text-center mb-6">
+              <div class="text-4xl mb-2">👻</div>
+              <h2 class="text-xl sm:text-2xl font-bold text-purple-400 tracking-[0.2em]">人代</h2>
+              <p class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)] mt-2">
+                現代社会の流れが世界に影響を与える
+              </p>
+            </div>
+            
+    <!-- 邪気レベルによるカード枚数 -->
+            <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mb-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-[var(--color-landing-text-secondary)]">邪気レベル</span>
+                <span class="text-lg font-bold text-purple-300">{@game_state[:evil_pool] || 0}</span>
+              </div>
+              <div class="text-xs text-[var(--color-landing-text-secondary)]">
+                <%= cond do %>
+                  <% (@game_state[:evil_pool] || 0) <= 2 -> %>
+                    邪気0-2: 人代カード1枚
+                  <% (@game_state[:evil_pool] || 0) <= 5 -> %>
+                    邪気3-5: 人代カード2枚
+                  <% true -> %>
+                    邪気6-8: 人代カード3枚
+                <% end %>
+              </div>
+            </div>
+            
+    <!-- 処理中表示 -->
+            <div class="text-center text-sm text-[var(--color-landing-text-secondary)]">
+              <div class="animate-pulse">🎴 人代カードを処理中...</div>
+            </div>
+            
+    <!-- 自動処理ボタン（デバッグ用・将来は自動） -->
+            <button
+              phx-click="advance_hitoyo_phase"
+              class="w-full mt-4 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 active:scale-98 transition-all"
+            >
+              人代カードを処理
+            </button>
+          </div>
+        <% end %>
+        
+    <!-- Event Phase (Legacy - now part of Hitoyo) -->
+        <%= if false && @current_phase in ["event", :event] && @current_event && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full max-w-md animate-fade-in">
             <.event_card
               title={@current_event[:title] || @current_event["title"] || "イベント"}
@@ -546,9 +644,9 @@ defmodule ShinkankiWebWeb.GameLive do
             </div>
           </div>
         <% end %>
-
-        <!-- Action Phase: Show current player info - Mobile Optimized -->
-        <%= if @current_phase in ["action", :action] && @game_status in ["active", :active, "playing", :playing] do %>
+        
+    <!-- 営み (Itonami) Phase: Show current player info - Mobile Optimized -->
+        <%= if @current_phase in ["itonami", :itonami, "action", :action] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full px-2">
             <!-- Mobile: Very compact single line -->
             <div class="sm:hidden flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
@@ -564,8 +662,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 <span class="text-xs text-[var(--color-landing-text-secondary)]">🤖 AI実行中...</span>
               <% end %>
             </div>
-
-            <!-- Desktop: Full display -->
+            
+    <!-- Desktop: Full display -->
             <div class="hidden sm:block text-center mb-4 space-y-2">
               <div class="text-lg font-bold text-[var(--color-landing-gold)]">アクションフェーズ</div>
               <%= if is_current_player_turn(@game_state, @user_id) do %>
@@ -582,14 +680,18 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
                 <div class="flex flex-wrap justify-center gap-1">
                   <%= for player <- @players do %>
-                    <% has_acted = Enum.any?(@action_logs, fn log ->
-                      p = Enum.find(@players, fn pl ->
-                        (pl.is_ai && pl.name == log.player_name) || (!pl.is_ai && log.player_name == "あなた")
-                      end)
-                      p && p.id == player.id
-                    end) %>
+                    <% has_acted =
+                      Enum.any?(@action_logs, fn log ->
+                        p =
+                          Enum.find(@players, fn pl ->
+                            (pl.is_ai && pl.name == log.player_name) ||
+                              (!pl.is_ai && log.player_name == "あなた")
+                          end)
+
+                        p && p.id == player.id
+                      end) %>
                     <div class={"px-2 py-1 rounded text-xs #{if has_acted, do: "bg-green-500/30 text-green-300", else: "bg-gray-500/30 text-gray-400"}"}>
-                      <%= if has_acted, do: "✓", else: "⏳" %>
+                      {if has_acted, do: "✓", else: "⏳"}
                     </div>
                   <% end %>
                 </div>
@@ -597,11 +699,14 @@ defmodule ShinkankiWebWeb.GameLive do
                   <div class="mt-2 pt-2 border-t border-white/10">
                     <% last_log = List.first(@action_logs) %>
                     <div class="text-xs text-[var(--color-landing-pale)]">
-                      <%= if last_log.is_ai, do: "🤖", else: "👤" %>
+                      {if last_log.is_ai, do: "🤖", else: "👤"}
                       <%= case last_log.action_type do %>
-                        <% "play_card" -> %>🃏 「{String.slice(last_log.card_name || "カード", 0, 6)}」
-                        <% "pass" -> %>⏭️ パス
-                        <% _ -> %>{last_log.action_type}
+                        <% "play_card" -> %>
+                          🃏 「{String.slice(last_log.card_name || "カード", 0, 6)}」
+                        <% "pass" -> %>
+                          ⏭️ パス
+                        <% _ -> %>
+                          {last_log.action_type}
                       <% end %>
                     </div>
                   </div>
@@ -609,9 +714,91 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             </div>
           </div>
+          
+    <!-- 磨きカード選択パネル (営みフェーズ中に表示) -->
+          <%= if @show_migaki_panel do %>
+            <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+              <div class="bg-[rgba(20,25,35,0.98)] border border-[var(--color-landing-gold)]/30 rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                <div class="p-4 border-b border-[var(--color-landing-gold)]/20 flex items-center justify-between">
+                  <h3 class="text-lg font-bold text-[var(--color-landing-gold)]">✨ 磨きカード</h3>
+                  <button
+                    phx-click="toggle_migaki_panel"
+                    class="text-[var(--color-landing-text-secondary)] hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div class="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                  <%= for card <- @migaki_cards do %>
+                    <% can_afford = (@game_state[:currency] || 0) >= card.cost %>
+                    <button
+                      phx-click="use_migaki_card"
+                      phx-value-card-id={card.id}
+                      disabled={!can_afford}
+                      class={"w-full text-left p-3 rounded-lg border transition-all " <>
+                        if(can_afford, do: "border-green-500/30 bg-green-900/20 hover:bg-green-900/30", else: "border-gray-500/30 bg-gray-900/20 opacity-50")}
+                    >
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-lg">{migaki_category_emoji(card.category)}</span>
+                        <span class="font-bold text-[var(--color-landing-pale)]">{card.name}</span>
+                        <span class="ml-auto text-sm text-[var(--color-landing-gold)]">
+                          φ{card.cost}
+                        </span>
+                      </div>
+                      <p class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
+                        {card.description}
+                      </p>
+                      <div class="flex flex-wrap gap-1 text-[10px]">
+                        <%= if card.effect[:forest] && card.effect[:forest] != 0 do %>
+                          <span class="px-1.5 py-0.5 bg-matsu/30 text-matsu rounded">
+                            F{if card.effect[:forest] > 0, do: "+", else: ""}{card.effect[:forest]}
+                          </span>
+                        <% end %>
+                        <%= if card.effect[:culture] && card.effect[:culture] != 0 do %>
+                          <span class="px-1.5 py-0.5 bg-sakura/30 text-sakura rounded">
+                            K{if card.effect[:culture] > 0, do: "+", else: ""}{card.effect[:culture]}
+                          </span>
+                        <% end %>
+                        <%= if card.effect[:social] && card.effect[:social] != 0 do %>
+                          <span class="px-1.5 py-0.5 bg-kohaku/30 text-kohaku rounded">
+                            S{if card.effect[:social] > 0, do: "+", else: ""}{card.effect[:social]}
+                          </span>
+                        <% end %>
+                        <%= if card.effect[:jaki] && card.effect[:jaki] != 0 do %>
+                          <span class="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded">
+                            邪気{if card.effect[:jaki] > 0, do: "+", else: ""}{card.effect[:jaki]}
+                          </span>
+                        <% end %>
+                      </div>
+                    </button>
+                  <% end %>
+                </div>
+                <div class="p-3 border-t border-[var(--color-landing-gold)]/20 text-center">
+                  <button
+                    phx-click="toggle_migaki_panel"
+                    class="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          
+    <!-- 磨きカードボタン (営みフェーズ中に表示) -->
+          <%= if is_current_player_turn(@game_state, @user_id) do %>
+            <div class="mt-4 text-center">
+              <button
+                phx-click="toggle_migaki_panel"
+                class="px-4 py-2 bg-green-600/30 border border-green-500/50 text-green-300 rounded-lg hover:bg-green-600/40 transition-colors text-sm"
+              >
+                ✨ 磨きカードを使う
+              </button>
+            </div>
+          <% end %>
         <% end %>
-
-        <!-- Discussion Phase -->
+        
+    <!-- Discussion Phase -->
         <%= if @current_phase in ["discussion", :discussion] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="text-center space-y-3">
             <div class="text-lg font-bold text-[var(--color-landing-gold)]">相談フェーズ</div>
@@ -631,31 +818,37 @@ defmodule ShinkankiWebWeb.GameLive do
             <% end %>
           </div>
         <% end %>
-
-        <!-- 呼吸 (Breathing) Phase - 還流・禊 -->
-        <%= if @current_phase in ["breathing", :breathing] && @game_status in ["active", :active, "playing", :playing] do %>
+        
+    <!-- 呼吸 (Kokyu) Phase - 還流・禊 -->
+        <%= if @current_phase in ["kokyu", :kokyu, "breathing", :breathing] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full max-w-md px-4 animate-fade-in">
             <div class="text-center mb-6">
               <div class="text-4xl mb-2">🌬️</div>
-              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">呼吸</h2>
+              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">
+                呼吸
+              </h2>
               <p class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)] mt-2">
                 空環を巡らせ、邪気を祓う
               </p>
             </div>
-
-            <!-- 現在の状態 -->
+            
+    <!-- 現在の状態 -->
             <div class="bg-white/5 rounded-lg p-4 mb-4">
               <div class="flex justify-between items-center mb-3">
                 <span class="text-sm text-[var(--color-landing-text-secondary)]">あなたの空環</span>
-                <span class="text-lg font-bold text-[var(--color-landing-gold)]">φ{@game_state[:currency] || 0}</span>
+                <span class="text-lg font-bold text-[var(--color-landing-gold)]">
+                  φ{@game_state[:currency] || 0}
+                </span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-sm text-[var(--color-landing-text-secondary)]">あなたの邪気</span>
-                <span class="text-lg font-bold text-purple-300">😈 {@game_state[:player_evil] || 0}</span>
+                <span class="text-lg font-bold text-purple-300">
+                  😈 {@game_state[:player_evil] || 0}
+                </span>
               </div>
             </div>
-
-            <!-- 自動還流の説明 -->
+            
+    <!-- 自動還流の説明 -->
             <%= if (@game_state[:currency] || 0) >= 5 do %>
               <div class="bg-matsu/10 border border-matsu/30 rounded-lg p-4 mb-4">
                 <div class="text-sm text-matsu font-bold mb-2">✨ 自動還流</div>
@@ -670,8 +863,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
               </div>
             <% end %>
-
-            <!-- 追加還流（任意） -->
+            
+    <!-- 追加還流（任意） -->
             <div class="space-y-2 mb-4">
               <div class="text-sm text-[var(--color-landing-text-secondary)]">追加還流（任意）</div>
               <div class="grid grid-cols-3 gap-2">
@@ -707,8 +900,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 </button>
               </div>
             </div>
-
-            <!-- 次へ進むボタン -->
+            
+    <!-- 次へ進むボタン -->
             <button
               phx-click="advance_breathing_phase"
               class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
@@ -717,19 +910,21 @@ defmodule ShinkankiWebWeb.GameLive do
             </button>
           </div>
         <% end %>
-
-        <!-- 結び (Musuhi) Phase - 感謝と称号 -->
+        
+    <!-- 結び (Musuhi) Phase - 感謝と称号 -->
         <%= if @current_phase in ["musuhi", :musuhi] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full max-w-md px-4 animate-fade-in">
             <div class="text-center mb-6">
               <div class="text-4xl mb-2">🎋</div>
-              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">結び</h2>
+              <h2 class="text-xl sm:text-2xl font-bold text-[var(--color-landing-gold)] tracking-[0.2em]">
+                結び
+              </h2>
               <p class="text-xs sm:text-sm text-[var(--color-landing-text-secondary)] mt-2">
                 今年を振り返り、感謝を伝える
               </p>
             </div>
-
-            <!-- 今年のまとめ -->
+            
+    <!-- 今年のまとめ -->
             <div class="bg-white/5 rounded-lg p-4 mb-4">
               <div class="text-sm text-[var(--color-landing-gold)] font-bold mb-3">📊 今年の結果</div>
               <div class="grid grid-cols-3 gap-2 text-center">
@@ -753,8 +948,8 @@ defmodule ShinkankiWebWeb.GameLive do
                 <div class="text-xs text-[var(--color-landing-text-secondary)]">生命指数</div>
               </div>
             </div>
-
-            <!-- オロチ警告 -->
+            
+    <!-- オロチ警告 -->
             <%= if (@game_state[:orochi_level] || 0) > 0 do %>
               <div class="bg-shu/10 border border-shu/30 rounded-lg p-4 mb-4">
                 <div class="flex items-center gap-2 text-shu font-bold mb-2">
@@ -763,21 +958,24 @@ defmodule ShinkankiWebWeb.GameLive do
                 </div>
                 <div class="text-xs text-[var(--color-landing-text-secondary)]">
                   <%= case @game_state[:orochi_level] do %>
-                    <% 1 -> %>来年、森に-1のペナルティが発生します
-                    <% 2 -> %>来年、文化に-1のペナルティが発生します
-                    <% 3 -> %>来年、絆に-1のペナルティが発生します
+                    <% 1 -> %>
+                      来年、森に-1のペナルティが発生します
+                    <% 2 -> %>
+                      来年、文化に-1のペナルティが発生します
+                    <% 3 -> %>
+                      来年、絆に-1のペナルティが発生します
                     <% _ -> %>
                   <% end %>
                 </div>
               </div>
             <% end %>
-
-            <!-- 称号表示（将来拡張） -->
+            
+    <!-- 称号表示（将来拡張） -->
             <div class="text-center text-xs text-[var(--color-landing-text-secondary)] mb-4">
               🏷️ 称号システムは今後実装予定
             </div>
-
-            <!-- 次の年へ進む -->
+            
+    <!-- 次の年へ進む -->
             <button
               phx-click="advance_musuhi_phase"
               class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
@@ -790,24 +988,27 @@ defmodule ShinkankiWebWeb.GameLive do
             </button>
           </div>
         <% end %>
-
-        <!-- Game End Screen -->
+        
+    <!-- Game End Screen -->
         <%= if @game_status in ["completed", :completed, "failed", :failed, "won", :won, "lost", :lost] do %>
           <div class="text-center space-y-4">
             <h2 class="text-2xl font-bold text-[var(--color-landing-gold)]">
-              <%= if @game_status in ["completed", :completed], do: "ゲームクリア！", else: "ゲームオーバー" %>
+              {if @game_status in ["completed", :completed], do: "ゲームクリア！", else: "ゲームオーバー"}
             </h2>
             <div class="text-[var(--color-landing-text-secondary)]">
               最終生命指数: {life_index(@game_state)}
             </div>
-            <.link navigate={~p"/lobby"} class="inline-block px-6 py-2 bg-shu text-washi rounded font-bold">
+            <.link
+              navigate={~p"/lobby"}
+              class="inline-block px-6 py-2 bg-shu text-washi rounded font-bold"
+            >
               ロビーに戻る
             </.link>
           </div>
         <% end %>
       </main>
-
-      <!-- Action Log Toggle Button - Mobile: Bottom right, Desktop: Side -->
+      
+    <!-- Action Log Toggle Button - Mobile: Bottom right, Desktop: Side -->
       <button
         phx-click={JS.toggle(to: "#action-log-panel")}
         class="lg:hidden fixed right-2 bottom-48 z-40 w-10 h-10 flex items-center justify-center bg-[rgba(15,20,25,0.95)] border border-[var(--color-landing-gold)]/40 rounded-full text-[var(--color-landing-gold)] hover:bg-[rgba(25,30,35,0.95)] shadow-lg"
@@ -820,16 +1021,24 @@ defmodule ShinkankiWebWeb.GameLive do
           </span>
         <% end %>
       </button>
-
-      <!-- Action Log Panel - Mobile: Bottom sheet, Desktop: Side panel -->
-      <aside id="action-log-panel" class="fixed z-30 hidden lg:flex
+      
+    <!-- Action Log Panel - Mobile: Bottom sheet, Desktop: Side panel -->
+      <aside
+        id="action-log-panel"
+        class="fixed z-30 hidden lg:flex
         max-lg:inset-x-0 max-lg:bottom-0 max-lg:rounded-t-xl max-lg:max-h-[50vh]
         lg:right-0 lg:top-12 lg:bottom-24 lg:w-64
-        bg-[rgba(15,20,25,0.98)] border-t lg:border-l border-[var(--color-landing-gold)]/20 overflow-hidden flex-col">
+        bg-[rgba(15,20,25,0.98)] border-t lg:border-l border-[var(--color-landing-gold)]/20 overflow-hidden flex-col"
+      >
         <!-- Header -->
         <div class="px-3 py-2 border-b border-[var(--color-landing-gold)]/20 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-[var(--color-landing-gold)]">📋 ターン {String.pad_leading(Integer.to_string(@game_state.turn), 2, "0")}</h3>
-          <button phx-click={JS.toggle(to: "#action-log-panel")} class="lg:hidden w-8 h-8 flex items-center justify-center text-[var(--color-landing-text-secondary)] hover:text-white rounded-full hover:bg-white/10">
+          <h3 class="text-sm font-bold text-[var(--color-landing-gold)]">
+            📋 ターン {String.pad_leading(Integer.to_string(@game_state.turn), 2, "0")}
+          </h3>
+          <button
+            phx-click={JS.toggle(to: "#action-log-panel")}
+            class="lg:hidden w-8 h-8 flex items-center justify-center text-[var(--color-landing-text-secondary)] hover:text-white rounded-full hover:bg-white/10"
+          >
             <span class="text-lg">✕</span>
           </button>
         </div>
@@ -842,11 +1051,15 @@ defmodule ShinkankiWebWeb.GameLive do
           <% else %>
             <%= for log <- @action_logs do %>
               <div class={"p-2 rounded-lg text-xs flex items-center gap-2 #{if log.is_ai, do: "bg-blue-900/30 border border-blue-500/30", else: "bg-green-900/30 border border-green-500/30"}"}>
-                <span class={if log.is_ai, do: "text-blue-400 text-base", else: "text-green-400 text-base"}>
-                  <%= if log.is_ai, do: "🤖", else: "👤" %>
+                <span class={
+                  if log.is_ai, do: "text-blue-400 text-base", else: "text-green-400 text-base"
+                }>
+                  {if log.is_ai, do: "🤖", else: "👤"}
                 </span>
                 <div class="flex-1 min-w-0">
-                  <div class="font-bold text-[var(--color-landing-pale)] truncate">{log.player_name || "不明"}</div>
+                  <div class="font-bold text-[var(--color-landing-pale)] truncate">
+                    {log.player_name || "不明"}
+                  </div>
                   <div class="text-[var(--color-landing-text-secondary)] truncate">
                     <%= case log.action_type do %>
                       <% "play_card" -> %>
@@ -870,10 +1083,10 @@ defmodule ShinkankiWebWeb.GameLive do
             <%= for player <- @players do %>
               <div class={"flex items-center gap-1.5 px-2 py-1 rounded text-xs whitespace-nowrap #{if player.is_ai, do: "bg-blue-900/20", else: "bg-green-900/20"}"}>
                 <span class={if player.is_ai, do: "text-blue-400", else: "text-green-400"}>
-                  <%= if player.is_ai, do: "🤖", else: "👤" %>
+                  {if player.is_ai, do: "🤖", else: "👤"}
                 </span>
                 <span class="hidden lg:inline text-[var(--color-landing-pale)] truncate max-w-[80px]">
-                  <%= if player.is_ai, do: String.slice(player.name || "", 0, 4), else: "あなた" %>
+                  {if player.is_ai, do: String.slice(player.name || "", 0, 4), else: "あなた"}
                 </span>
                 <span class="text-[var(--color-landing-gold)] font-bold">φ{player.akasha}</span>
               </div>
@@ -881,13 +1094,14 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
       </aside>
-
-      <!-- Bottom Hand - Mobile: Vertical list, Desktop: Horizontal cards -->
+      
+    <!-- Bottom Hand - Mobile: Vertical list, Desktop: Horizontal cards -->
       <div class="bg-[rgba(15,20,25,0.95)] border-t border-[var(--color-landing-gold)]/20 p-2 sm:p-3">
         <!-- Mobile: Simple list view -->
         <div class="sm:hidden space-y-1.5 max-h-40 overflow-y-auto">
           <%= for card <- @hand_cards do %>
-            <% can_afford = (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
+            <% can_afford =
+              (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
             <button
               phx-click="select_card"
               phx-value-card-id={card.id}
@@ -901,14 +1115,16 @@ defmodule ShinkankiWebWeb.GameLive do
                 <span class="text-sm font-medium text-[var(--color-landing-pale)]">{card.title}</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-xs text-[var(--color-landing-gold)]">φ{card.cost_akasha || card.cost}</span>
+                <span class="text-xs text-[var(--color-landing-gold)]">
+                  φ{card.cost_akasha || card.cost}
+                </span>
                 <span class="text-[var(--color-landing-text-secondary)]">›</span>
               </div>
             </button>
           <% end %>
         </div>
-
-        <!-- Desktop: Traditional card view -->
+        
+    <!-- Desktop: Traditional card view -->
         <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
           <%= for card <- @hand_cards do %>
             <% card_talents = get_card_talents(card.id, assigns) %>
@@ -949,7 +1165,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
         </div>
       </div>
-
+      
     <!-- Talent Selector Modal - Mobile Optimized -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div
@@ -1228,7 +1444,12 @@ defmodule ShinkankiWebWeb.GameLive do
           if Enum.empty?(selected_talents) do
             Games.execute_action_card(player, action_card, game_session)
           else
-            Games.execute_action_card_with_talents(player, action_card, game_session, selected_talents)
+            Games.execute_action_card_with_talents(
+              player,
+              action_card,
+              game_session,
+              selected_talents
+            )
           end
 
         # アクションカードを実行
@@ -1532,11 +1753,13 @@ defmodule ShinkankiWebWeb.GameLive do
       # プレイヤーがまだアクションを実行していないかチェック
       if Games.player_has_acted?(game_session.id, player.id, game_session.turn) do
         toast_id = "toast-#{System.unique_integer([:positive])}"
+
         new_toast = %{
           id: toast_id,
           kind: :error,
           message: "このターンは既にアクションを実行しました。"
         }
+
         socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
         Process.send_after(self(), {:remove_toast, toast_id}, 3000)
         {:noreply, socket}
@@ -1548,6 +1771,7 @@ defmodule ShinkankiWebWeb.GameLive do
             Games.check_and_advance_turn(game_session.id)
 
             toast_id = "toast-#{System.unique_integer([:positive])}"
+
             new_toast = %{
               id: toast_id,
               kind: :success,
@@ -1562,40 +1786,42 @@ defmodule ShinkankiWebWeb.GameLive do
 
             {:noreply, socket}
 
-        {:error, :insufficient_resources} ->
-          toast_id = "toast-#{System.unique_integer([:positive])}"
-          new_toast = %{
-            id: toast_id,
-            kind: :error,
-            message: "リソースが不足しています。"
-          }
+          {:error, :insufficient_resources} ->
+            toast_id = "toast-#{System.unique_integer([:positive])}"
 
-          socket =
-            socket
-            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+            new_toast = %{
+              id: toast_id,
+              kind: :error,
+              message: "リソースが不足しています。"
+            }
 
-          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+            socket =
+              socket
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
 
-          {:noreply, socket}
+            Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
-        error ->
-          require Logger
-          Logger.error("Failed to execute action card: #{inspect(error)}")
+            {:noreply, socket}
 
-          toast_id = "toast-#{System.unique_integer([:positive])}"
-          new_toast = %{
-            id: toast_id,
-            kind: :error,
-            message: "アクションの実行に失敗しました。"
-          }
+          error ->
+            require Logger
+            Logger.error("Failed to execute action card: #{inspect(error)}")
 
-          socket =
-            socket
-            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+            toast_id = "toast-#{System.unique_integer([:positive])}"
 
-          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+            new_toast = %{
+              id: toast_id,
+              kind: :error,
+              message: "アクションの実行に失敗しました。"
+            }
 
-          {:noreply, socket}
+            socket =
+              socket
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+            Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+
+            {:noreply, socket}
         end
       end
     else
@@ -1647,11 +1873,13 @@ defmodule ShinkankiWebWeb.GameLive do
         case Games.advance_phase(updated_session.id) do
           {:ok, _} ->
             toast_id = "toast-#{System.unique_integer([:positive])}"
+
             new_toast = %{
               id: toast_id,
               kind: :info,
               message: "今年の方針「#{policy_name(policy)}」を決定しました"
             }
+
             socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
             Process.send_after(self(), {:remove_toast, toast_id}, 3000)
             {:noreply, socket}
@@ -1666,29 +1894,37 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   # 呼吸フェーズ: 任意の還流
-  def handle_event("voluntary_circulation", %{"player-id" => player_id, "amount" => amount}, socket) do
+  def handle_event(
+        "voluntary_circulation",
+        %{"player-id" => player_id, "amount" => amount},
+        socket
+      ) do
     game_session = socket.assigns.game_session
     amount = String.to_integer(amount)
 
     case Games.voluntary_circulation(game_session, player_id, amount) do
       {:ok, _updated_session} ->
         toast_id = "toast-#{System.unique_integer([:positive])}"
+
         new_toast = %{
           id: toast_id,
           kind: :info,
           message: "#{amount}Akashaを還流しました（邪気-1）"
         }
+
         socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
         Process.send_after(self(), {:remove_toast, toast_id}, 3000)
         {:noreply, socket}
 
       {:error, reason} ->
         toast_id = "toast-#{System.unique_integer([:positive])}"
+
         new_toast = %{
           id: toast_id,
           kind: :error,
           message: "還流に失敗しました: #{reason}"
         }
+
         socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
         Process.send_after(self(), {:remove_toast, toast_id}, 3000)
         {:noreply, socket}
@@ -1696,28 +1932,110 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   # 呼吸フェーズ: 次のフェーズへ進む
+  # 人代フェーズを処理
+  def handle_event("advance_hitoyo_phase", _params, socket) do
+    game_session = socket.assigns.game_session
+
+    # 人代フェーズを実行
+    case Games.execute_hitoyo_phase(game_session.id) do
+      {:ok, _updated_session, hitoyo_cards} ->
+        # 引いた人代カードの名前をトーストで表示
+        card_names = Enum.map(hitoyo_cards, & &1.name) |> Enum.join("、")
+        toast_id = "toast-#{System.unique_integer([:positive])}"
+
+        new_toast = %{
+          id: toast_id,
+          kind: :warning,
+          message: "人代カード: #{card_names}"
+        }
+
+        socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+        Process.send_after(self(), {:remove_toast, toast_id}, 5000)
+        {:noreply, socket}
+
+      {:error, reason} ->
+        require Logger
+        Logger.error("Failed to execute hitoyo phase: #{inspect(reason)}")
+        {:noreply, socket}
+    end
+  end
+
+  # 磨きカードパネルの表示切替
+  def handle_event("toggle_migaki_panel", _params, socket) do
+    {:noreply, assign(socket, :show_migaki_panel, !socket.assigns.show_migaki_panel)}
+  end
+
+  # 磨きカードを使用
+  def handle_event("use_migaki_card", %{"card-id" => card_id_str}, socket) do
+    game_session = socket.assigns.game_session
+    user_id = socket.assigns.user_id
+
+    # プレイヤーを取得
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
+
+    if player do
+      # 文字列のカードIDをatomに変換
+      card_id = String.to_existing_atom(card_id_str)
+
+      case Games.execute_migaki_card(player, card_id, game_session) do
+        {:ok, _updated_session} ->
+          card = Shinkanki.Card.get_migaki(card_id)
+          card_name = if card, do: card.name, else: "磨きカード"
+
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :success,
+            message: "✨ #{card_name}を使用しました"
+          }
+
+          socket =
+            socket
+            |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+            |> assign(:show_migaki_panel, false)
+
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          {:noreply, socket}
+
+        {:error, :insufficient_resources} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "コストが足りません"
+          }
+
+          socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          {:noreply, socket}
+
+        _ ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("advance_breathing_phase", _params, socket) do
     game_session = socket.assigns.game_session
 
-    # まず呼吸フェーズの処理を実行（game_session_idを渡す）
-    {:ok, _updated_session} = Games.execute_breathing_phase(game_session.id)
+    # 呼吸フェーズの処理を実行（新しい関数を使用）
+    {:ok, _updated_session} = Games.execute_kokyu_phase(game_session.id)
 
-    # 次のフェーズ（結び）へ進む
-    case Games.advance_phase(game_session.id) do
-      {:ok, _} ->
-        toast_id = "toast-#{System.unique_integer([:positive])}"
-        new_toast = %{
-          id: toast_id,
-          kind: :info,
-          message: "呼吸フェーズを完了しました"
-        }
-        socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
-        Process.send_after(self(), {:remove_toast, toast_id}, 3000)
-        {:noreply, socket}
+    toast_id = "toast-#{System.unique_integer([:positive])}"
 
-      {:error, _reason} ->
-        {:noreply, socket}
-    end
+    new_toast = %{
+      id: toast_id,
+      kind: :info,
+      message: "呼吸フェーズを完了しました"
+    }
+
+    socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+    Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+    {:noreply, socket}
   end
 
   # 結びフェーズ: 次のフェーズ（年の終わり）へ進む
@@ -1737,22 +2055,26 @@ defmodule ShinkankiWebWeb.GameLive do
         case result do
           {:continue, _} ->
             toast_id = "toast-#{System.unique_integer([:positive])}"
+
             new_toast = %{
               id: toast_id,
               kind: :info,
               message: "第#{turn}年が終了しました"
             }
+
             socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
             Process.send_after(self(), {:remove_toast, toast_id}, 3000)
             {:noreply, socket}
 
           {:game_over, _reason, _final_session} ->
             toast_id = "toast-#{System.unique_integer([:positive])}"
+
             new_toast = %{
               id: toast_id,
               kind: :info,
               message: "ゲームが終了しました"
             }
+
             socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
             Process.send_after(self(), {:remove_toast, toast_id}, 3000)
             {:noreply, socket}
@@ -1795,7 +2117,10 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:current_event, get_current_event(updated_session, turn_state))
       |> assign(:action_buttons, get_available_action_cards(updated_session, turn_state))
       |> assign(:hand_cards, get_hand_cards_from_session(updated_session, turn_state))
-      |> assign(:player_talents, get_player_talents_from_session(updated_session, socket.assigns.user_id))
+      |> assign(
+        :player_talents,
+        get_player_talents_from_session(updated_session, socket.assigns.user_id)
+      )
       |> assign(:active_projects, get_active_projects_from_session(updated_session))
       |> assign(:players, get_players_from_session(updated_session))
       |> assign(:player_role, get_player_role(updated_session, socket.assigns.user_id))
@@ -1878,37 +2203,84 @@ defmodule ShinkankiWebWeb.GameLive do
      update(socket, :toasts, fn toasts -> Enum.reject(toasts, &(&1.id == toast_id)) end)}
   end
 
-  # AI自動行動をスケジュール
+  # AI自動行動をスケジュール（新しい6フェーズシステム対応）
   def handle_info({:ai_auto_action, game_session_id}, socket) do
     # AIが自動で行動を実行
     game_session = Games.get_game_session!(game_session_id)
     turn_state = get_current_turn_state(game_session)
-    current_phase = if turn_state, do: turn_state.phase, else: "event"
+    current_phase = if turn_state, do: turn_state.phase, else: "hitoyo"
 
     case current_phase do
-      "event" ->
-        # イベントフェーズでは自動でイベントを処理してdiscussionへ進める
-        # イベントがある場合は効果を適用
-        if turn_state && turn_state.current_event_id do
-          Games.apply_event_effects(game_session.id, turn_state.current_event_id)
+      # 人代フェーズ: 自動で人代カードを処理
+      phase when phase in ["hitoyo", "event"] ->
+        Games.execute_hitoyo_phase(game_session.id)
+        # フェーズが変わったか確認してからスケジュール
+        updated_session = Games.get_game_session!(game_session_id)
+        updated_turn_state = get_current_turn_state(updated_session)
+        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "hitoyo"
+        # フェーズが変わった場合のみ次のアクションをスケジュール
+        if new_phase != current_phase do
+          Process.send_after(self(), {:ai_auto_action, game_session_id}, 800)
         end
-        # discussionフェーズへ進める
-        Games.advance_phase_by_session_id(game_session.id)
-        # 次のフェーズでもAI行動をスケジュール
-        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
 
-      "discussion" ->
-        # discussionフェーズでは、AIは自動でreadyになる（既に実装済みの場合はスキップ）
-        # ここでは次のフェーズへ進めるだけ
-        if all_players_ready?(game_session) do
-          Games.advance_to_action_phase(game_session.id)
-          # actionフェーズでもAI行動をスケジュール
+      # 神議りフェーズ: AIが方針を提案（最も低いパラメータを優先）
+      "kami_hakari" ->
+        policy = ai_suggest_policy(game_session)
+        Games.set_policy(game_session.id, policy)
+        # フェーズが変わったか確認してからスケジュール
+        updated_session = Games.get_game_session!(game_session_id)
+        updated_turn_state = get_current_turn_state(updated_session)
+        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "kami_hakari"
+
+        if new_phase != current_phase do
           Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
         end
 
-      "action" ->
-        # actionフェーズでは、AIプレイヤーがアクションを実行
-        execute_ai_actions(game_session)
+      # 営みフェーズ: AIプレイヤーがアクションを実行
+      phase when phase in ["itonami", "action"] ->
+        execute_ai_actions_smart(game_session)
+
+      # 呼吸フェーズ: 自動で還流処理
+      phase when phase in ["kokyu", "breathing"] ->
+        Games.execute_kokyu_phase(game_session.id)
+        # フェーズが変わったか確認してからスケジュール
+        updated_session = Games.get_game_session!(game_session_id)
+        updated_turn_state = get_current_turn_state(updated_session)
+        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "kokyu"
+
+        if new_phase != current_phase do
+          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+        end
+
+      # 結びフェーズ: 自動で結びフェーズを完了
+      "musuhi" ->
+        Games.execute_musuhi_phase(game_session.id)
+        # フェーズが変わったか確認してからスケジュール
+        updated_session = Games.get_game_session!(game_session_id)
+        updated_turn_state = get_current_turn_state(updated_session)
+        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "musuhi"
+
+        if new_phase != current_phase do
+          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+        end
+
+      # 年送りフェーズ: 年末処理と次のターンへ
+      phase when phase in ["toshiokuri", "end"] ->
+        Games.execute_toshiokuri_phase(game_session.id)
+
+      # 後方互換: discussionフェーズ
+      "discussion" ->
+        if all_players_ready?(game_session) do
+          Games.advance_to_action_phase(game_session.id)
+          # フェーズが変わったか確認してからスケジュール
+          updated_session = Games.get_game_session!(game_session_id)
+          updated_turn_state = get_current_turn_state(updated_session)
+          new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "discussion"
+
+          if new_phase != current_phase do
+            Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+          end
+        end
 
       _ ->
         :ok
@@ -1919,12 +2291,43 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_info(_msg, socket), do: {:noreply, socket}
 
-  # AIアクションが必要かチェックしてスケジュール
+  # AIが方針を提案（最も低いパラメータを優先）
+  defp ai_suggest_policy(game_session) do
+    f = game_session.forest
+    k = game_session.culture
+    s = game_session.social
+    evil = game_session.evil_pool || 0
+
+    cond do
+      # 邪気が高い場合は浄化優先
+      evil >= 5 -> "purify"
+      f <= k and f <= s -> "forest"
+      k <= f and k <= s -> "culture"
+      s <= f and s <= k -> "community"
+      true -> Enum.random(["forest", "culture", "community", "purify"])
+    end
+  end
+
+  # AIアクションが必要かチェックしてスケジュール（新6フェーズ対応）
   defp schedule_ai_action_if_needed(game_session, current_phase) do
     has_ai_players = Enum.any?(game_session.players, fn p -> p.is_ai end)
 
-    # イベント、ディスカッション、アクションフェーズでAI自動行動をトリガー
-    if has_ai_players and current_phase in ["event", "discussion", "action"] do
+    # 新しいフェーズ名と古いフェーズ名の両方に対応
+    ai_phases = [
+      "hitoyo",
+      "kami_hakari",
+      "itonami",
+      "kokyu",
+      "musuhi",
+      "toshiokuri",
+      "event",
+      "discussion",
+      "action",
+      "breathing",
+      "end"
+    ]
+
+    if has_ai_players and current_phase in ai_phases do
       # 500ms後にAI行動をトリガー
       Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
     end
@@ -1936,24 +2339,21 @@ defmodule ShinkankiWebWeb.GameLive do
     true
   end
 
-  # AIプレイヤーのアクションを実行
-  defp execute_ai_actions(game_session) do
+  # AIプレイヤーのアクションを実行（賢い意思決定版）
+  defp execute_ai_actions_smart(game_session) do
     ai_players = Enum.filter(game_session.players, fn p -> p.is_ai end)
 
     # まだアクションを実行していないAIプレイヤーのみ処理
     Enum.each(ai_players, fn ai_player ->
       unless Games.player_has_acted?(game_session.id, ai_player.id, game_session.turn) do
-        # ランダムにアクションカードを選択して実行
         turn_state = get_current_turn_state(game_session)
         available_cards = if turn_state, do: turn_state.available_cards || [], else: []
 
         if length(available_cards) > 0 do
-          # ランダムにカードを選択
-          card_id = Enum.random(available_cards)
-          # アクションを実行
+          # 賢くカードを選択
+          card_id = ai_select_best_card(game_session, ai_player, available_cards)
           Games.execute_action_if_not_acted(game_session.id, ai_player.id, card_id)
         else
-          # カードがなければパス
           Games.pass_action(game_session.id, ai_player.id)
         end
       end
@@ -1961,6 +2361,78 @@ defmodule ShinkankiWebWeb.GameLive do
 
     # 全プレイヤー（人間+AI）がアクション完了したかチェック
     Games.check_and_advance_turn(game_session.id)
+  end
+
+  # AIがベストなカードを選択（役割とゲーム状況に基づく）
+  defp ai_select_best_card(game_session, ai_player, available_card_ids) do
+    # カード情報を取得
+    cards =
+      Shinkanki.Games.ActionCard
+      |> Shinkanki.Repo.all()
+      |> Enum.filter(fn card -> card.id in available_card_ids end)
+
+    if Enum.empty?(cards) do
+      Enum.random(available_card_ids)
+    else
+      # 現在のゲーム状況を分析
+      f = game_session.forest
+      k = game_session.culture
+      s = game_session.social
+      evil = game_session.evil_pool || 0
+      policy = game_session.current_policy
+
+      # 最も低いパラメータを特定
+      {weakest, _value} =
+        [{:forest, f}, {:culture, k}, {:social, s}]
+        |> Enum.min_by(fn {_key, v} -> v end)
+
+      # 役割に応じた優先カテゴリ
+      role_category =
+        case ai_player.role do
+          "forest_guardian" -> "forest"
+          "heritage_weaver" -> "culture"
+          "community_keeper" -> "social"
+          "akasha_architect" -> "akasha"
+          _ -> nil
+        end
+
+      # カードをスコアリング
+      scored_cards =
+        Enum.map(cards, fn card ->
+          score = 0
+
+          # 方針と一致するカテゴリは高得点
+          score = if policy && card.category == policy, do: score + 3, else: score
+
+          # 役割に合ったカテゴリは高得点
+          score = if role_category && card.category == role_category, do: score + 2, else: score
+
+          # 最も低いパラメータを上げるカードは高得点
+          score =
+            case weakest do
+              :forest -> score + (card.effect_forest || 0)
+              :culture -> score + (card.effect_culture || 0)
+              :social -> score + (card.effect_social || 0)
+            end
+
+          # 邪気が高い時は邪気を減らすカードを優先
+          evil_delta = Map.get(card, :evil_delta, 0) || 0
+          score = if evil >= 5 and evil_delta < 0, do: score + 3, else: score
+
+          # コストが払えるか確認（払えなければ大幅減点）
+          score = if ai_player.akasha >= (card.cost_akasha || 0), do: score, else: score - 10
+
+          {card.id, score}
+        end)
+
+      # 最高スコアのカードを選択（同点の場合はランダム）
+      {best_card_id, _score} =
+        scored_cards
+        |> Enum.sort_by(fn {_id, score} -> -score end)
+        |> List.first()
+
+      best_card_id
+    end
   end
 
   defp life_index(state) do
@@ -1985,20 +2457,30 @@ defmodule ShinkankiWebWeb.GameLive do
   defp policy_color(_), do: "text-gray-500"
 
   # 短縮版フェーズ名（モバイル用）
+  # 新フェーズ名（shinkanki_rules.xml準拠）
+  defp phase_name_short(:hitoyo), do: "人代"
+  defp phase_name_short("hitoyo"), do: "人代"
   defp phase_name_short(:kami_hakari), do: "神議"
   defp phase_name_short("kami_hakari"), do: "神議"
-  defp phase_name_short(:event), do: "イベ"
-  defp phase_name_short("event"), do: "イベ"
-  defp phase_name_short(:discussion), do: "相談"
-  defp phase_name_short("discussion"), do: "相談"
-  defp phase_name_short(:action), do: "行動"
-  defp phase_name_short("action"), do: "行動"
-  defp phase_name_short(:breathing), do: "呼吸"
-  defp phase_name_short("breathing"), do: "呼吸"
+  defp phase_name_short(:itonami), do: "営み"
+  defp phase_name_short("itonami"), do: "営み"
+  defp phase_name_short(:kokyu), do: "呼吸"
+  defp phase_name_short("kokyu"), do: "呼吸"
   defp phase_name_short(:musuhi), do: "結び"
   defp phase_name_short("musuhi"), do: "結び"
-  defp phase_name_short(:end), do: "終了"
-  defp phase_name_short("end"), do: "終了"
+  defp phase_name_short(:toshiokuri), do: "年送"
+  defp phase_name_short("toshiokuri"), do: "年送"
+  # 後方互換性
+  defp phase_name_short(:event), do: "人代"
+  defp phase_name_short("event"), do: "人代"
+  defp phase_name_short(:discussion), do: "相談"
+  defp phase_name_short("discussion"), do: "相談"
+  defp phase_name_short(:action), do: "営み"
+  defp phase_name_short("action"), do: "営み"
+  defp phase_name_short(:breathing), do: "呼吸"
+  defp phase_name_short("breathing"), do: "呼吸"
+  defp phase_name_short(:end), do: "年送"
+  defp phase_name_short("end"), do: "年送"
   defp phase_name_short(:resolution), do: "解決"
   defp phase_name_short("resolution"), do: "解決"
   defp phase_name_short(_), do: "待機"
@@ -2199,7 +2681,6 @@ defmodule ShinkankiWebWeb.GameLive do
   defp get_role_name(:community_light), do: "コミュニティの灯火"
   defp get_role_name(:akasha_engineer), do: "空環エンジニア"
   defp get_role_name(_), do: "不明"
-
 
   defp format_game_state(nil), do: mock_game_state()
 
@@ -2440,6 +2921,32 @@ defmodule ShinkankiWebWeb.GameLive do
   defp card_type_from_category("akasha"), do: :action
   defp card_type_from_category(_), do: :action
 
+  # 磨きカードのリストを取得
+  defp get_available_migaki_cards do
+    Shinkanki.Card.list_migaki()
+    |> Enum.map(fn card ->
+      %{
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        cost: card.cost || 0,
+        category: card.category,
+        effect: card.effect,
+        flavor: card.flavor,
+        special: card.special,
+        tags: card.tags
+      }
+    end)
+  end
+
+  # 磨きカードカテゴリの絵文字
+  defp migaki_category_emoji(:kitchen), do: "🍳"
+  defp migaki_category_emoji(:forest), do: "🌲"
+  defp migaki_category_emoji(:festival), do: "🎉"
+  defp migaki_category_emoji(:care), do: "💝"
+  defp migaki_category_emoji(:ritual), do: "⛩️"
+  defp migaki_category_emoji(_), do: "✨"
+
   # プレイヤーのタレント（才能）を取得（DBベース）
   defp get_player_talents_from_session(game_session, user_id) do
     player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
@@ -2566,21 +3073,24 @@ defmodule ShinkankiWebWeb.GameLive do
     |> Enum.map(fn action ->
       # プレイヤー情報を取得
       player = Enum.find(game_session.players, fn p -> p.id == action.player_id end)
-      player_name = if player do
-        if player.is_ai, do: player.ai_name || "AI", else: "あなた"
-      else
-        "不明"
-      end
+
+      player_name =
+        if player do
+          if player.is_ai, do: player.ai_name || "AI", else: "あなた"
+        else
+          "不明"
+        end
 
       # アクションカード情報を取得
-      card_name = if action.action_card_id do
-        case Shinkanki.Repo.get(Shinkanki.Games.ActionCard, action.action_card_id) do
-          nil -> nil
-          card -> card.name
+      card_name =
+        if action.action_card_id do
+          case Shinkanki.Repo.get(Shinkanki.Games.ActionCard, action.action_card_id) do
+            nil -> nil
+            card -> card.name
+          end
+        else
+          nil
         end
-      else
-        nil
-      end
 
       %{
         id: action.id,

@@ -139,7 +139,14 @@ defmodule Shinkanki.Games.TurnEngine do
       {:ok, updated_session} ->
         # 次のターンを開始
         {:ok, new_turn_state} = Games.start_new_turn(updated_session)
-        {:ok, %{game_session: updated_session, turn_state: new_turn_state, phase: "event", new_turn: true}}
+
+        {:ok,
+         %{
+           game_session: updated_session,
+           turn_state: new_turn_state,
+           phase: "event",
+           new_turn: true
+         }}
 
       {:game_over, reason} ->
         {:game_over, reason}
@@ -165,7 +172,9 @@ defmodule Shinkanki.Games.TurnEngine do
             # 全員がアクションしたかチェック
             if all_players_acted?(updated_session, game_session.turn) do
               {:ok, updated_turn_state} = next_phase(turn_state)
-              {:ok, %{game_session: updated_session, turn_state: updated_turn_state, all_acted: true}}
+
+              {:ok,
+               %{game_session: updated_session, turn_state: updated_turn_state, all_acted: true}}
             else
               {:ok, %{game_session: updated_session, turn_state: turn_state, all_acted: false}}
             end

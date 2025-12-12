@@ -228,11 +228,47 @@ const AmbientAudio = {
   }
 }
 
+// NavDropdown hook for LiveView pages
+const NavDropdown = {
+  mounted() {
+    this.toggle = this.el.querySelector(".dropdown-toggle")
+    if (this.toggle) {
+      this.handleClick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // Close other dropdowns
+        document.querySelectorAll(".nav-dropdown.dropdown-open").forEach(other => {
+          if (other !== this.el) {
+            other.classList.remove("dropdown-open")
+          }
+        })
+        this.el.classList.toggle("dropdown-open")
+      }
+      this.toggle.addEventListener("click", this.handleClick)
+    }
+
+    this.handleOutsideClick = (e) => {
+      if (!this.el.contains(e.target)) {
+        this.el.classList.remove("dropdown-open")
+      }
+    }
+    document.addEventListener("click", this.handleOutsideClick)
+  },
+  destroyed() {
+    if (this.toggle && this.handleClick) {
+      this.toggle.removeEventListener("click", this.handleClick)
+    }
+    if (this.handleOutsideClick) {
+      document.removeEventListener("click", this.handleOutsideClick)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {ChatScroll, MessageScroll, ToastAutoRemove, ChatInput, AmbientAudio},
+  hooks: {ChatScroll, MessageScroll, ToastAutoRemove, ChatInput, AmbientAudio, NavDropdown},
 })
 
 // Show progress bar on live navigation and form submits
@@ -263,6 +299,164 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       lastScroll = currentScroll
     })
+  }
+
+  // Hamburger menu toggle
+  const hamburgerBtn = document.getElementById("hamburger-btn")
+  const landingNav = document.getElementById("landing-nav")
+  if (hamburgerBtn && landingNav) {
+    hamburgerBtn.addEventListener("click", () => {
+      hamburgerBtn.classList.toggle("active")
+      landingNav.classList.toggle("open")
+      const isOpen = landingNav.classList.contains("open")
+      hamburgerBtn.setAttribute("aria-expanded", isOpen ? "true" : "false")
+    })
+
+    // Close menu when clicking a link
+    landingNav.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        hamburgerBtn.classList.remove("active")
+        landingNav.classList.remove("open")
+        hamburgerBtn.setAttribute("aria-expanded", "false")
+      })
+    })
+  }
+
+  // Hero login dropdown toggle
+  const heroLoginBtn = document.getElementById("hero-login-btn")
+  const heroLoginDropdown = document.getElementById("hero-login-dropdown")
+  if (heroLoginBtn && heroLoginDropdown) {
+    heroLoginBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      heroLoginDropdown.classList.toggle("open")
+    })
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!heroLoginDropdown.contains(e.target)) {
+        heroLoginDropdown.classList.remove("open")
+      }
+    })
+  }
+
+  // Card list dropdown toggle (for touch/click)
+  const navDropdowns = document.querySelectorAll(".nav-dropdown")
+  navDropdowns.forEach(dropdown => {
+    const toggle = dropdown.querySelector(".dropdown-toggle")
+    if (toggle) {
+      toggle.addEventListener("click", (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // Close other dropdowns
+        navDropdowns.forEach(other => {
+          if (other !== dropdown) {
+            other.classList.remove("dropdown-open")
+          }
+        })
+        dropdown.classList.toggle("dropdown-open")
+      })
+    }
+  })
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", (e) => {
+    navDropdowns.forEach(dropdown => {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove("dropdown-open")
+      }
+    })
+  })
+
+  // Ambient audio control (for non-LiveView pages)
+  const ambientShell = document.getElementById("ambient-audio-control")
+  if (ambientShell && !ambientShell._initialized) {
+    ambientShell._initialized = true
+    const src = ambientShell.dataset.audioSrc
+    if (src) {
+      const gearToggle = ambientShell.querySelector("[data-role='gear-toggle']")
+      const slider = ambientShell.querySelector("[data-role='volume-slider']")
+      const muteBtn = ambientShell.querySelector("[data-role='mute-toggle']")
+      const label = ambientShell.querySelector("[data-role='volume-label']")
+
+      const initialVolume = clamp(parseFloat(ambientShell.dataset.initialVolume || "0.4"), 0, 1)
+      let lastVolume = initialVolume
+      const audio = new Audio(src)
+      audio.loop = true
+      audio.preload = "auto"
+      audio.volume = initialVolume
+
+      const attemptPlay = () => {
+        const playPromise = audio.play()
+        if (playPromise) {
+          playPromise
+            .then(() => ambientShell.classList.remove("requires-interaction"))
+            .catch(() => ambientShell.classList.add("requires-interaction"))
+        }
+      }
+
+      const updateUI = () => {
+        const effectiveVolume = audio.muted ? 0 : Math.round(audio.volume * 100)
+        if (label) label.textContent = `${effectiveVolume}%`
+        if (muteBtn) {
+          const isMuted = audio.muted || effectiveVolume === 0
+          muteBtn.setAttribute("aria-pressed", isMuted ? "true" : "false")
+          muteBtn.classList.toggle("is-muted", isMuted)
+        }
+        ambientShell.classList.toggle("is-muted", audio.muted)
+      }
+
+      audio.addEventListener("canplay", attemptPlay, {once: true})
+      ;["pointerdown", "touchstart", "keydown"].forEach(eventName => {
+        const handler = () => {
+          attemptPlay()
+          window.removeEventListener(eventName, handler)
+        }
+        window.addEventListener(eventName, handler)
+      })
+
+      if (gearToggle) {
+        gearToggle.addEventListener("click", (e) => {
+          e.stopPropagation()
+          ambientShell.classList.toggle("panel-open")
+          gearToggle.setAttribute("aria-expanded", ambientShell.classList.contains("panel-open") ? "true" : "false")
+        })
+        document.addEventListener("click", (e) => {
+          if (!ambientShell.contains(e.target)) {
+            ambientShell.classList.remove("panel-open")
+            gearToggle.setAttribute("aria-expanded", "false")
+          }
+        })
+      }
+
+      if (slider) {
+        slider.value = Math.round(initialVolume * 100)
+        slider.addEventListener("input", (e) => {
+          const value = clamp(parseFloat(e.target.value || "0") / 100, 0, 1)
+          lastVolume = value > 0 ? value : lastVolume
+          audio.volume = value
+          if (audio.muted && value > 0) audio.muted = false
+          attemptPlay()
+          updateUI()
+        })
+      }
+
+      if (muteBtn) {
+        muteBtn.addEventListener("click", () => {
+          if (audio.muted || audio.volume === 0) {
+            audio.muted = false
+            const restored = lastVolume > 0 ? lastVolume : 0.3
+            audio.volume = restored
+            if (slider) slider.value = Math.round(restored * 100)
+          } else {
+            audio.muted = true
+          }
+          attemptPlay()
+          updateUI()
+        })
+      }
+
+      updateUI()
+    }
   }
 })
 

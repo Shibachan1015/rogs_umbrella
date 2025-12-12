@@ -20,7 +20,10 @@ defmodule RogsIdentity.Repo.Migrations.CreateFriendshipsAndGameHistories do
     create table(:game_histories, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :user_id, references(:users, on_delete: :delete_all, type: :binary_id), null: false
-      add :played_with_id, references(:users, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :played_with_id, references(:users, on_delete: :delete_all, type: :binary_id),
+        null: false
+
       add :room_id, :binary_id, null: false
       add :played_at, :utc_datetime, null: false
 

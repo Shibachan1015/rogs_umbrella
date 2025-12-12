@@ -12,6 +12,11 @@ defmodule RogsIdentity.Accounts.User do
     field :confirmed_at, :naive_datetime
     field :authenticated_at, :naive_datetime, virtual: true
 
+    # OAuth provider info
+    field :provider, :string
+    field :provider_id, :string
+    field :avatar_url, :string
+
     # プロフィール
     field :avatar, :string, default: "🎮"
     field :bio, :string
@@ -200,9 +205,11 @@ defmodule RogsIdentity.Accounts.User do
   Falls back to email prefix if name is not set.
   """
   def display_name(%__MODULE__{name: name}) when is_binary(name) and name != "", do: name
+
   def display_name(%__MODULE__{email: email}) when is_binary(email) do
     email |> String.split("@") |> List.first()
   end
+
   def display_name(_), do: "Anonymous"
 
   @doc """
@@ -225,5 +232,21 @@ defmodule RogsIdentity.Accounts.User do
   def valid_password?(_, _) do
     Bcrypt.no_user_verify()
     false
+  end
+
+  @doc """
+  A changeset for OAuth registration/login.
+  Creates or updates a user from OAuth provider data.
+  """
+  def oauth_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:email, :name, :provider, :provider_id, :avatar_url])
+    |> validate_required([:email, :provider, :provider_id])
+    |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
+      message: "must have the @ sign and no spaces"
+    )
+    |> validate_length(:email, max: 160)
+    |> unique_constraint(:email)
+    |> unique_constraint([:provider, :provider_id])
   end
 end

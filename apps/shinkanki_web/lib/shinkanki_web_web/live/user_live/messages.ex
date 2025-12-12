@@ -95,7 +95,10 @@ defmodule ShinkankiWebWeb.UserLive.Messages do
                 <%= for conv <- @conversations do %>
                   <.link
                     patch={~p"/messages/#{conv.user_id}"}
-                    class={["conversation-item", @selected_user && @selected_user.id == conv.user_id && "selected"]}
+                    class={[
+                      "conversation-item",
+                      @selected_user && @selected_user.id == conv.user_id && "selected"
+                    ]}
                   >
                     <span class="conv-avatar">{conv.avatar || "🎮"}</span>
                     <div class="conv-info">
@@ -128,7 +131,12 @@ defmodule ShinkankiWebWeb.UserLive.Messages do
                 <% end %>
               </div>
 
-              <.form for={@message_form} id="message-form" phx-submit="send_message" class="message-form">
+              <.form
+                for={@message_form}
+                id="message-form"
+                phx-submit="send_message"
+                class="message-form"
+              >
                 <input
                   type="text"
                   name="message[content]"

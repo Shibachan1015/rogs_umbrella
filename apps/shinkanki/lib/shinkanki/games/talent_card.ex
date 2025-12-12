@@ -40,7 +40,11 @@ defmodule Shinkanki.Games.TalentCard do
     - "cost_reduction": Akashaコストを削減
     - "extra_effect": 追加効果（全カテゴリに+1）
   """
-  def apply_effect(%__MODULE__{effect_type: "bonus", effect_value: value, category: category}, effects, action_category) do
+  def apply_effect(
+        %__MODULE__{effect_type: "bonus", effect_value: value, category: category},
+        effects,
+        action_category
+      ) do
     # 同じカテゴリの場合は効果値を追加、そうでなければ半分
     bonus = if category == action_category, do: value, else: div(value, 2)
 
@@ -50,13 +54,21 @@ defmodule Shinkanki.Games.TalentCard do
     |> Map.update(:social, 0, fn v -> if action_category == "social", do: v + bonus, else: v end)
   end
 
-  def apply_effect(%__MODULE__{effect_type: "cost_reduction", effect_value: value}, costs, _action_category) do
+  def apply_effect(
+        %__MODULE__{effect_type: "cost_reduction", effect_value: value},
+        costs,
+        _action_category
+      ) do
     # Akashaコスト削減
     costs
     |> Map.update(:akasha, 0, &max(&1 - value, 0))
   end
 
-  def apply_effect(%__MODULE__{effect_type: "extra_effect", effect_value: value}, effects, _action_category) do
+  def apply_effect(
+        %__MODULE__{effect_type: "extra_effect", effect_value: value},
+        effects,
+        _action_category
+      ) do
     # 全カテゴリにボーナス
     effects
     |> Map.update(:forest, 0, &(&1 + value))

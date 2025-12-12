@@ -39,7 +39,17 @@ defmodule Shinkanki.Games.Player do
   @doc false
   def changeset(player, attrs) do
     player
-    |> cast(attrs, [:akasha, :role, :player_order, :game_session_id, :user_id, :is_ai, :ai_name, :evil_tokens, :titles])
+    |> cast(attrs, [
+      :akasha,
+      :role,
+      :player_order,
+      :game_session_id,
+      :user_id,
+      :is_ai,
+      :ai_name,
+      :evil_tokens,
+      :titles
+    ])
     |> validate_required([:akasha, :role, :player_order, :game_session_id])
     |> validate_number(:akasha, greater_than_or_equal_to: 0)
     |> validate_number(:player_order, greater_than_or_equal_to: 1, less_than_or_equal_to: 4)

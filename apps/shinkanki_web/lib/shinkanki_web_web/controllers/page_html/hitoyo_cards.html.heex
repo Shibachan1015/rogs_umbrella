@@ -1,0 +1,217 @@
+<main class="card-catalog hitoyo-catalog">
+  <header class="catalog-header">
+    <a href="/" class="back-link">← トップに戻る</a>
+    <h1>人代カード</h1>
+    <p class="subtitle">Hitoyo Cards</p>
+    <p class="description">
+      現代社会の流れ（環境破壊・物理的誘惑・文化の切り捨て・分断など）を表すカード。
+      引かれると、F/K/Sが減ったり、邪気が増えたりします。
+    </p>
+  </header>
+
+  <nav class="catalog-nav">
+    <a href="/rulebook">ルールブック</a>
+    <a href="/cards/talent">才能</a>
+    <a href="/cards/cocreation">共創</a>
+    <a href="/cards/action">アクション</a>
+    <a href="/cards/hitoyo" class="active">人代</a>
+    <a href="/cards/migaki">磨き</a>
+    <a href="/kuukan">空環</a>
+  </nav>
+
+  <section class="catalog-intro">
+    <h2>人代カードとは</h2>
+    <ul>
+      <li>毎年の<strong>人代フェイズ</strong>で公開される「社会の圧力」</li>
+      <li>邪気レベルに応じて引く枚数が変わる（邪気6〜8なら<strong>3枚</strong>）</li>
+      <li><strong>即時型</strong>：引いた瞬間にF/K/Sや邪気が変化</li>
+      <li><strong>猶予型</strong>：条件を満たさないと年末にペナルティ発生</li>
+      <li>磨きカードで一部の効果を<strong>軽減・無効化</strong>できる</li>
+    </ul>
+  </section>
+
+  <section class="card-grid">
+    <h2>人代カード一覧</h2>
+    
+<!-- 環境破壊系 -->
+    <article class="game-card hitoyo-card" data-category="environment">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">環境破壊</span>
+        <h3>山肌むき出しメガプロジェクト</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">開発という名の暴力が、山を削り取る。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">F−3, 邪気+1</p>
+      </div>
+    </article>
+
+    <article class="game-card hitoyo-card" data-category="environment">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">環境破壊</span>
+        <h3>農薬散布の季節</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">虫を殺し、土を殺し、やがて人を蝕む。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">F−2</p>
+      </div>
+    </article>
+
+    <article class="game-card hitoyo-card" data-category="environment">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">環境破壊</span>
+        <h3>プラスチックの海</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">便利の果てに、海が窒息していく。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">F−2, 邪気+1</p>
+      </div>
+    </article>
+    
+<!-- 文化の切り捨て系 -->
+    <article class="game-card hitoyo-card" data-category="culture">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">文化の切り捨て</span>
+        <h3>中止される小さな祭り</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">「採算が取れない」その一言で、百年が消える。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">K−2, S−1</p>
+      </div>
+    </article>
+
+    <article class="game-card hitoyo-card" data-category="culture">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">文化の切り捨て</span>
+        <h3>効率化の波</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">手間のかかることが、次々と切り捨てられる。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">K−2</p>
+      </div>
+    </article>
+    
+<!-- 分断系 -->
+    <article class="game-card hitoyo-card" data-category="division">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">分断</span>
+        <h3>炎上する SNS</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">正義の名のもとに、人と人が引き裂かれる。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">S−2, 邪気+1</p>
+      </div>
+    </article>
+
+    <article class="game-card hitoyo-card" data-category="division">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">分断</span>
+        <h3>世代間の断絶</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">「最近の若者は」「老害が」憎み合う構造。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">S−2, K−1</p>
+      </div>
+    </article>
+    
+<!-- 物理的誘惑系 -->
+    <article class="game-card hitoyo-card" data-category="temptation">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">物理的誘惑</span>
+        <h3>底なしセール</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">安い。だから買う。だからまた作る。終わらない。</p>
+        <div class="card-timing">
+          <span class="timing delayed">猶予</span>
+        </div>
+        <p class="card-condition">今年中にF+1できなければ…</p>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">全員P+1、ただし年末にF−1, S−1</p>
+      </div>
+    </article>
+
+    <article class="game-card hitoyo-card" data-category="temptation">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">物理的誘惑</span>
+        <h3>24時間営業の罠</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">便利は、誰かの犠牲の上に成り立っている。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">S−1, 邪気+1</p>
+      </div>
+    </article>
+    
+<!-- 邪気増加系 -->
+    <article class="game-card hitoyo-card" data-category="jaki">
+      <div class="card-header">
+        <span class="card-type-badge danger">人代</span>
+        <span class="card-category">邪気</span>
+        <h3>無関心の蔓延</h3>
+      </div>
+      <div class="card-body">
+        <p class="card-flavor">「自分には関係ない」その言葉が、世界を蝕む。</p>
+        <div class="card-timing">
+          <span class="timing immediate">即時</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <p class="card-effect negative">邪気+2</p>
+      </div>
+    </article>
+  </section>
+
+  <footer class="catalog-footer">
+    <p>神環記 カードカタログ</p>
+    <a href="/" class="back-link">← トップに戻る</a>
+  </footer>
+</main>

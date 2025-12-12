@@ -7,7 +7,10 @@ defmodule Shinkanki.Repo.Migrations.CreatePlayers do
       add :akasha, :integer, null: false
       add :role, :string, null: false
       add :player_order, :integer, null: false
-      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :user_id, :binary_id
 
       timestamps()

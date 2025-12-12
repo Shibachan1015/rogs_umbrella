@@ -1,7 +1,10 @@
+# fly.toml app configuration file generated for rogs-umbrella on 2025-12-13T02:10:02+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'rogs-umbrella'
 primary_region = 'nrt'
-
-[build]
 
 [env]
   PHX_HOST = 'rogs-umbrella.fly.dev'

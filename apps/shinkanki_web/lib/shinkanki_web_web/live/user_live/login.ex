@@ -54,7 +54,12 @@ defmodule ShinkankiWebWeb.UserLive.Login do
             />
 
             <div class="auth-actions">
-              <button type="submit" class="auth-submit-btn" name={@form[:remember_me].name} value="true">
+              <button
+                type="submit"
+                class="auth-submit-btn"
+                name={@form[:remember_me].name}
+                value="true"
+              >
                 ログイン
               </button>
             </div>

@@ -47,7 +47,13 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
         <div class="profile-card">
           <h1 class="profile-title">🎮 プロフィール編集</h1>
 
-          <.form for={@form} id="profile-form" phx-submit="save" phx-change="validate" class="profile-form">
+          <.form
+            for={@form}
+            id="profile-form"
+            phx-submit="save"
+            phx-change="validate"
+            class="profile-form"
+          >
             <%!-- アバター選択 --%>
             <div class="avatar-section">
               <div class="avatar-preview">
@@ -85,7 +91,7 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
               <p class="form-hint">1〜30文字（ゲーム中やロビーで表示されます）</p>
               <%= if @form[:name].errors != [] do %>
                 <p class="form-error">
-                  <%= Enum.map(@form[:name].errors, fn {msg, _opts} -> msg end) |> Enum.join(", ") %>
+                  {Enum.map(@form[:name].errors, fn {msg, _opts} -> msg end) |> Enum.join(", ")}
                 </p>
               <% end %>
             </div>
@@ -104,7 +110,7 @@ defmodule ShinkankiWebWeb.UserLive.Profile do
               <p class="form-hint">200文字以内</p>
               <%= if @form[:bio].errors != [] do %>
                 <p class="form-error">
-                  <%= Enum.map(@form[:bio].errors, fn {msg, _opts} -> msg end) |> Enum.join(", ") %>
+                  {Enum.map(@form[:bio].errors, fn {msg, _opts} -> msg end) |> Enum.join(", ")}
                 </p>
               <% end %>
             </div>

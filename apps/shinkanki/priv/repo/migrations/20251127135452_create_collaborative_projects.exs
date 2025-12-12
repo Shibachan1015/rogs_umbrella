@@ -23,8 +23,13 @@ defmodule Shinkanki.Repo.Migrations.CreateCollaborativeProjects do
     # ゲーム内のアクティブプロジェクト
     create table(:game_projects, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all), null: false
-      add :project_template_id, references(:project_templates, type: :binary_id, on_delete: :restrict), null: false
+
+      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all),
+        null: false
+
+      add :project_template_id,
+          references(:project_templates, type: :binary_id, on_delete: :restrict), null: false
+
       add :started_turn, :integer, null: false
       add :status, :string, default: "active"
       add :completed_turn, :integer
@@ -38,7 +43,10 @@ defmodule Shinkanki.Repo.Migrations.CreateCollaborativeProjects do
     # プレイヤーのプロジェクト参加記録
     create table(:project_participations, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :game_project_id, references(:game_projects, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :game_project_id, references(:game_projects, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :player_id, references(:players, type: :binary_id, on_delete: :delete_all), null: false
       add :turn, :integer, null: false
 

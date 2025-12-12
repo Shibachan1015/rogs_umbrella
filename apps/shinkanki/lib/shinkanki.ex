@@ -54,7 +54,9 @@ defmodule Shinkanki do
   Lets a player join the room with name and avatar, plus optional talents.
   """
   def join_player(room_id, player_id, name, avatar \\ "🎮", talent_ids \\ nil) do
-    call_server(room_id, fn -> GameServer.join_player(room_id, player_id, name, avatar, talent_ids) end)
+    call_server(room_id, fn ->
+      GameServer.join_player(room_id, player_id, name, avatar, talent_ids)
+    end)
   end
 
   @doc """
@@ -183,6 +185,7 @@ defmodule Shinkanki do
            game,
            player_id,
            payload["name"] || payload[:name],
+           payload["avatar"] || payload[:avatar] || "🎮",
            payload["talent_ids"] || payload[:talent_ids]
          ) do
       {:ok, new_game} -> new_game
@@ -191,14 +194,64 @@ defmodule Shinkanki do
   end
 
   defp apply_action_log(game, %ActionLog{
-         action: "play_action",
+         action: action,
          player_id: player_id,
          payload: payload
-       }) do
+       })
+       when action in ["play_action", "ai_play_action"] do
     action_id = payload["action_id"] || payload[:action_id]
     talent_ids = payload["talent_ids"] || payload[:talent_ids] || []
 
     case Game.play_action(game, player_id, action_id, talent_ids) do
+      {:ok, new_game} -> new_game
+      _ -> game
+    end
+  end
+
+  defp apply_action_log(game, %ActionLog{
+         action: "contribute_talent_to_project",
+         player_id: player_id,
+         payload: payload
+       }) do
+    project_id = payload["project_id"] || payload[:project_id]
+    talent_id = payload["talent_id"] || payload[:talent_id]
+
+    case Game.contribute_talent_to_project(game, player_id, project_id, talent_id) do
+      {:ok, new_game} -> new_game
+      _ -> game
+    end
+  end
+
+  defp apply_action_log(game, %ActionLog{
+         action: action,
+         player_id: player_id
+       })
+       when action in ["mark_discussion_ready", "ai_discussion_ready"] do
+    case Game.mark_discussion_ready(game, player_id) do
+      {:ok, new_game} -> new_game
+      _ -> game
+    end
+  end
+
+  defp apply_action_log(game, %ActionLog{
+         action: "toggle_waiting_ready",
+         player_id: player_id
+       }) do
+    case Game.toggle_waiting_ready(game, player_id) do
+      {:ok, new_game} -> new_game
+      _ -> game
+    end
+  end
+
+  defp apply_action_log(game, %ActionLog{action: "start_game"}) do
+    case Game.start_game(game) do
+      {:ok, new_game} -> new_game
+      _ -> game
+    end
+  end
+
+  defp apply_action_log(game, %ActionLog{action: "start_game_with_ai"}) do
+    case Game.start_game_with_ai(game) do
       {:ok, new_game} -> new_game
       _ -> game
     end
@@ -211,6 +264,10 @@ defmodule Shinkanki do
       {:ok, new_game} -> new_game
       _ -> game
     end
+  end
+
+  defp apply_action_log(game, %ActionLog{action: "next_phase"}) do
+    Game.next_phase(game)
   end
 
   defp apply_action_log(game, %ActionLog{action: "next_turn"}) do

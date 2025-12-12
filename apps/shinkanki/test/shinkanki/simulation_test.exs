@@ -38,6 +38,7 @@ defmodule Shinkanki.SimulationTest do
   defp simulate_game(room_id) do
     game = Game.new(room_id)
     {:ok, game} = Game.join(game, "p1", "Player 1")
+    {:ok, game} = Game.start_game(game)
 
     simulate_until_end(game, game.turn, 0)
   end

@@ -8,7 +8,9 @@ defmodule Shinkanki.Repo.Migrations.CreateGameActions do
       add :action_type, :string, null: false
       add :details, :map
 
-      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all), null: false
+      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :player_id, references(:players, type: :binary_id, on_delete: :delete_all)
       add :action_card_id, references(:action_cards, type: :binary_id, on_delete: :nilify_all)
 

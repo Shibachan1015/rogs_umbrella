@@ -10,7 +10,8 @@ defmodule Shinkanki.Repo.Migrations.CreateTurnStates do
       add :current_event_id, :binary_id
       add :event_choice, :string
 
-      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all), null: false
+      add :game_session_id, references(:game_sessions, type: :binary_id, on_delete: :delete_all),
+        null: false
 
       timestamps()
     end

@@ -13,7 +13,16 @@ defmodule Shinkanki.Player do
           is_ai: boolean()
         }
 
-  defstruct [:id, :name, :role, avatar: "🎮", talents: [], used_talents: [], is_ready: false, is_ai: false]
+  defstruct [
+    :id,
+    :name,
+    :role,
+    avatar: "🎮",
+    talents: [],
+    used_talents: [],
+    is_ready: false,
+    is_ai: false
+  ]
 
   @doc """
   Creates a new player with optional avatar.

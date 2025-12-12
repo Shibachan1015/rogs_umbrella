@@ -16,6 +16,7 @@ defmodule RogsComm.Cache.MessageCacheTest do
 
     test "stores and retrieves messages" do
       room_id = "room-1"
+
       messages = [
         %{id: "msg-1", content: "Hello"},
         %{id: "msg-2", content: "World"}
@@ -83,4 +84,3 @@ defmodule RogsComm.Cache.MessageCacheTest do
     end
   end
 end
-

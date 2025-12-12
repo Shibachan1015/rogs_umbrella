@@ -89,8 +89,7 @@ defmodule ShinkankiWebWeb.UserLive.Registration do
          socket
          |> put_flash(:info, "アカウントを作成しました。プロフィールを設定してください。")
          |> redirect(
-           external:
-             "/users/auto-login?token=#{encoded_token}&redirect=#{URI.encode("/profile")}"
+           external: "/users/auto-login?token=#{encoded_token}&redirect=#{URI.encode("/profile")}"
          )}
 
       {:error, %Ecto.Changeset{} = changeset} ->

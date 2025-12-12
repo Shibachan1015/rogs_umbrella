@@ -406,19 +406,22 @@ defmodule Shinkanki.Games do
 
       # カードの邪気デルタを適用（evil_deltaフィールドがある場合）
       evil_delta = Map.get(card, :evil_delta, 0) || 0
-      {:ok, updated_session} = if evil_delta != 0 do
-        add_evil(updated_session, evil_delta)
-      else
-        {:ok, updated_session}
-      end
+
+      {:ok, updated_session} =
+        if evil_delta != 0 do
+          add_evil(updated_session, evil_delta)
+        else
+          {:ok, updated_session}
+        end
 
       # 方針違反チェック（方針と異なるカテゴリのカードを使用した場合）
-      {:ok, updated_session} = if check_policy_violation(game_session, card.category) do
-        # 方針違反: プレイヤーに邪気+1
-        add_player_evil(updated_session, player.id, 1)
-      else
-        {:ok, updated_session}
-      end
+      {:ok, updated_session} =
+        if check_policy_violation(game_session, card.category) do
+          # 方針違反: プレイヤーに邪気+1
+          add_player_evil(updated_session, player.id, 1)
+        else
+          {:ok, updated_session}
+        end
 
       # 生命指数を更新
       {:ok, updated_session} = update_life_index(updated_session)
@@ -514,7 +517,10 @@ defmodule Shinkanki.Games do
 
       # 効果適用
       new_forest = clamp(game_session.forest + final_effects.forest - final_costs.forest, 0, 20)
-      new_culture = clamp(game_session.culture + final_effects.culture - final_costs.culture, 0, 20)
+
+      new_culture =
+        clamp(game_session.culture + final_effects.culture - final_costs.culture, 0, 20)
+
       new_social = clamp(game_session.social + final_effects.social - final_costs.social, 0, 20)
 
       # プレイヤーのAkasha更新
@@ -535,19 +541,22 @@ defmodule Shinkanki.Games do
 
       # カードの邪気デルタを適用（evil_deltaフィールドがある場合）
       evil_delta = Map.get(card, :evil_delta, 0) || 0
-      {:ok, updated_session} = if evil_delta != 0 do
-        add_evil(updated_session, evil_delta)
-      else
-        {:ok, updated_session}
-      end
+
+      {:ok, updated_session} =
+        if evil_delta != 0 do
+          add_evil(updated_session, evil_delta)
+        else
+          {:ok, updated_session}
+        end
 
       # 方針違反チェック（方針と異なるカテゴリのカードを使用した場合）
-      {:ok, updated_session} = if check_policy_violation(game_session, card.category) do
-        # 方針違反: プレイヤーに邪気+1
-        add_player_evil(updated_session, player.id, 1)
-      else
-        {:ok, updated_session}
-      end
+      {:ok, updated_session} =
+        if check_policy_violation(game_session, card.category) do
+          # 方針違反: プレイヤーに邪気+1
+          add_player_evil(updated_session, player.id, 1)
+        else
+          {:ok, updated_session}
+        end
 
       # 生命指数を更新
       {:ok, updated_session} = update_life_index(updated_session)
@@ -1145,6 +1154,7 @@ defmodule Shinkanki.Games do
 
     # ゲーム終了チェック
     updated_session = get_game_session!(game_session_id)
+
     case check_game_end(updated_session) do
       {:immediate_loss, reason} ->
         {:ok, final_session} = update_game_session(updated_session, %{status: "failed"})
@@ -1158,7 +1168,9 @@ defmodule Shinkanki.Games do
 
       {:continue, _} ->
         # 次のターンを開始
-        {:ok, new_turn_session} = update_game_session(updated_session, %{turn: updated_session.turn + 1})
+        {:ok, new_turn_session} =
+          update_game_session(updated_session, %{turn: updated_session.turn + 1})
+
         {:ok, _turn_state} = start_new_turn(new_turn_session)
 
         final_session = get_game_session!(game_session_id)
@@ -1373,6 +1385,7 @@ defmodule Shinkanki.Games do
 
     # イベントフェーズへ進める
     turn_state = get_current_turn_state(updated)
+
     if turn_state && turn_state.phase == "kami_hakari" do
       advance_phase(turn_state)
     end
@@ -1426,6 +1439,7 @@ defmodule Shinkanki.Games do
 
     # フェーズを進める
     turn_state = get_current_turn_state(game_session)
+
     if turn_state && turn_state.phase == "breathing" do
       advance_phase(turn_state)
     end
@@ -1473,6 +1487,7 @@ defmodule Shinkanki.Games do
 
     # フェーズを進める
     turn_state = get_current_turn_state(game_session)
+
     if turn_state && turn_state.phase == "musuhi" do
       advance_phase(turn_state)
     end
@@ -1542,23 +1557,229 @@ defmodule Shinkanki.Games do
   end
 
   @doc """
-  神議りフェーズから始まる新しいターンを開始
+  人代フェーズから始まる新しいターンを開始（shinkanki_rules.xml準拠）
   """
-  def start_new_turn_with_kami_hakari(%GameSession{} = game_session) do
-    event_card = draw_event_card()
+  def start_new_turn_with_hitoyo(%GameSession{} = game_session) do
     action_cards = draw_action_cards(5)
     action_card_ids = Enum.map(action_cards, & &1.id)
 
     turn_state_attrs = %{
       game_session_id: game_session.id,
       turn_number: game_session.turn,
-      phase: "kami_hakari",  # 神議りからスタート
+      # 人代フェーズからスタート
+      phase: "hitoyo",
       available_cards: action_card_ids,
-      current_event_id: if(event_card, do: event_card.id, else: nil)
+      current_event_id: nil
     }
 
     %TurnState{}
     |> TurnState.changeset(turn_state_attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  神議りフェーズから始まる新しいターンを開始（後方互換）
+  """
+  def start_new_turn_with_kami_hakari(%GameSession{} = game_session) do
+    start_new_turn_with_hitoyo(game_session)
+  end
+
+  # ===================
+  # 人代フェーズ処理
+  # ===================
+
+  @doc """
+  人代フェーズを実行
+  - 邪気レベルに応じた人代カードを引く（0-2:1枚、3-5:2枚、6-8:3枚）
+  - 各カードの効果を適用
+  - 神議りフェーズへ進む
+  """
+  def execute_hitoyo_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+    jaki_level = game_session.evil_pool || 0
+
+    # 人代カードを引く
+    hitoyo_cards = Shinkanki.Card.draw_hitoyo_cards(jaki_level)
+
+    # 各カードの効果を適用
+    {:ok, updated_session} =
+      Enum.reduce(hitoyo_cards, {:ok, game_session}, fn card, {:ok, session} ->
+        apply_hitoyo_card_effect(session, card)
+      end)
+
+    # フェーズを進める（人代/event -> 神議り）
+    turn_state = get_current_turn_state(updated_session)
+
+    if turn_state && turn_state.phase in ["hitoyo", "event"] do
+      advance_phase(turn_state)
+    end
+
+    final_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, final_session)
+    {:ok, final_session, hitoyo_cards}
+  end
+
+  @doc """
+  人代カードの効果を適用
+  """
+  def apply_hitoyo_card_effect(%GameSession{} = game_session, %Shinkanki.Card{} = card) do
+    effect = card.effect || %{}
+
+    # パラメータの変更を計算
+    forest_delta = Map.get(effect, :forest, 0)
+    culture_delta = Map.get(effect, :culture, 0)
+    social_delta = Map.get(effect, :social, 0)
+    jaki_delta = Map.get(effect, :jaki, 0)
+    currency_delta = Map.get(effect, :currency, 0)
+
+    new_forest = clamp(game_session.forest + forest_delta, 0, 10)
+    new_culture = clamp(game_session.culture + culture_delta, 0, 10)
+    new_social = clamp(game_session.social + social_delta, 0, 10)
+    new_evil_pool = max(0, min(8, game_session.evil_pool + jaki_delta))
+
+    # 通貨効果は全プレイヤーに分配
+    if currency_delta != 0 do
+      game_session.players
+      |> Enum.each(fn player ->
+        update_player_akasha(player, currency_delta)
+      end)
+    end
+
+    update_game_session(game_session, %{
+      forest: new_forest,
+      culture: new_culture,
+      social: new_social,
+      evil_pool: new_evil_pool
+    })
+  end
+
+  # ===================
+  # 磨きカード処理
+  # ===================
+
+  @doc """
+  磨きカードを実行
+  - コストをプレイヤーから支払う
+  - 効果を適用（F/K/S回復、邪気減少）
+  """
+  def execute_migaki_card(%Player{} = player, migaki_card_id, %GameSession{} = game_session) do
+    card = Shinkanki.Card.get_migaki(migaki_card_id)
+
+    if card && player.akasha >= (card.cost || 0) do
+      # コスト支払い
+      {:ok, _} = update_player_akasha(player, -(card.cost || 0))
+
+      # 効果適用
+      effect = card.effect || %{}
+      forest_delta = Map.get(effect, :forest, 0)
+      culture_delta = Map.get(effect, :culture, 0)
+      social_delta = Map.get(effect, :social, 0)
+      jaki_delta = Map.get(effect, :jaki, 0)
+
+      new_forest = clamp(game_session.forest + forest_delta, 0, 10)
+      new_culture = clamp(game_session.culture + culture_delta, 0, 10)
+      new_social = clamp(game_session.social + social_delta, 0, 10)
+      new_evil_pool = max(0, min(8, game_session.evil_pool + jaki_delta))
+
+      {:ok, updated_session} =
+        update_game_session(game_session, %{
+          forest: new_forest,
+          culture: new_culture,
+          social: new_social,
+          evil_pool: new_evil_pool
+        })
+
+      # 生命指数を更新
+      {:ok, updated_session} = update_life_index(updated_session)
+
+      GamePubSub.broadcast_state_update(updated_session.id, updated_session)
+      {:ok, updated_session}
+    else
+      {:error, :insufficient_resources}
+    end
+  end
+
+  # ===================
+  # 呼吸フェーズ（改善版）
+  # ===================
+
+  @doc """
+  呼吸フェーズを実行（強制還流対応）
+  - P>=5のプレイヤーは強制還流（P-1を森・文化・絆のいずれかに還流）
+  - 還流するとプレイヤーの邪気-1
+  """
+  def execute_kokyu_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    # 各プレイヤーの強制還流
+    Enum.each(game_session.players, fn player ->
+      if player.akasha >= 5 do
+        # 強制還流: P-1
+        {:ok, updated_player} = update_player_akasha(player, -1)
+        # 邪気-1
+        {:ok, _} = add_player_evil(updated_player, -1)
+      end
+    end)
+
+    # フェーズを進める（呼吸 -> 結び）
+    turn_state = get_current_turn_state(game_session)
+
+    if turn_state && turn_state.phase in ["kokyu", "breathing"] do
+      advance_phase(turn_state)
+    end
+
+    updated_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, updated_session)
+    {:ok, updated_session}
+  end
+
+  # ===================
+  # 年送りフェーズ
+  # ===================
+
+  @doc """
+  年送りフェーズを実行（ターン終了処理）
+  - 邪気→オロチ変換チェック
+  - オロチペナルティ適用
+  - 生命指数更新
+  - 勝敗判定
+  - 次のターンへ
+  """
+  def execute_toshiokuri_phase(game_session_id) do
+    game_session = get_game_session!(game_session_id)
+
+    # 邪気→オロチ変換
+    {:ok, game_session} = advance_orochi_if_needed(game_session)
+
+    # オロチペナルティ適用
+    {:ok, game_session} = apply_orochi_penalty(game_session)
+
+    # 生命指数更新
+    {:ok, game_session} = update_life_index(game_session)
+
+    # 方針をリセット
+    {:ok, game_session} = update_game_session(game_session, %{current_policy: nil})
+
+    # 勝敗判定
+    case check_game_end(game_session) do
+      {:immediate_loss, reason} ->
+        {:ok, final_session} = update_game_session(game_session, %{status: "failed"})
+        GamePubSub.broadcast_game_end(final_session.id, reason)
+        {:game_over, reason, final_session}
+
+      {:completed, ending} ->
+        {:ok, final_session} = update_game_session(game_session, %{status: "completed"})
+        GamePubSub.broadcast_game_end(final_session.id, ending)
+        {:game_over, ending, final_session}
+
+      {:continue, _} ->
+        # 次のターンへ
+        {:ok, new_session} = update_game_session(game_session, %{turn: game_session.turn + 1})
+        {:ok, _turn_state} = start_new_turn_with_hitoyo(new_session)
+
+        final_session = get_game_session!(game_session_id)
+        GamePubSub.broadcast_state_update(game_session_id, final_session)
+        {:continue, final_session}
+    end
   end
 end

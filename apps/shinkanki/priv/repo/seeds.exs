@@ -886,7 +886,9 @@ akasha_architect_talents = [
 ]
 
 # タレントカードを挿入
-all_talent_cards = forest_guardian_talents ++ heritage_weaver_talents ++ community_keeper_talents ++ akasha_architect_talents
+all_talent_cards =
+  forest_guardian_talents ++
+    heritage_weaver_talents ++ community_keeper_talents ++ akasha_architect_talents
 
 Enum.each(all_talent_cards, fn talent_attrs ->
   %TalentCard{}

@@ -673,4 +673,55 @@ defmodule RogsIdentity.Accounts do
   end
 
   defp calculate_win_rate(_), do: 0.0
+
+  # ============================================================
+  # OAuth Functions
+  # ============================================================
+
+  @doc """
+  Finds or creates a user from OAuth provider data.
+  """
+  def find_or_create_oauth_user(attrs) do
+    case get_user_by_oauth(attrs.provider, attrs.provider_id) do
+      nil ->
+        # Check if user with same email exists
+        case get_user_by_email(attrs.email) do
+          nil ->
+            # Create new user
+            create_oauth_user(attrs)
+
+          existing_user ->
+            # Link existing account to OAuth provider
+            update_oauth_user(existing_user, attrs)
+        end
+
+      user ->
+        {:ok, user}
+    end
+  end
+
+  @doc """
+  Gets a user by OAuth provider and provider_id.
+  """
+  def get_user_by_oauth(provider, provider_id)
+      when is_binary(provider) and is_binary(provider_id) do
+    Repo.get_by(User, provider: provider, provider_id: provider_id)
+  end
+
+  def get_user_by_oauth(provider, provider_id) do
+    get_user_by_oauth(to_string(provider), to_string(provider_id))
+  end
+
+  defp create_oauth_user(attrs) do
+    %User{}
+    |> User.oauth_changeset(attrs)
+    |> User.confirm_changeset()
+    |> Repo.insert()
+  end
+
+  defp update_oauth_user(user, attrs) do
+    user
+    |> User.oauth_changeset(attrs)
+    |> Repo.update()
+  end
 end

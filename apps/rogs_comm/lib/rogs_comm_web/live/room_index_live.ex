@@ -84,15 +84,23 @@ defmodule RogsCommWeb.RoomIndexLive do
         <div class="torii-lines"></div>
         <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
           <div class="mb-8 md:mb-12 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold pb-4 inline-block" style="font-family: var(--trds-font-serif); letter-spacing: 0.3em; color: var(--color-landing-text-primary); border-bottom: 2px solid var(--trds-outline-strong);">
+            <h1
+              class="text-3xl md:text-4xl font-bold pb-4 inline-block"
+              style="font-family: var(--trds-font-serif); letter-spacing: 0.3em; color: var(--color-landing-text-primary); border-bottom: 2px solid var(--trds-outline-strong);"
+            >
               チャットルーム
             </h1>
-            <p class="mt-4 text-lg" style="color: var(--color-landing-text-secondary);">ルームを作成するか、既存のルームに参加してください</p>
+            <p class="mt-4 text-lg" style="color: var(--color-landing-text-secondary);">
+              ルームを作成するか、既存のルームに参加してください
+            </p>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
             <div class="trds-glass-panel">
-              <h2 class="text-xl font-semibold mb-6 pl-3" style="color: var(--color-landing-text-primary); border-left: 4px solid var(--trds-outline-strong);">
+              <h2
+                class="text-xl font-semibold mb-6 pl-3"
+                style="color: var(--color-landing-text-primary); border-left: 4px solid var(--trds-outline-strong);"
+              >
                 ルームを作成
               </h2>
               <.form for={@form} id="room-form" phx-change="validate" phx-submit="save">
@@ -132,7 +140,10 @@ defmodule RogsCommWeb.RoomIndexLive do
             </div>
 
             <div>
-              <h2 class="text-xl font-semibold mb-6 pl-3" style="color: var(--color-landing-text-primary); border-left: 4px solid var(--trds-outline-strong);">
+              <h2
+                class="text-xl font-semibold mb-6 pl-3"
+                style="color: var(--color-landing-text-primary); border-left: 4px solid var(--trds-outline-strong);"
+              >
                 ルーム一覧
               </h2>
 
@@ -145,7 +156,10 @@ defmodule RogsCommWeb.RoomIndexLive do
                   class="space-y-4"
                 >
                   <div>
-                    <label class="text-xs uppercase tracking-[0.4em]" style="color: var(--color-landing-text-secondary);">
+                    <label
+                      class="text-xs uppercase tracking-[0.4em]"
+                      style="color: var(--color-landing-text-secondary);"
+                    >
                       キーワード
                     </label>
                     <.input
@@ -157,7 +171,10 @@ defmodule RogsCommWeb.RoomIndexLive do
                     />
                   </div>
 
-                  <label class="flex items-center gap-3 text-sm font-medium" style="color: var(--color-landing-text-primary);">
+                  <label
+                    class="flex items-center gap-3 text-sm font-medium"
+                    style="color: var(--color-landing-text-primary);"
+                  >
                     <input
                       type="checkbox"
                       name="filters[show_private]"
@@ -184,10 +201,17 @@ defmodule RogsCommWeb.RoomIndexLive do
                   <.link navigate={~p"/rooms/#{room.id}/chat"} class="block">
                     <div class="flex items-start justify-between">
                       <div class="flex-1">
-                        <h3 class="font-semibold text-lg pl-2" style="color: var(--color-landing-text-primary); border-left: 2px solid var(--trds-outline-strong);">
+                        <h3
+                          class="font-semibold text-lg pl-2"
+                          style="color: var(--color-landing-text-primary); border-left: 2px solid var(--trds-outline-strong);"
+                        >
                           {room.name}
                         </h3>
-                        <p :if={room.topic} class="text-sm mt-2" style="color: var(--color-landing-text-secondary);">
+                        <p
+                          :if={room.topic}
+                          class="text-sm mt-2"
+                          style="color: var(--color-landing-text-secondary);"
+                        >
                           {room.topic}
                         </p>
                         <div class="flex items-center gap-4 mt-3 text-xs">
@@ -222,8 +246,12 @@ defmodule RogsCommWeb.RoomIndexLive do
 
                 <div :if={@rooms == []} class="text-center py-12 concept-card">
                   <div class="text-4xl mb-4">🏛️</div>
-                  <p class="text-lg" style="color: var(--color-landing-text-primary);">該当するルームがありません</p>
-                  <p class="text-sm mt-2" style="color: var(--color-landing-text-secondary);">検索条件を変更するか、新しいルームを作成してください</p>
+                  <p class="text-lg" style="color: var(--color-landing-text-primary);">
+                    該当するルームがありません
+                  </p>
+                  <p class="text-sm mt-2" style="color: var(--color-landing-text-secondary);">
+                    検索条件を変更するか、新しいルームを作成してください
+                  </p>
                 </div>
               </div>
             </div>

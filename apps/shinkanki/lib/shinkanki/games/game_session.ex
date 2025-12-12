@@ -52,13 +52,14 @@ defmodule Shinkanki.Games.GameSession do
       :current_policy
     ])
     |> validate_required([:forest, :culture, :social, :life_index])
-    |> validate_number(:forest, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
-    |> validate_number(:culture, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
-    |> validate_number(:social, greater_than_or_equal_to: 0, less_than_or_equal_to: 20)
+    |> validate_number(:forest, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate_number(:culture, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate_number(:social, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
     |> validate_number(:turn, greater_than_or_equal_to: 1, less_than_or_equal_to: 20)
     |> validate_number(:evil_pool, greater_than_or_equal_to: 0)
     |> validate_number(:orochi_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 3)
     |> validate_inclusion(:status, ["active", "completed", "failed"])
+    |> validate_number(:life_index, greater_than_or_equal_to: 0, less_than_or_equal_to: 300)
     |> validate_inclusion(:current_policy, @policies ++ [nil])
   end
 

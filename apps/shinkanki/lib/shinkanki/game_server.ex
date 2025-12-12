@@ -137,7 +137,12 @@ defmodule Shinkanki.GameServer do
   def handle_call({:join_player, player_id, name, avatar, talent_ids}, _from, game) do
     case Game.join(game, player_id, name, avatar, talent_ids) do
       {:ok, new_game} = ok ->
-        log_action(new_game, "join_player", player_id, %{name: name, avatar: avatar, talent_ids: talent_ids})
+        log_action(new_game, "join_player", player_id, %{
+          name: name,
+          avatar: avatar,
+          talent_ids: talent_ids
+        })
+
         broadcast_state(new_game)
         {:reply, ok, new_game}
 
@@ -297,9 +302,20 @@ defmodule Shinkanki.GameServer do
   end
 
   defp get_current_player_id(game) do
-    player_order = Map.keys(game.players) |> Enum.sort()
-    current_index = rem(game.current_player_index || 0, length(player_order))
-    Enum.at(player_order, current_index)
+    case Game.get_current_player(game) do
+      nil ->
+        order = game.player_order || []
+
+        if order == [] do
+          nil
+        else
+          current_index = rem(game.current_player_index || 0, length(order))
+          Enum.at(order, current_index)
+        end
+
+      player_id ->
+        player_id
+    end
   end
 
   # Handle AI discussion ready
@@ -327,6 +343,7 @@ defmodule Shinkanki.GameServer do
               action_id: action_id,
               talent_ids: talent_ids
             })
+
             broadcast_state(new_game)
             {:noreply, new_game}
 

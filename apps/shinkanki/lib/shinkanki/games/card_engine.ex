@@ -108,18 +108,20 @@ defmodule Shinkanki.Games.CardEngine do
       {session_costs, player_costs} = deduct_costs(card, player, game_session)
 
       # 効果適用（コスト差し引き後）
-      intermediate_session = %{game_session |
-        forest: game_session.forest - session_costs.forest,
-        culture: game_session.culture - session_costs.culture,
-        social: game_session.social - session_costs.social
+      intermediate_session = %{
+        game_session
+        | forest: game_session.forest - session_costs.forest,
+          culture: game_session.culture - session_costs.culture,
+          social: game_session.social - session_costs.social
       }
 
       final_updates = apply_effects(intermediate_session, effects)
 
-      {:ok, %{
-        game_session_updates: final_updates,
-        player_updates: player_costs
-      }}
+      {:ok,
+       %{
+         game_session_updates: final_updates,
+         player_updates: player_costs
+       }}
     else
       {:error, :insufficient_resources}
     end

@@ -32,8 +32,11 @@ end
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
+# PHX_SERVER=true の場合、メインの ShinkankiWebWeb.Endpoint だけを起動
 if System.get_env("PHX_SERVER") do
-  config :rogs_game, RogsGameWeb.Endpoint, server: true
+  config :shinkanki_web, ShinkankiWebWeb.Endpoint, server: true
+  # 他のエンドポイントは本番では起動しない（1つのアプリで1ポートのみ）
+  # config :rogs_game, RogsGameWeb.Endpoint, server: true
 end
 
 if config_env() == :prod do
@@ -150,9 +153,7 @@ end
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
-if System.get_env("PHX_SERVER") do
-  config :shinkanki_web, ShinkankiWebWeb.Endpoint, server: true
-end
+# PHX_SERVER は上で一括設定済み
 
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.
@@ -233,9 +234,7 @@ end
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
-if System.get_env("PHX_SERVER") do
-  config :shinkanki, ShinkankiWeb.Endpoint, server: true
-end
+# PHX_SERVER は上で一括設定済み
 
 if config_env() == :prod do
   database_url =
@@ -333,9 +332,7 @@ end
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
-if System.get_env("PHX_SERVER") do
-  config :rogs_comm, RogsCommWeb.Endpoint, server: true
-end
+# PHX_SERVER は上で一括設定済み
 
 if config_env() == :prod do
   database_url =
@@ -433,9 +430,7 @@ end
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
-if System.get_env("PHX_SERVER") do
-  config :rogs_identity, RogsIdentityWeb.Endpoint, server: true
-end
+# PHX_SERVER は上で一括設定済み
 
 if config_env() == :prod do
   database_url =

@@ -49,7 +49,7 @@ if System.get_env("PHX_SERVER") do
   # config :rogs_game, RogsGameWeb.Endpoint, server: true
 end
 
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -165,7 +165,7 @@ end
 # script that automatically sets the env var above.
 # PHX_SERVER は上で一括設定済み
 
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
   # want to use a different value for prod and you most likely don't want
@@ -246,7 +246,7 @@ end
 # script that automatically sets the env var above.
 # PHX_SERVER は上で一括設定済み
 
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -344,7 +344,7 @@ end
 # script that automatically sets the env var above.
 # PHX_SERVER は上で一括設定済み
 
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -442,7 +442,7 @@ end
 # script that automatically sets the env var above.
 # PHX_SERVER は上で一括設定済み
 
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -528,7 +528,7 @@ end
 # and secrets from environment variables or elsewhere. Do not define
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
-if config_env() == :prod do
+if System.get_env("MIX_ENV") == "prod" do
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
@@ -628,4 +628,6 @@ if config_env() == :prod do
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
   config :rogs, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+
+  config :swoosh, :api_client, false
 end

@@ -866,6 +866,15 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
   @impl true
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
+    handle_game_state_updated(game, socket)
+  end
+
+  @impl true
+  def handle_info({:game_state_updated, game}, socket) do
+    handle_game_state_updated(game, socket)
+  end
+
+  defp handle_game_state_updated(game, socket) do
     user_id = socket.assigns.user_id
 
     # ゲームが開始されたら遷移

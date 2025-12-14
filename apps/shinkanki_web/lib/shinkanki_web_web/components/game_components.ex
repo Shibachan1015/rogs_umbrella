@@ -99,13 +99,37 @@ defmodule ShinkankiWebWeb.GameComponents do
   """
   attr :current_phase, :atom,
     required: true,
-    values: [:event, :discussion, :action, :demurrage, :life_update, :judgment]
+    values: [
+      :hitoyo,
+      :kamihakari,
+      :itonami,
+      :kokyu,
+      :musuhi,
+      :toshiokuri,
+      :event,
+      :discussion,
+      :action,
+      :demurrage,
+      :life_update,
+      :judgment
+    ]
 
   attr :class, :string, default: nil
   attr :rest, :global
 
   def phase_indicator(assigns) do
-    phases = [
+    # New rulebook-compliant phases
+    new_phases = [
+      {:hitoyo, "人代", "邪気に応じた人代カードをめくる"},
+      {:kamihakari, "神議り", "プレイヤー全員で方針を相談する"},
+      {:itonami, "営み", "営みカードを選択し、実行する"},
+      {:kokyu, "呼吸", "空環の還流（P≧5は必須）"},
+      {:musuhi, "結び", "むすひチップを仲間へ贈る"},
+      {:toshiokuri, "年送り", "ターン終了・判定"}
+    ]
+
+    # Legacy phases for backward compatibility
+    legacy_phases = [
       {:event, "イベント", "イベントカードを1枚めくり、効果を適用する"},
       {:discussion, "相談", "プレイヤー全員で方針を相談する"},
       {:action, "アクション", "アクションカードを選択し、実行する"},
@@ -113,6 +137,14 @@ defmodule ShinkankiWebWeb.GameComponents do
       {:life_update, "生命更新", "L = F + K + S を再計算"},
       {:judgment, "判定", "ゲームオーバー条件のチェック"}
     ]
+
+    # Choose phases based on current phase
+    phases =
+      if assigns.current_phase in [:hitoyo, :kamihakari, :itonami, :kokyu, :musuhi, :toshiokuri] do
+        new_phases
+      else
+        legacy_phases
+      end
 
     assigns = assign(assigns, :phases, phases)
 
@@ -2299,4 +2331,171 @@ defmodule ShinkankiWebWeb.GameComponents do
     |> Enum.filter(&(&1 && &1 != "" && &1 != false))
     |> Enum.join(" ")
   end
+
+  @doc """
+  Renders a jaki (邪気) track showing the current jaki level.
+  """
+  attr :jaki, :integer, required: true
+  attr :class, :string, default: nil
+
+  def jaki_track(assigns) do
+    ~H"""
+    <div class={["jaki-track flex flex-col items-center", @class]}>
+      <div class="text-xs font-bold text-sumi/70 mb-1">邪気</div>
+      <div class="flex items-center gap-0.5">
+        <%= for i <- 0..8 do %>
+          <div
+            class={[
+              "w-4 h-4 sm:w-5 sm:h-5 rounded-sm flex items-center justify-center text-[10px] font-bold transition-all",
+              if(i <= @jaki,
+                do: jaki_color(i),
+                else: "bg-sumi/10 text-sumi/30"
+              )
+            ]}
+            title={"邪気レベル #{i}"}
+          >
+            <%= if i == @jaki do %>
+              <span class="animate-pulse">{i}</span>
+            <% else %>
+              {i}
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <div class="text-[10px] text-sumi/50 mt-1">
+        人代: {hitoyo_count(@jaki)}枚
+      </div>
+    </div>
+    """
+  end
+
+  defp jaki_color(level) when level <= 2, do: "bg-matsu/30 text-matsu"
+  defp jaki_color(level) when level <= 5, do: "bg-kohaku/40 text-kohaku"
+  defp jaki_color(_level), do: "bg-shu/40 text-shu"
+
+  defp hitoyo_count(jaki) when jaki <= 2, do: 1
+  defp hitoyo_count(jaki) when jaki <= 5, do: 2
+  defp hitoyo_count(_jaki), do: 3
+
+  @doc """
+  Renders a kuukan (空環) display for a player.
+  """
+  attr :kuukan, :integer, required: true
+  attr :class, :string, default: nil
+  attr :compact, :boolean, default: false
+
+  def kuukan_display(assigns) do
+    ~H"""
+    <div class={[
+      "kuukan-display flex items-center gap-1",
+      if(@compact, do: "text-xs", else: "text-sm"),
+      @class
+    ]}>
+      <span class="text-kohaku font-bold">P</span>
+      <div class="flex items-center gap-0.5">
+        <%= for i <- 1..10 do %>
+          <div
+            class={[
+              if(@compact, do: "w-2 h-2", else: "w-3 h-3"),
+              "rounded-full transition-all",
+              if(i <= @kuukan,
+                do: kuukan_color(@kuukan, i),
+                else: "bg-sumi/10"
+              )
+            ]}
+            title={"空環 #{i}"}
+          />
+        <% end %>
+      </div>
+      <span class={["font-mono font-bold", if(@kuukan >= 5, do: "text-shu", else: "text-kohaku")]}>
+        {@kuukan}
+      </span>
+      <%= if @kuukan >= 5 do %>
+        <span class="text-[10px] text-shu animate-pulse">還流必須</span>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp kuukan_color(total, _i) when total >= 5, do: "bg-shu/60"
+  defp kuukan_color(_total, _i), do: "bg-kohaku/50"
+
+  @doc """
+  Renders a musuhi chip display.
+  """
+  attr :received, :integer, default: 0
+  attr :available, :integer, default: 0
+  attr :class, :string, default: nil
+
+  def musuhi_display(assigns) do
+    ~H"""
+    <div class={["musuhi-display flex items-center gap-2 text-xs", @class]}>
+      <div class="flex items-center gap-1">
+        <span class="text-pink-500">💝</span>
+        <span class="text-sumi/70">受: </span>
+        <span class={["font-bold", if(@received >= 2, do: "text-pink-500", else: "text-sumi")]}>
+          {@received}
+        </span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="text-sumi/70">渡: </span>
+        <span class="font-bold text-sumi">{@available}</span>
+      </div>
+      <%= if @received >= 2 do %>
+        <span class="text-[10px] text-pink-500 animate-pulse">才能獲得可!</span>
+      <% end %>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a hitoyo card (人代カード).
+  """
+  attr :card, :map, required: true
+  attr :class, :string, default: nil
+
+  def hitoyo_card(assigns) do
+    ~H"""
+    <div class={[
+      "hitoyo-card p-3 bg-gradient-to-br from-sumi/90 to-sumi/70 text-washi rounded-lg shadow-lg border border-sumi/50",
+      @class
+    ]}>
+      <div class="flex items-start justify-between mb-2">
+        <h4 class="font-bold text-sm text-shu">{@card.name}</h4>
+        <span class={[
+          "text-[10px] px-1.5 py-0.5 rounded",
+          if(@card.timing == :instant, do: "bg-shu/30 text-shu", else: "bg-kohaku/30 text-kohaku")
+        ]}>
+          {if @card.timing == :instant, do: "即時", else: "遅延"}
+        </span>
+      </div>
+      <p class="text-xs text-washi/80 mb-2">{@card.description}</p>
+      <%= if @card.flavor do %>
+        <p class="text-[10px] text-washi/50 italic border-t border-washi/20 pt-1">{@card.flavor}</p>
+      <% end %>
+      <div class="flex gap-2 mt-2">
+        <%= for {key, val} <- @card.effect || %{} do %>
+          <span class={[
+            "text-[10px] px-1.5 py-0.5 rounded",
+            effect_color(key, val)
+          ]}>
+            {effect_label(key)}: {if val > 0, do: "+#{val}", else: val}
+          </span>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
+
+  defp effect_label(:forest), do: "F"
+  defp effect_label(:culture), do: "K"
+  defp effect_label(:social), do: "S"
+  defp effect_label(:jaki), do: "邪気"
+  defp effect_label(:currency), do: "P"
+  defp effect_label(key), do: to_string(key)
+
+  defp effect_color(:jaki, val) when val > 0, do: "bg-shu/30 text-shu"
+  defp effect_color(:jaki, _val), do: "bg-matsu/30 text-matsu"
+  defp effect_color(_key, val) when val < 0, do: "bg-shu/30 text-shu"
+  defp effect_color(_key, _val), do: "bg-matsu/30 text-matsu"
 end

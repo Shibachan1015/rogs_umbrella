@@ -53,7 +53,7 @@ defmodule RogsCommWeb.RoomIndexLiveTest do
       {:ok, view, _html} = live(conn, ~p"/rooms")
 
       view
-      |> form("#filters-form", filters: %{query: "Forest"})
+      |> form("#filters-form", %{query: "Forest"})
       |> render_change()
 
       html = render(view)
@@ -70,7 +70,7 @@ defmodule RogsCommWeb.RoomIndexLiveTest do
       refute render(view) =~ private_room.name
 
       view
-      |> form("#filters-form", filters: %{query: "", show_private: "true"})
+      |> form("#filters-form", %{filters: %{show_private: "true"}})
       |> render_change()
 
       assert render(view) =~ private_room.name

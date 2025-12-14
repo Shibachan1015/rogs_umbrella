@@ -52,12 +52,15 @@ defmodule RogsCommWeb.ChatLive do
           |> assign(:search_mode, false)
           |> assign(:search_results, [])
           |> assign(:rtc_state, default_rtc_state())
+          |> assign(:oldest_message_id, nil)
+          |> assign(:message_count, 0)
           |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
 
         if connected?(socket) do
           topic = topic(room_id)
           RogsCommWeb.Endpoint.subscribe(topic)
           messages = Messages.list_messages(room_id, limit: 50)
+          oldest_id = if messages != [], do: List.first(messages).id, else: nil
 
           presences =
             try do
@@ -69,6 +72,8 @@ defmodule RogsCommWeb.ChatLive do
           socket =
             socket
             |> assign(:presences, presences)
+            |> assign(:oldest_message_id, oldest_id)
+            |> assign(:message_count, length(messages))
             |> stream(:messages, messages)
 
           {:ok, socket}
@@ -1051,7 +1056,7 @@ defmodule RogsCommWeb.ChatLive do
                     検索モード: {length(@search_results)}件
                   </div>
                   <div class="text-xs" style="color: var(--color-landing-text-secondary);">
-                    メッセージ数: {Enum.count(@streams.messages)}
+                    メッセージ数: {@message_count}
                   </div>
                 </div>
               </div>
@@ -1066,12 +1071,12 @@ defmodule RogsCommWeb.ChatLive do
                 aria-atomic="false"
               >
                 <div
-                  :if={@has_older_messages && Enum.count(@streams.messages) > 0 && !@search_mode}
+                  :if={@has_older_messages && @message_count > 0 && !@search_mode}
                   class="text-center py-2"
                 >
                   <button
                     phx-click="load_older_messages"
-                    phx-value-message_id={@streams.messages |> Enum.at(0) |> elem(1) |> Map.get(:id)}
+                    phx-value-message_id={@oldest_message_id}
                     class="cta-button cta-outline trds-focusable text-sm"
                     aria-label="古いメッセージを読み込む"
                   >
@@ -1079,7 +1084,7 @@ defmodule RogsCommWeb.ChatLive do
                   </button>
                 </div>
                 <div
-                  :if={@search_mode && Enum.count(@streams.messages) == 0}
+                  :if={@search_mode && @message_count == 0}
                   class="text-center py-8 trds-glass-panel"
                   role="status"
                   aria-live="polite"

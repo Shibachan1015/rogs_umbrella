@@ -74,3 +74,6 @@ config :rogs_comm, RogsCommWeb.Endpoint,
 
 # Swoosh設定（開発環境ではAPIクライアントを無効化）
 config :swoosh, :api_client, false
+
+# 開発環境でログインをバイパス
+config :rogs_identity, :dev_bypass_auth, true

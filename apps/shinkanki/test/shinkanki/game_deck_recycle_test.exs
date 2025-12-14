@@ -2,19 +2,25 @@ defmodule Shinkanki.GameDeckRecycleTest do
   use ExUnit.Case
   alias Shinkanki.Game
 
+  # Helper to create a playing game with custom attributes
+  defp playing_game(attrs \\ %{}) do
+    base = %Game{Game.new("room") | status: :playing}
+    struct(base, attrs)
+  end
+
   describe "deck recycling" do
     test "reshuffles discard pile when deck is empty" do
       # Create game with empty deck and some cards in discard pile
-      game = %Game{
-        Game.new("room")
-        | deck: [],
-          discard_pile: [:shokurin, :saiji, :koueki],
-          event_deck: [],
-          event_discard_pile: []
-      }
+      game = playing_game(%{
+        deck: [],
+        discard_pile: [:shokurin, :saiji, :koueki],
+        event_deck: [],
+        event_discard_pile: []
+      })
 
-      # Join player to enable drawing cards
-      {:ok, game} = Game.join(game, "p1", "Player 1")
+      # Join player to enable drawing cards (this is in waiting, but we set status to playing)
+      {:ok, game} = Game.join(%{game | status: :waiting}, "p1", "Player 1")
+      game = %{game | status: :playing}
 
       # Draw cards - should trigger reshuffle
       hand = Map.get(game.hands, "p1", [])
@@ -26,7 +32,7 @@ defmodule Shinkanki.GameDeckRecycleTest do
 
       # Card should be in discard pile (unless it was immediately drawn again)
       # The important thing is that we can test reshuffle by manually setting deck to empty
-      game_with_empty_deck = %{game_after_play | deck: []}
+      game_with_empty_deck = %{game_after_play | deck: [], status: :waiting}
 
       # If discard pile has cards, joining another player should trigger reshuffle
       if length(game_with_empty_deck.discard_pile) > 0 do
@@ -72,8 +78,8 @@ defmodule Shinkanki.GameDeckRecycleTest do
     end
 
     test "multiple deck cycles work correctly" do
-      # Create game with small deck
-      game = %Game{
+      # Create game with small deck in waiting status for join
+      base_game = %Game{
         Game.new("room")
         | deck: [:shokurin, :saiji],
           discard_pile: [],
@@ -81,7 +87,8 @@ defmodule Shinkanki.GameDeckRecycleTest do
           event_discard_pile: []
       }
 
-      {:ok, game} = Game.join(game, "p1", "Player 1")
+      {:ok, game} = Game.join(base_game, "p1", "Player 1")
+      {:ok, game} = Game.start_game(game)
 
       # Play cards to exhaust deck and build discard pile
       hand = Map.get(game.hands, "p1", [])

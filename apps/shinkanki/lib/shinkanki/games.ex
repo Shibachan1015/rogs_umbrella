@@ -442,9 +442,12 @@ defmodule Shinkanki.Games do
           {:ok, final_session}
 
         {:continue, _} ->
-          # 状態更新をブロードキャスト
-          GamePubSub.broadcast_state_update(updated_session.id, updated_session)
-          {:ok, updated_session}
+          # 全員がアクション完了したかチェックして、フェーズを進める
+          check_and_advance_turn(updated_session.id)
+          # 最新の状態を取得してブロードキャスト
+          refreshed_session = get_game_session!(updated_session.id)
+          GamePubSub.broadcast_state_update(refreshed_session.id, refreshed_session)
+          {:ok, refreshed_session}
       end
     else
       {:error, :insufficient_resources}
@@ -577,9 +580,12 @@ defmodule Shinkanki.Games do
           {:ok, final_session}
 
         {:continue, _} ->
-          # 状態更新をブロードキャスト
-          GamePubSub.broadcast_state_update(updated_session.id, updated_session)
-          {:ok, updated_session}
+          # 全員がアクション完了したかチェックして、フェーズを進める
+          check_and_advance_turn(updated_session.id)
+          # 最新の状態を取得してブロードキャスト
+          refreshed_session = get_game_session!(updated_session.id)
+          GamePubSub.broadcast_state_update(refreshed_session.id, refreshed_session)
+          {:ok, refreshed_session}
       end
     else
       {:error, :insufficient_resources}
@@ -1218,15 +1224,24 @@ defmodule Shinkanki.Games do
   def check_and_advance_turn(game_session_id) do
     game_session = get_game_session!(game_session_id)
     turn_state = get_current_turn_state(game_session)
+    current_phase = if turn_state, do: turn_state.phase, else: nil
 
-    if turn_state && turn_state.phase == "action" do
-      if all_players_acted?(game_session_id, game_session.turn) do
+    # 新旧両方のフェーズ名に対応（itonami = action）
+    action_phases = ["action", "itonami"]
+
+    if current_phase in action_phases do
+      all_acted = all_players_acted?(game_session_id, game_session.turn)
+      IO.puts("[DEBUG] check_and_advance_turn: phase=#{current_phase}, all_acted=#{all_acted}")
+
+      if all_acted do
         # 全プレイヤーがアクション完了、呼吸フェーズへ移行
+        IO.puts("[DEBUG] Advancing phase from #{current_phase}")
         advance_phase(game_session_id)
       else
         {:ok, game_session}
       end
     else
+      IO.puts("[DEBUG] check_and_advance_turn: skipped, phase=#{current_phase}")
       {:ok, game_session}
     end
   end
@@ -1617,6 +1632,31 @@ defmodule Shinkanki.Games do
     final_session = get_game_session!(game_session_id)
     GamePubSub.broadcast_state_update(game_session_id, final_session)
     {:ok, final_session, hitoyo_cards}
+  end
+
+  @doc """
+  すでに引かれた人代カードの効果を適用
+  UIで事前に引いたカードを使用する場合に使う
+  """
+  def apply_drawn_hitoyo_cards(game_session_id, hitoyo_cards) do
+    game_session = get_game_session!(game_session_id)
+
+    # 各カードの効果を適用
+    {:ok, updated_session} =
+      Enum.reduce(hitoyo_cards, {:ok, game_session}, fn card, {:ok, session} ->
+        apply_hitoyo_card_effect(session, card)
+      end)
+
+    # フェーズを進める（人代/event -> 神議り）
+    turn_state = get_current_turn_state(updated_session)
+
+    if turn_state && turn_state.phase in ["hitoyo", "event"] do
+      advance_phase(turn_state)
+    end
+
+    final_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, final_session)
+    {:ok, final_session}
   end
 
   @doc """

@@ -24,6 +24,9 @@ defmodule ShinkankiWebWeb.Router do
   scope "/", ShinkankiWebWeb do
     pipe_through :browser
 
+    # ==============================
+    # 静的ページ（認証不要）
+    # ==============================
     get "/", PageController, :home
     get "/rulebook", PageController, :rulebook
     get "/cards/talent", PageController, :talent_cards
@@ -33,31 +36,29 @@ defmodule ShinkankiWebWeb.Router do
     get "/cards/migaki", PageController, :migaki_cards
     get "/kuukan", PageController, :kuukan
 
-    # 認証ルート（未ログイン用）
+    # ==============================
+    # 認証（rogs_identity ドメイン）
+    # ==============================
     live "/users/log-in", UserLive.Login, :new
     live "/users/register", UserLive.Registration, :new
     post "/users/log-in", UserSessionController, :create
     get "/users/auto-login", UserSessionController, :auto_login
     delete "/users/log-out", UserSessionController, :delete
 
-    # ユーザー情報を取得するLiveSession
+    # ==============================
+    # 認証済みユーザー用
+    # ==============================
     live_session :with_user, on_mount: [{ShinkankiWebWeb.UserAuth, :default}] do
-      # ロビー（ルーム一覧・作成）
+      # --- rogs_comm ドメイン: ルーム・ロビー ---
       live "/lobby", LobbyLive
-
-      # 待機室（ゲーム開始前）
       live "/room/:slug", WaitingRoomLive
 
-      # ゲーム画面（ゲーム中）
+      # --- shinkanki ドメイン: ゲーム ---
       live "/game/:room_id", GameLive
 
-      # プロフィール編集
+      # --- rogs_identity ドメイン: ユーザー管理 ---
       live "/profile", UserLive.Profile
-
-      # フレンドリスト
       live "/friends", UserLive.Friends
-
-      # ダイレクトメッセージ
       live "/messages", UserLive.Messages
       live "/messages/:user_id", UserLive.Messages
     end

@@ -55,12 +55,12 @@ defmodule RogsComm.RoomsTest do
 
   describe "create_room/1" do
     test "succeeds with valid data" do
-      valid_attrs = %{name: "Forest Watch", slug: "forest-watch", max_participants: 6}
+      valid_attrs = %{name: "Forest Watch", slug: "forest-watch", max_participants: 4}
 
       assert {:ok, %Room{} = room} = Rooms.create_room(valid_attrs)
       assert room.name == "Forest Watch"
       assert room.slug == "forest-watch"
-      assert room.max_participants == 6
+      assert room.max_participants == 4
     end
 
     test "auto-generates slug from name" do

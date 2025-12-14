@@ -37,12 +37,36 @@ defmodule ShinkankiWebWeb.UserAuth do
             assign(socket, :current_user, user)
 
           nil ->
-            assign(socket, :current_user, nil)
+            maybe_dev_user(socket)
         end
 
       _ ->
-        # Remember me cookie からトークンを取得（LiveViewでは直接アクセスできないので session経由）
-        assign(socket, :current_user, nil)
+        maybe_dev_user(socket)
+    end
+  end
+
+  # 開発環境でのバイパス
+  defp maybe_dev_user(socket) do
+    if Application.get_env(:rogs_identity, :dev_bypass_auth, false) do
+      dev_user = get_or_create_dev_user()
+      assign(socket, :current_user, dev_user)
+    else
+      assign(socket, :current_user, nil)
+    end
+  end
+
+  defp get_or_create_dev_user do
+    email = "dev@example.com"
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        {:ok, user} = Accounts.register_user(%{
+          email: email,
+          password: "devpassword123"
+        })
+        user
+
+      user ->
+        user
     end
   end
 end

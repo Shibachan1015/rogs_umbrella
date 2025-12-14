@@ -186,7 +186,7 @@ defmodule RogsComm.Messages do
   def edit_message(%Message{} = message, attrs) do
     case message
          |> Message.changeset(attrs)
-         |> Ecto.Changeset.change(edited_at: DateTime.utc_now())
+         |> Ecto.Changeset.change(edited_at: DateTime.utc_now() |> DateTime.truncate(:second))
          |> Repo.update() do
       {:ok, updated_message} = result ->
         # Invalidate cache for the room

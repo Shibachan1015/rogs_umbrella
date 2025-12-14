@@ -3,7 +3,6 @@ defmodule RogsIdentityWeb.OAuthController do
   plug Ueberauth
 
   alias RogsIdentity.Accounts
-  alias RogsIdentityWeb.UserAuth
 
   def request(conn, params) do
     # return_toパラメータがあればセッションに保存

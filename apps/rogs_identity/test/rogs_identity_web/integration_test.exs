@@ -214,10 +214,10 @@ defmodule RogsIdentityWeb.IntegrationTest do
       assert RogsIdentity.get_display_name(user.id) == "John Doe"
     end
 
-    test "returns email when name is not set", %{conn: _conn} do
+    test "returns email prefix when name is not set", %{conn: _conn} do
       user = user_fixture()
-
-      assert RogsIdentity.get_display_name(user.id) == user.email
+      expected_prefix = user.email |> String.split("@") |> List.first()
+      assert RogsIdentity.get_display_name(user.id) == expected_prefix
     end
 
     test "returns Anonymous for non-existent user", %{conn: _conn} do

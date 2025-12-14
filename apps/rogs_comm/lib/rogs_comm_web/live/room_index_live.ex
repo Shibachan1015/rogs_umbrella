@@ -61,7 +61,14 @@ defmodule RogsCommWeb.RoomIndexLive do
   end
 
   @impl true
-  def handle_event("filter", %{"filters" => filters_params}, socket) do
+  def handle_event("filter", params, socket) do
+    # Handle both nested "filters" params and flat params from form
+    filters_params =
+      case params do
+        %{"filters" => nested} -> nested
+        flat -> flat
+      end
+
     filters = normalize_filters(filters_params)
     rooms = load_rooms(filters)
 
@@ -70,10 +77,6 @@ defmodule RogsCommWeb.RoomIndexLive do
      |> assign(:rooms, rooms)
      |> assign(:filters, filters)
      |> assign(:filter_form, to_form(filter_form_data(filters)))}
-  end
-
-  def handle_event("filter", _params, socket) do
-    {:noreply, socket}
   end
 
   @impl true

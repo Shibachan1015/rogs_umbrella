@@ -2,11 +2,25 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
   use ExUnit.Case
   alias Shinkanki.Game
 
+  # Helper to create a game in discussion phase with players
+  defp game_in_discussion_phase(player_ids) do
+    base = %Game{
+      Game.new("room")
+      | phase: :discussion,
+        status: :playing,
+        event_deck: [],
+        event_discard_pile: []
+    }
+
+    Enum.reduce(player_ids, base, fn {id, name}, game ->
+      {:ok, g} = Game.join(%{game | status: :waiting}, id, name)
+      %{g | status: :playing}
+    end)
+  end
+
   describe "discussion phase management" do
     test "player can mark themselves as ready in discussion phase" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
-      {:ok, game} = Game.join(game, "p2", "Player 2")
+      game = game_in_discussion_phase([{"p1", "Player 1"}, {"p2", "Player 2"}])
 
       player = Map.get(game.players, "p1")
       assert player.is_ready == false
@@ -22,16 +36,14 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
 
     test "returns error if not in discussion phase" do
-      game = %Game{Game.new("room") | phase: :action, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
+      game = game_in_discussion_phase([{"p1", "Player 1"}])
+      game = %{game | phase: :action}
 
       assert {:error, :not_discussion_phase} = Game.mark_discussion_ready(game, "p1")
     end
 
     test "returns error if player already ready" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
-      {:ok, game} = Game.join(game, "p2", "Player 2")
+      game = game_in_discussion_phase([{"p1", "Player 1"}, {"p2", "Player 2"}])
 
       # Mark first player as ready (should still be in discussion phase)
       {:ok, game} = Game.mark_discussion_ready(game, "p1")
@@ -42,9 +54,7 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
 
     test "advances to action phase when all players are ready" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
-      {:ok, game} = Game.join(game, "p2", "Player 2")
+      game = game_in_discussion_phase([{"p1", "Player 1"}, {"p2", "Player 2"}])
 
       # First player ready
       {:ok, game} = Game.mark_discussion_ready(game, "p1")
@@ -60,8 +70,7 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
 
     test "single player game advances immediately when ready" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
+      game = game_in_discussion_phase([{"p1", "Player 1"}])
 
       {:ok, final_game} = Game.mark_discussion_ready(game, "p1")
       assert final_game.phase == :action
@@ -71,7 +80,13 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
 
     test "returns error if player not found" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
+      game = %Game{
+        Game.new("room")
+        | phase: :discussion,
+          status: :playing,
+          event_deck: [],
+          event_discard_pile: []
+      }
 
       assert {:error, :player_not_found} = Game.mark_discussion_ready(game, "nonexistent")
     end
@@ -89,9 +104,7 @@ defmodule Shinkanki.GameDiscussionPhaseTest do
     end
 
     test "execute_phase automatically advances when all players ready" do
-      game = %Game{Game.new("room") | phase: :discussion, event_deck: [], event_discard_pile: []}
-      {:ok, game} = Game.join(game, "p1", "Player 1")
-      {:ok, game} = Game.join(game, "p2", "Player 2")
+      game = game_in_discussion_phase([{"p1", "Player 1"}, {"p2", "Player 2"}])
 
       # Mark all players as ready manually
       game = %{game | players: Map.update!(game.players, "p1", fn p -> %{p | is_ready: true} end)}

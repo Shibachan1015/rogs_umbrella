@@ -4,9 +4,20 @@ defmodule RogsCommWeb.RateLimiterTest do
   alias RogsCommWeb.RateLimiter
 
   setup do
+    # Clean up existing table if it exists
+    if :ets.whereis(:rogs_comm_rate_limits) != :undefined do
+      :ets.delete(:rogs_comm_rate_limits)
+    end
+
     # Initialize rate limiter for each test
     RateLimiter.init()
-    on_exit(fn -> :ets.delete(:rogs_comm_rate_limits) end)
+
+    on_exit(fn ->
+      if :ets.whereis(:rogs_comm_rate_limits) != :undefined do
+        :ets.delete(:rogs_comm_rate_limits)
+      end
+    end)
+
     :ok
   end
 

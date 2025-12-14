@@ -44,8 +44,33 @@ defmodule RogsIdentity.Plug do
   @doc """
   Fetches the current user from the session.
   Sets `conn.assigns.current_user` and `conn.assigns.current_scope`.
+  In development, can bypass authentication with :dev_bypass_auth config.
   """
   def fetch_current_user(conn, _opts) do
+    # 開発環境でのバイパスチェック
+    if Application.get_env(:rogs_identity, :dev_bypass_auth, false) do
+      fetch_current_user_with_bypass(conn)
+    else
+      fetch_current_user_normal(conn)
+    end
+  end
+
+  defp fetch_current_user_with_bypass(conn) do
+    # まず通常の認証を試みる
+    case fetch_current_user_normal(conn) do
+      %{assigns: %{current_user: nil}} = conn ->
+        # ログインしていない場合、開発用ユーザーを取得または作成
+        dev_user = get_or_create_dev_user()
+        conn
+        |> assign(:current_user, dev_user)
+        |> assign(:current_scope, Scope.for_user(dev_user))
+
+      conn ->
+        conn
+    end
+  end
+
+  defp fetch_current_user_normal(conn) do
     with {token, conn} <- ensure_user_token(conn),
          {user, _token_inserted_at} <- Accounts.get_user_by_session_token(token) do
       conn
@@ -56,6 +81,22 @@ defmodule RogsIdentity.Plug do
         conn
         |> assign(:current_user, nil)
         |> assign(:current_scope, Scope.for_user(nil))
+    end
+  end
+
+  defp get_or_create_dev_user do
+    email = "dev@example.com"
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        # 開発用ユーザーを作成
+        {:ok, user} = Accounts.register_user(%{
+          email: email,
+          password: "devpassword123"
+        })
+        user
+
+      user ->
+        user
     end
   end
 

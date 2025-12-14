@@ -1,6 +1,9 @@
 defmodule Shinkanki.GameServer do
   use GenServer
   alias Shinkanki.{Game, ActionLog, AI}
+  alias Shinkanki.AI.ClaudeAgent
+
+  require Logger
 
   # Client API
 
@@ -279,9 +282,14 @@ defmodule Shinkanki.GameServer do
       |> Enum.filter(fn {_id, player} -> player.is_ai && !player.is_ready end)
       |> Enum.map(fn {id, _} -> id end)
 
-    # Schedule AI players to mark ready after a short delay
-    Enum.each(ai_not_ready, fn player_id ->
-      Process.send_after(self(), {:ai_discussion_ready, player_id}, 500)
+    # Schedule AI players to share their thoughts and mark ready after delays
+    ai_not_ready
+    |> Enum.with_index()
+    |> Enum.each(fn {player_id, index} ->
+      # Stagger AI messages to make conversation feel natural
+      delay = 1000 + index * 1500
+      Process.send_after(self(), {:ai_discussion_speak, player_id}, delay)
+      Process.send_after(self(), {:ai_discussion_ready, player_id}, delay + 500)
     end)
   end
 
@@ -318,6 +326,14 @@ defmodule Shinkanki.GameServer do
     end
   end
 
+  # Handle AI speaking during discussion
+  @impl true
+  def handle_info({:ai_discussion_speak, player_id}, game) do
+    {:ok, message} = ClaudeAgent.discuss(game, player_id)
+    broadcast_ai_chat(game, player_id, message)
+    {:noreply, game}
+  end
+
   # Handle AI discussion ready
   @impl true
   def handle_info({:ai_discussion_ready, player_id}, game) do
@@ -332,16 +348,21 @@ defmodule Shinkanki.GameServer do
     end
   end
 
-  # Handle AI taking action
+  # Handle AI taking action with Claude Agent
   @impl true
   def handle_info({:ai_take_action, player_id}, game) do
-    case AI.select_action(game, player_id) do
-      {:ok, action_id, talent_ids} ->
+    # Use Claude Agent for action decision with thoughts
+    case ClaudeAgent.decide_action(game, player_id) do
+      {:ok, action_id, talent_ids, thought} ->
+        # Broadcast AI's thought as chat message
+        broadcast_ai_chat(game, player_id, thought)
+
         case Game.play_action(game, player_id, action_id, talent_ids) do
           {:ok, new_game} ->
             log_action(new_game, "ai_play_action", player_id, %{
               action_id: action_id,
-              talent_ids: talent_ids
+              talent_ids: talent_ids,
+              thought: thought
             })
 
             broadcast_state(new_game)
@@ -353,8 +374,16 @@ defmodule Shinkanki.GameServer do
         end
 
       {:error, :no_affordable_cards} ->
-        # AI can't afford any cards, advance to next phase/player
-        case Game.next_phase(game) do
+        # Broadcast AI's inability to act
+        player = Map.get(game.players, player_id)
+        if player do
+          ai_index = get_ai_index(game, player_id)
+          message = get_skip_message(ai_index, :no_affordable_cards)
+          broadcast_ai_chat(game, player_id, message)
+        end
+
+        # Mark AI as ready so turn can advance
+        case Game.mark_player_ready_for_action(game, player_id) do
           {:ok, new_game} ->
             log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_affordable_cards})
             broadcast_state(new_game)
@@ -365,8 +394,15 @@ defmodule Shinkanki.GameServer do
         end
 
       {:error, :no_cards} ->
-        # AI has no cards, advance to next phase
-        case Game.next_phase(game) do
+        # Broadcast AI's inability to act
+        player = Map.get(game.players, player_id)
+        if player do
+          ai_index = get_ai_index(game, player_id)
+          message = get_skip_message(ai_index, :no_cards)
+          broadcast_ai_chat(game, player_id, message)
+        end
+
+        case Game.mark_player_ready_for_action(game, player_id) do
           {:ok, new_game} ->
             log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_cards})
             broadcast_state(new_game)
@@ -383,6 +419,74 @@ defmodule Shinkanki.GameServer do
 
   @impl true
   def handle_info(_msg, game), do: {:noreply, game}
+
+  # Broadcast AI chat message to all subscribers
+  defp broadcast_ai_chat(game, player_id, message) do
+    Phoenix.PubSub.broadcast(
+      Shinkanki.PubSub,
+      "shinkanki:game:#{game.room_id}",
+      {:ai_chat_message, %{player_id: player_id, message: message, timestamp: DateTime.utc_now()}}
+    )
+  end
+
+  # Get AI player index (1-4) for character selection
+  defp get_ai_index(game, player_id) do
+    ai_players =
+      game.player_order
+      |> Enum.filter(fn id ->
+        player = Map.get(game.players, id)
+        player && player.is_ai
+      end)
+
+    case Enum.find_index(ai_players, &(&1 == player_id)) do
+      nil -> 1
+      idx -> idx + 1
+    end
+  end
+
+  # Get skip message based on AI character
+  defp get_skip_message(ai_index, reason) do
+    character =
+      case ai_index do
+        1 -> %{name: "森の精霊ミドリ", emoji: "🌳"}
+        2 -> %{name: "文化の守人カグラ", emoji: "🎎"}
+        3 -> %{name: "絆の使者ムスビ", emoji: "🤝"}
+        4 -> %{name: "空環の賢者アカシャ", emoji: "✨"}
+        _ -> %{name: "AI", emoji: "🤖"}
+      end
+
+    message =
+      case {ai_index, reason} do
+        {1, :no_affordable_cards} ->
+          "空環が足りないの…今年は見守ることしかできないわ。"
+
+        {1, :no_cards} ->
+          "手札がないの…次の年に備えるわね。"
+
+        {2, :no_affordable_cards} ->
+          "空環が不足しております。今年は力を蓄える年となりましょう。"
+
+        {2, :no_cards} ->
+          "手持ちのカードがございません。来年に期待いたします。"
+
+        {3, :no_affordable_cards} ->
+          "ごめん、空環が足りなくて何もできないや…。"
+
+        {3, :no_cards} ->
+          "手札がないんだ。次の年、頑張るね！"
+
+        {4, :no_affordable_cards} ->
+          "空環が足りぬ。時には待つことも知恵であろう。"
+
+        {4, :no_cards} ->
+          "手札がない。次の機会を待つとしよう。"
+
+        _ ->
+          "今年は行動できません。"
+      end
+
+    "#{character.emoji} #{character.name}: #{message}"
+  end
 
   defp log_action(game, action, player_id, payload) do
     # Only log if Repo is available (not in test environment)

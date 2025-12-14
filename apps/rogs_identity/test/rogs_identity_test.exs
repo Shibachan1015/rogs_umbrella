@@ -20,14 +20,16 @@ defmodule RogsIdentityTest do
       assert RogsIdentity.get_display_name(user.id) == "John Doe"
     end
 
-    test "returns email if name is not set" do
+    test "returns email prefix if name is not set" do
       user = AccountsFixtures.user_fixture(%{name: nil})
-      assert RogsIdentity.get_display_name(user.id) == user.email
+      expected_prefix = user.email |> String.split("@") |> List.first()
+      assert RogsIdentity.get_display_name(user.id) == expected_prefix
     end
 
-    test "returns email if name is empty string" do
+    test "returns email prefix if name is empty string" do
       user = AccountsFixtures.user_fixture(%{name: ""})
-      assert RogsIdentity.get_display_name(user.id) == user.email
+      expected_prefix = user.email |> String.split("@") |> List.first()
+      assert RogsIdentity.get_display_name(user.id) == expected_prefix
     end
 
     test "returns Anonymous if user does not exist" do

@@ -187,8 +187,8 @@ defmodule Shinkanki.Card do
     end)
   end
 
-  # --- Action Cards (行動カード) ---
-  # Based on "Compatible Actions" from Talent descriptions
+  # --- Action Cards (行動カード/営みカード) ---
+  # Scale: 0-10 for F/K/S, costs in 空環 points (1-3)
   defp actions do
     [
       # Forest / Nature related
@@ -197,8 +197,8 @@ defmodule Shinkanki.Card do
         type: :action,
         name: "植林 (Reforestation)",
         description: "Plant trees to restore nature.",
-        cost: 10,
-        effect: %{forest: 5},
+        cost: 1,
+        effect: %{forest: 1},
         tags: [:nature, :grow]
       },
       # Culture / Event related
@@ -207,8 +207,8 @@ defmodule Shinkanki.Card do
         type: :action,
         name: "祭事 (Festival)",
         description: "Celebrate to boost culture.",
-        cost: 20,
-        effect: %{culture: 5, social: 3},
+        cost: 2,
+        effect: %{culture: 1, social: 1},
         tags: [:event, :culture]
       },
       # Social / Community related
@@ -218,7 +218,7 @@ defmodule Shinkanki.Card do
         name: "奉仕 (Service)",
         description: "Community service strengthens bonds.",
         cost: 0,
-        effect: %{social: 5, currency: -5},
+        effect: %{social: 1},
         tags: [:community, :care]
       },
       # Economic / Trade
@@ -227,8 +227,8 @@ defmodule Shinkanki.Card do
         type: :action,
         name: "交易 (Trade)",
         description: "Trade brings wealth.",
-        cost: 10,
-        effect: %{currency: 20, culture: -5},
+        cost: 1,
+        effect: %{currency: 2},
         tags: [:biz, :logistics]
       },
       # Making / Craft
@@ -237,8 +237,8 @@ defmodule Shinkanki.Card do
         type: :action,
         name: "制作 (Crafting)",
         description: "Make tools or art.",
-        cost: 5,
-        effect: %{culture: 3, currency: 5},
+        cost: 1,
+        effect: %{culture: 1},
         tags: [:craft, :make]
       },
       # Repair
@@ -247,9 +247,8 @@ defmodule Shinkanki.Card do
         type: :action,
         name: "修理 (Repair)",
         description: "Fix broken things.",
-        cost: 5,
-        # Reduce waste
-        effect: %{social: 2, forest: 2},
+        cost: 1,
+        effect: %{social: 1, forest: 1},
         tags: [:fix, :craft]
       }
     ]
@@ -403,6 +402,7 @@ defmodule Shinkanki.Card do
   end
 
   # --- Project Cards (共創プロジェクト) ---
+  # Scale: 0-10 for F/K/S, unlock conditions in 0-10 scale
   defp projects do
     [
       %__MODULE__{
@@ -410,11 +410,10 @@ defmodule Shinkanki.Card do
         type: :project,
         name: "森の祝祭 (Forest Festival)",
         description: "A grand festival in the forest. Requires 4 talents to complete.",
-        # High cost
-        cost: 50,
-        effect: %{forest: 10, culture: 10, social: 10},
+        cost: 5,
+        effect: %{forest: 2, culture: 2, social: 2},
         tags: [:event, :nature, :community],
-        unlock_condition: %{forest: 80, culture: 60},
+        unlock_condition: %{forest: 8, culture: 6},
         required_progress: 4
       },
       %__MODULE__{
@@ -422,17 +421,18 @@ defmodule Shinkanki.Card do
         type: :project,
         name: "定期市 (Regular Market)",
         description: "Establish a regular market system. Requires 3 talents to complete.",
-        cost: 30,
-        effect: %{currency: 30, social: 5},
+        cost: 3,
+        effect: %{currency: 5, social: 1},
         tags: [:biz, :system],
-        unlock_condition: %{social: 70},
+        unlock_condition: %{social: 7},
         required_progress: 3
       }
     ]
   end
 
   # --- Event Cards (イベントカード) ---
-  # 25 cards: disasters, festivals, divine blessings, old economy temptations
+  # Scale: 0-10 for F/K/S, effects scaled appropriately
+  # These are now legacy events - hitoyo cards are the main event system
   defp events do
     [
       # === 災害系 (Disasters) - 8 cards ===
@@ -441,7 +441,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "大干ばつ (Great Drought)",
         description: "長い干ばつが森を枯らす。",
-        effect: %{forest: -10, currency: -5},
+        effect: %{forest: -2, jaki: 1},
         tags: [:disaster, :nature]
       },
       %__MODULE__{
@@ -449,7 +449,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "大洪水 (Great Flood)",
         description: "洪水が文化遺産を破壊する。",
-        effect: %{culture: -8, forest: -5},
+        effect: %{culture: -1, forest: -1},
         tags: [:disaster, :nature]
       },
       %__MODULE__{
@@ -457,7 +457,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "疫病 (Pestilence)",
         description: "疫病がコミュニティを分断する。",
-        effect: %{social: -10, culture: -5},
+        effect: %{social: -2, jaki: 1},
         tags: [:disaster, :community]
       },
       %__MODULE__{
@@ -465,7 +465,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "山火事 (Wildfire)",
         description: "山火事が森を焼き尽くす。",
-        effect: %{forest: -15},
+        effect: %{forest: -2, jaki: 1},
         tags: [:disaster, :nature]
       },
       %__MODULE__{
@@ -473,7 +473,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "文化の喪失 (Cultural Loss)",
         description: "伝統が失われていく。",
-        effect: %{culture: -12},
+        effect: %{culture: -2},
         tags: [:disaster, :culture]
       },
       %__MODULE__{
@@ -481,7 +481,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "対立 (Conflict)",
         description: "コミュニティ内で対立が起きる。",
-        effect: %{social: -12, currency: -10},
+        effect: %{social: -2, jaki: 1},
         tags: [:disaster, :community]
       },
       %__MODULE__{
@@ -489,7 +489,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "土壌流失 (Soil Erosion)",
         description: "土壌が失われ、森が弱る。",
-        effect: %{forest: -8, culture: -3},
+        effect: %{forest: -1, culture: -1},
         tags: [:disaster, :nature]
       },
       %__MODULE__{
@@ -497,7 +497,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "孤立 (Isolation)",
         description: "人々が孤立し、つながりが薄れる。",
-        effect: %{social: -8, forest: -3},
+        effect: %{social: -1, jaki: 1},
         tags: [:disaster, :community]
       },
 
@@ -507,7 +507,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "収穫祭 (Harvest Festival)",
         description: "豊作を祝う祭りが開かれる。",
-        effect: %{forest: 8, culture: 5, social: 5},
+        effect: %{forest: 1, culture: 1, social: 1},
         tags: [:festival, :nature]
       },
       %__MODULE__{
@@ -515,7 +515,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "文化祭 (Cultural Festival)",
         description: "文化を祝う祭りが開かれる。",
-        effect: %{culture: 10, social: 5},
+        effect: %{culture: 2, social: 1},
         tags: [:festival, :culture]
       },
       %__MODULE__{
@@ -523,7 +523,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "コミュニティの集い (Community Gathering)",
         description: "人々が集まり、絆を深める。",
-        effect: %{social: 10, culture: 3},
+        effect: %{social: 2, culture: 1},
         tags: [:festival, :community]
       },
       %__MODULE__{
@@ -531,7 +531,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "神々の加護 (Divine Blessing)",
         description: "神々が世界に祝福を与える。",
-        effect: %{forest: 5, culture: 5, social: 5, currency: 10},
+        effect: %{forest: 1, culture: 1, social: 1, jaki: -1},
         tags: [:blessing, :divine]
       },
       %__MODULE__{
@@ -539,7 +539,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "恵みの雨 (Blessing Rain)",
         description: "恵みの雨が森を潤す。",
-        effect: %{forest: 12},
+        effect: %{forest: 2},
         tags: [:blessing, :nature]
       },
       %__MODULE__{
@@ -547,7 +547,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "芸術の目覚め (Artistic Awakening)",
         description: "新しい芸術が生まれる。",
-        effect: %{culture: 12},
+        effect: %{culture: 2},
         tags: [:blessing, :culture]
       },
       %__MODULE__{
@@ -555,7 +555,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "結束 (Unity)",
         description: "人々が結束し、力を合わせる。",
-        effect: %{social: 12, currency: 5},
+        effect: %{social: 2, jaki: -1},
         tags: [:blessing, :community]
       },
       %__MODULE__{
@@ -563,7 +563,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "自然の回復 (Nature Recovery)",
         description: "自然が回復し始める。",
-        effect: %{forest: 8, culture: 3},
+        effect: %{forest: 1, culture: 1},
         tags: [:blessing, :nature]
       },
       %__MODULE__{
@@ -571,7 +571,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "伝統の復興 (Tradition Revival)",
         description: "古い伝統が再び息づく。",
-        effect: %{culture: 8, social: 3},
+        effect: %{culture: 1, social: 1},
         tags: [:blessing, :culture]
       },
       %__MODULE__{
@@ -579,7 +579,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "相互扶助 (Mutual Aid)",
         description: "人々が互いに助け合う。",
-        effect: %{social: 8, forest: 3},
+        effect: %{social: 1, forest: 1},
         tags: [:blessing, :community]
       },
 
@@ -589,7 +589,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "急な利益 (Quick Profit)",
         description: "短期的な利益がもたらされるが、代償がある。",
-        effect: %{currency: 30, forest: -5, culture: -5},
+        effect: %{currency: 3, forest: -1, jaki: 1},
         tags: [:temptation, :economy]
       },
       %__MODULE__{
@@ -597,7 +597,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "産業ブーム (Industrial Boom)",
         description: "産業が発展するが、環境に負担がかかる。",
-        effect: %{currency: 25, forest: -8, social: -3},
+        effect: %{currency: 2, forest: -1, jaki: 1},
         tags: [:temptation, :economy]
       },
       %__MODULE__{
@@ -605,7 +605,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "投機 (Speculation)",
         description: "投機で一時的な富が生まれるが、不安定さが増す。",
-        effect: %{currency: 20, social: -8, culture: -3},
+        effect: %{currency: 2, social: -1, jaki: 1},
         tags: [:temptation, :economy]
       },
       %__MODULE__{
@@ -613,7 +613,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "短期的な利益 (Short-term Gain)",
         description: "短期的な利益がもたらされるが、長期的な損失がある。",
-        effect: %{currency: 15, forest: -3, culture: -3, social: -3},
+        effect: %{currency: 2, jaki: 1},
         tags: [:temptation, :economy]
       },
 
@@ -623,7 +623,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "調和 (Balance)",
         description: "すべてが調和し、バランスが取れる。",
-        effect: %{forest: 5, culture: 5, social: 5, currency: 10},
+        effect: %{forest: 1, culture: 1, social: 1, jaki: -1},
         tags: [:special, :balance]
       },
       %__MODULE__{
@@ -631,7 +631,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "予期せぬ収入 (Windfall)",
         description: "予期せぬ収入が入る。",
-        effect: %{currency: 20},
+        effect: %{currency: 2},
         tags: [:special, :economy]
       },
       %__MODULE__{
@@ -639,7 +639,7 @@ defmodule Shinkanki.Card do
         type: :event,
         name: "知恵の光 (Light of Wisdom)",
         description: "古い知恵が新たな光を放つ。",
-        effect: %{culture: 8, social: 5, currency: 5},
+        effect: %{culture: 1, social: 1},
         tags: [:special, :wisdom]
       }
     ]

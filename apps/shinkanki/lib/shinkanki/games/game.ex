@@ -14,22 +14,27 @@ defmodule Shinkanki.Game do
   defstruct [
     :room_id,
     turn: 1,
-    # Forest (F)
-    forest: 50,
-    # Culture (K)
-    culture: 50,
-    # Social (S)
-    social: 50,
-    # Currency (P)
-    currency: 100,
-    # Life Index (L) = F + K + S
-    life_index: 150,
+    # Forest (F) - Scale 0-10
+    forest: 5,
+    # Culture (K) - Scale 0-10
+    culture: 5,
+    # Social (S) - Scale 0-10
+    social: 5,
+    # Jaki (邪気) - Scale 0-8, initial 6
+    jaki: 6,
+    # Currency (P/空環) - Now managed per-player, this is legacy/shared pool
+    currency: 10,
+    # Life Index (L) = F + K + S, max 30
+    life_index: 15,
     # :waiting, :playing, :won, :lost
     status: :waiting,
     # Ending type when game ends: :blessing, :purification, :uncertainty, :lament, :instant_loss
     ending_type: nil,
-    # Current game phase: :event, :discussion, :action, :demurrage, :life_update, :judgment
-    phase: :event,
+    # Current game phase: :hitoyo, :kamihakari, :itonami, :kokyu, :musuhi, :toshiokuri
+    # 人代 → 神議り → 営み → 呼吸 → 結び → 年送り
+    phase: :hitoyo,
+    # Current hitoyo cards drawn this turn
+    current_hitoyo: [],
     logs: [],
     players: %{},
     # Player order for turn-based actions
@@ -56,6 +61,7 @@ defmodule Shinkanki.Game do
           forest: integer(),
           culture: integer(),
           social: integer(),
+          jaki: integer(),
           currency: integer(),
           life_index: integer(),
           status: :waiting | :playing | :won | :lost,
@@ -73,7 +79,8 @@ defmodule Shinkanki.Game do
           completed_projects: list(atom()),
           event_deck: list(atom()),
           event_discard_pile: list(atom()),
-          current_event: atom() | nil
+          current_event: atom() | nil,
+          current_hitoyo: list(map())
         }
 
   @doc """
@@ -535,14 +542,16 @@ defmodule Shinkanki.Game do
     end
   end
 
-  defp can_player_act?(%__MODULE__{phase: :action} = game, player_id) do
-    # In action phase, check if it's the player's turn
+  defp can_player_act?(%__MODULE__{phase: phase} = game, player_id)
+       when phase in [:action, :itonami] do
+    # In action/itonami phase, check if it's the player's turn
     current_player = get_current_player(game)
     current_player == player_id
   end
 
-  defp can_player_act?(%__MODULE__{phase: phase}, _player_id) when phase != :action do
-    # Outside action phase, all players can act (for backward compatibility)
+  defp can_player_act?(%__MODULE__{phase: phase}, _player_id)
+       when phase not in [:action, :itonami] do
+    # Outside action/itonami phase, all players can act (for backward compatibility)
     true
   end
 
@@ -611,13 +620,18 @@ defmodule Shinkanki.Game do
   defp apply_changes(game, changes) do
     Enum.reduce(changes, game, fn {key, val}, acc ->
       case key do
-        :forest -> %{acc | forest: acc.forest + val}
-        :culture -> %{acc | culture: acc.culture + val}
-        :social -> %{acc | social: acc.social + val}
-        :currency -> %{acc | currency: acc.currency + val}
+        :forest -> %{acc | forest: clamp(acc.forest + val, 0, 10)}
+        :culture -> %{acc | culture: clamp(acc.culture + val, 0, 10)}
+        :social -> %{acc | social: clamp(acc.social + val, 0, 10)}
+        :jaki -> %{acc | jaki: clamp(acc.jaki + val, 0, 8)}
+        :currency -> %{acc | currency: max(acc.currency + val, 0)}
         _ -> acc
       end
     end)
+  end
+
+  defp clamp(value, min_val, max_val) do
+    value |> max(min_val) |> min(max_val)
   end
 
   defp update_life_index(game) do
@@ -641,19 +655,19 @@ defmodule Shinkanki.Game do
 
   defp determine_ending(game) do
     cond do
-      # 🌈 神々の祝福エンディング (L >= 40)
-      game.life_index >= 40 ->
+      # 🌈 神々の祝福エンディング (L >= 24, max 30)
+      game.life_index >= 24 ->
         %{game | status: :won, ending_type: :blessing}
 
-      # 🌿 浄化の兆しエンディング (30 <= L < 40)
-      game.life_index >= 30 ->
+      # 🌿 浄化の兆しエンディング (18 <= L < 24)
+      game.life_index >= 18 ->
         %{game | status: :won, ending_type: :purification}
 
-      # 🌙 揺らぎの未来エンディング (20 <= L < 30)
-      game.life_index >= 20 ->
+      # 🌙 揺らぎの未来エンディング (12 <= L < 18)
+      game.life_index >= 12 ->
         %{game | status: :lost, ending_type: :uncertainty}
 
-      # 🔥 神々の嘆き（文明崩壊）(L <= 19)
+      # 🔥 神々の嘆き（文明崩壊）(L < 12)
       true ->
         %{game | status: :lost, ending_type: :lament}
     end
@@ -676,6 +690,20 @@ defmodule Shinkanki.Game do
     end
   end
 
+  @doc """
+  Marks a player as ready for action phase (public API for AI skip).
+  Also advances to next player and potentially advances the turn.
+  """
+  def mark_player_ready_for_action(%__MODULE__{} = game, player_id) do
+    new_game =
+      game
+      |> mark_player_ready(player_id)
+      |> advance_to_next_player()
+      |> maybe_advance_turn()
+
+    {:ok, new_game}
+  end
+
   defp mark_player_used_talents(game, player_id, talent_ids) do
     case Map.get(game.players, player_id) do
       nil ->
@@ -687,7 +715,8 @@ defmodule Shinkanki.Game do
     end
   end
 
-  defp maybe_advance_turn(%__MODULE__{status: :playing, phase: :action} = game) do
+  defp maybe_advance_turn(%__MODULE__{status: :playing, phase: phase} = game)
+       when phase in [:action, :itonami] do
     players = Map.values(game.players)
 
     cond do
@@ -698,7 +727,7 @@ defmodule Shinkanki.Game do
         %Player{is_ready: ready} -> ready
         _ -> false
       end) ->
-        # All players ready - advance to demurrage phase
+        # All players ready - advance to next phase (kokyu for itonami, demurrage for action)
         next_phase(game)
 
       true ->
@@ -708,11 +737,14 @@ defmodule Shinkanki.Game do
 
   defp maybe_advance_turn(game), do: game
 
-  defp advance_to_next_player(%__MODULE__{phase: :action, player_order: []} = game), do: game
+  defp advance_to_next_player(%__MODULE__{phase: phase, player_order: []} = game)
+       when phase in [:action, :itonami],
+       do: game
 
   defp advance_to_next_player(
-         %__MODULE__{phase: :action, player_order: order, current_player_index: index} = game
-       ) do
+         %__MODULE__{phase: phase, player_order: order, current_player_index: index} = game
+       )
+       when phase in [:action, :itonami] do
     next_index = rem(index + 1, length(order))
     %{game | current_player_index: next_index}
   end
@@ -720,13 +752,14 @@ defmodule Shinkanki.Game do
   defp advance_to_next_player(game), do: game
 
   @doc """
-  Gets the current player ID in action phase.
+  Gets the current player ID in action/itonami phase.
   """
   def get_current_player(%__MODULE__{
-        phase: :action,
+        phase: phase,
         player_order: order,
         current_player_index: index
-      }) do
+      })
+      when phase in [:action, :itonami] do
     if order != [] and index < length(order) do
       Enum.at(order, index)
     else
@@ -948,20 +981,90 @@ defmodule Shinkanki.Game do
   end
 
   # === Phase Management System ===
+  # New phase flow: 人代(hitoyo) → 神議り(kamihakari) → 営み(itonami) → 呼吸(kokyu) → 結び(musuhi) → 年送り(toshiokuri)
 
   defp set_phase(game, phase) do
     %{game | phase: phase}
   end
 
+  # New phase names
+  defp get_next_phase(:hitoyo), do: :kamihakari
+  defp get_next_phase(:kamihakari), do: :itonami
+  defp get_next_phase(:itonami), do: :kokyu
+  defp get_next_phase(:kokyu), do: :musuhi
+  defp get_next_phase(:musuhi), do: :toshiokuri
+  defp get_next_phase(:toshiokuri), do: :hitoyo
+  # Legacy phase names for backward compatibility
   defp get_next_phase(:event), do: :discussion
   defp get_next_phase(:discussion), do: :action
   defp get_next_phase(:action), do: :demurrage
   defp get_next_phase(:demurrage), do: :life_update
   defp get_next_phase(:life_update), do: :judgment
-  # Next turn starts
   defp get_next_phase(:judgment), do: :event
-  defp get_next_phase(_), do: :event
+  defp get_next_phase(_), do: :hitoyo
 
+  # === 人代フェーズ (Hitoyo Phase) ===
+  # Draw hitoyo cards based on jaki level
+  defp execute_phase(%__MODULE__{status: :playing, phase: :hitoyo} = game) do
+    hitoyo_cards = Card.draw_hitoyo_cards(game.jaki)
+
+    game
+    |> Map.put(:current_hitoyo, hitoyo_cards)
+    |> apply_hitoyo_effects(hitoyo_cards)
+    |> add_log("人代フェーズ: #{length(hitoyo_cards)}枚のカードを引きました（邪気レベル: #{game.jaki}）")
+    |> set_phase(:kamihakari)
+  end
+
+  # === 神議りフェーズ (Kamihakari Phase) ===
+  # Discussion phase - players discuss strategy
+  defp execute_phase(%__MODULE__{status: :playing, phase: :kamihakari} = game) do
+    if all_players_discussion_ready?(game) do
+      game
+      |> add_log("神議りフェーズ完了 - 営みフェーズへ")
+      |> prepare_itonami_phase()
+    else
+      game
+    end
+  end
+
+  # === 営みフェーズ (Itonami Phase) ===
+  # Action phase - players play cards
+  defp execute_phase(%__MODULE__{status: :playing, phase: :itonami} = game), do: game
+
+  # === 呼吸フェーズ (Kokyu Phase) ===
+  # Kanryu phase - players with kuukan >= 5 must return at least 1
+  defp execute_phase(%__MODULE__{status: :playing, phase: :kokyu} = game) do
+    game
+    |> process_kokyu_phase()
+    |> set_phase(:musuhi)
+  end
+
+  # === 結びフェーズ (Musuhi Phase) ===
+  # Players give musuhi chips to each other
+  defp execute_phase(%__MODULE__{status: :playing, phase: :musuhi} = game) do
+    game
+    |> distribute_musuhi_chips()
+    |> set_phase(:toshiokuri)
+  end
+
+  # === 年送りフェーズ (Toshiokuri Phase) ===
+  # End of turn - check win/loss
+  defp execute_phase(%__MODULE__{status: :playing, phase: :toshiokuri} = game) do
+    updated_game =
+      game
+      |> reset_player_state_for_new_turn()
+      |> check_projects_unlock()
+      |> update_life_index()
+      |> check_win_loss()
+
+    if updated_game.status == :playing do
+      set_phase(updated_game, :hitoyo)
+    else
+      set_phase(updated_game, :toshiokuri)
+    end
+  end
+
+  # Legacy phase handlers for backward compatibility
   defp execute_phase(%__MODULE__{status: :playing, phase: :event} = game) do
     game
     |> draw_and_apply_event()
@@ -969,8 +1072,6 @@ defmodule Shinkanki.Game do
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :discussion} = game) do
-    # Discussion phase - players can discuss
-    # Check if all players are ready to advance to action phase
     if all_players_discussion_ready?(game) do
       game
       |> add_log("All players ready - advancing to action phase")
@@ -986,8 +1087,6 @@ defmodule Shinkanki.Game do
     game
     |> apply_demurrage()
     |> set_phase(:life_update)
-
-    # Don't recursively call execute_phase - let next_phase handle it
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :life_update} = game) do
@@ -996,24 +1095,84 @@ defmodule Shinkanki.Game do
     |> check_projects_unlock()
     |> update_life_index()
     |> set_phase(:judgment)
-
-    # Don't recursively call execute_phase - let next_phase handle it
   end
 
   defp execute_phase(%__MODULE__{status: :playing, phase: :judgment} = game) do
     updated_game = check_win_loss(game)
 
     if updated_game.status == :playing do
-      # Game continues - next turn starts with event phase
-      # But don't execute event phase yet - that happens on next_turn
       set_phase(updated_game, :event)
     else
-      # Game ended - stay in judgment phase
       set_phase(updated_game, :judgment)
     end
   end
 
   defp execute_phase(game), do: game
+
+  # === Helper functions for new phases ===
+
+  defp apply_hitoyo_effects(game, hitoyo_cards) do
+    Enum.reduce(hitoyo_cards, game, fn card, acc ->
+      if card.timing == :instant do
+        apply_changes(acc, card.effect)
+        |> add_log("人代「#{card.name}」の効果を適用")
+      else
+        # Delayed effects are tracked but not applied immediately
+        acc
+        |> add_log("人代「#{card.name}」（遅延効果）")
+      end
+    end)
+  end
+
+  defp process_kokyu_phase(game) do
+    # For now, auto-process kokyu for players with kuukan >= 5
+    # In the full implementation, players would choose how much to return
+    players =
+      Enum.into(game.players, %{}, fn {id, player} ->
+        if Player.must_kanryu?(player) do
+          # Auto-return 1 kuukan and boost a random stat
+          updated_player = %{player | kuukan: player.kuukan - 1}
+          {id, updated_player}
+        else
+          {id, player}
+        end
+      end)
+
+    %{game | players: players}
+  end
+
+  defp distribute_musuhi_chips(game) do
+    # Give each player 1 musuhi chip to distribute
+    players =
+      Enum.into(game.players, %{}, fn {id, player} ->
+        {id, Player.reset_musuhi(player)}
+      end)
+
+    %{game | players: players}
+  end
+
+  defp reset_player_state_for_new_turn(game) do
+    players =
+      Enum.into(game.players, %{}, fn {id, player} ->
+        {id, %{player | is_ready: false, used_talents: [], musuhi_received: 0}}
+      end)
+
+    %{game | players: players, current_player_index: 0, current_hitoyo: []}
+  end
+
+  defp prepare_itonami_phase(%__MODULE__{} = game) do
+    game
+    |> reset_action_phase_readiness()
+    |> Map.put(:current_player_index, 0)
+    |> set_phase(:itonami)
+    |> log_itonami_phase_start()
+  end
+
+  defp log_itonami_phase_start(%__MODULE__{player_order: []} = game), do: game
+
+  defp log_itonami_phase_start(%__MODULE__{} = game) do
+    add_log(game, "営みフェーズ開始 - #{get_current_player_name(game)}の番")
+  end
 
   defp prepare_action_phase(%__MODULE__{} = game) do
     game
@@ -1091,6 +1250,14 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the current phase name in Japanese.
   """
+  # New phase names
+  def phase_name(:hitoyo), do: "人代フェーズ"
+  def phase_name(:kamihakari), do: "神議りフェーズ"
+  def phase_name(:itonami), do: "営みフェーズ"
+  def phase_name(:kokyu), do: "呼吸フェーズ"
+  def phase_name(:musuhi), do: "結びフェーズ"
+  def phase_name(:toshiokuri), do: "年送りフェーズ"
+  # Legacy phase names
   def phase_name(:event), do: "イベントフェーズ"
   def phase_name(:discussion), do: "相談フェーズ"
   def phase_name(:action), do: "アクションフェーズ"

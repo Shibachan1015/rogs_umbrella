@@ -124,6 +124,11 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:migaki_cards, get_available_migaki_cards())
       |> assign(:selected_migaki_id, nil)
       |> assign(:show_migaki_panel, false)
+      # フェーズ確認用タイマー（30秒で自動進行）
+      |> assign(:phase_auto_advance_timer, nil)
+      |> assign(:phase_countdown, 30)
+      # 人代フェーズで引いたカード
+      |> assign(:drawn_hitoyo_cards, [])
 
     socket =
       if connected?(socket) do
@@ -131,8 +136,12 @@ defmodule ShinkankiWebWeb.GameLive do
         chat_topic = "room:#{room_id}"
         Phoenix.PubSub.subscribe(CommPubSub, chat_topic)
 
-        # Subscribe to GamePubSub for game state updates
+        # Subscribe to GamePubSub for game state updates (DB-based)
         Shinkanki.GamePubSub.subscribe(game_session.id)
+
+        # Subscribe to Shinkanki PubSub for AI chat messages (memory-based game)
+        shinkanki_topic = "shinkanki:game:#{room_id}"
+        Phoenix.PubSub.subscribe(Shinkanki.PubSub, shinkanki_topic)
 
         # Load initial messages from rogs_comm
         messages = load_messages(room_id)
@@ -362,10 +371,10 @@ defmodule ShinkankiWebWeb.GameLive do
           </button>
           <button
             phx-click={JS.toggle(to: "#chat-panel")}
-            class="hidden sm:block p-1.5 rounded bg-white/10 hover:bg-white/20 transition-colors"
+            class="p-1 sm:p-1.5 rounded bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
             aria-label="チャットを表示"
           >
-            <.icon name="hero-chat-bubble-left-right" class="w-4 h-4" />
+            <.icon name="hero-chat-bubble-left-right" class="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
         </div>
       </header>
@@ -454,14 +463,20 @@ defmodule ShinkankiWebWeb.GameLive do
           <div
             :for={{id, msg} <- @streams.chat_messages}
             id={id}
-            class="text-xs bg-white/5 rounded p-2"
+            class={"text-xs rounded p-2 #{if Map.get(msg, :is_ai), do: "bg-purple-500/20 border-l-2 border-purple-400", else: "bg-white/5"}"}
           >
-            <span class="font-semibold text-[var(--color-landing-gold)]">
-              {msg.user_email || msg.author}:
-            </span>
-            <span class="text-[var(--color-landing-text-primary)] ml-1">
-              {msg.content || msg.body}
-            </span>
+            <%= if Map.get(msg, :is_ai) do %>
+              <span class="text-purple-300">
+                {msg.content || msg.body}
+              </span>
+            <% else %>
+              <span class="font-semibold text-[var(--color-landing-gold)]">
+                {msg.user_email || msg.author}:
+              </span>
+              <span class="text-[var(--color-landing-text-primary)] ml-1">
+                {msg.content || msg.body}
+              </span>
+            <% end %>
           </div>
         </div>
         <.form for={@chat_form} id="chat-form" phx-submit="send_chat" class="flex gap-2">
@@ -475,23 +490,48 @@ defmodule ShinkankiWebWeb.GameLive do
         </.form>
       </div>
       
-    <!-- Main Content - Mobile First Design -->
-      <main class="flex-1 flex flex-col items-center justify-start p-1 sm:p-4 overflow-y-auto">
-        <!-- Player List - Hidden on mobile, shown on larger screens -->
-        <div class="hidden sm:block w-full max-w-2xl mb-4">
-          <div class="flex flex-wrap justify-center gap-2">
-            <%= for player <- @players do %>
-              <div class={"px-3 py-1 rounded text-xs #{if player.is_ai, do: "bg-purple-500/20 text-purple-300", else: "bg-blue-500/20 text-blue-300"}"}>
-                <%= if player.is_ai do %>
-                  🤖 {player.name || player.ai_name}
-                <% else %>
-                  👤 あなた
-                <% end %>
-                <span class="ml-1 text-[var(--color-landing-gold)]">φ{player.akasha}</span>
-              </div>
-            <% end %>
+    <!-- Main Content - Mobile First Design with Desktop AI Chat Panel -->
+      <main class="flex-1 flex overflow-hidden">
+        <!-- AI Chat Panel - Desktop Only (Left Side) -->
+        <aside class="hidden lg:flex flex-col w-72 xl:w-80 bg-[rgba(15,20,25,0.95)] border-r border-purple-500/30">
+          <div class="p-3 border-b border-purple-500/30">
+            <h3 class="text-sm font-bold text-purple-300 flex items-center gap-2">
+              <span>🤖</span>
+              <span>AIプレイヤーの会話</span>
+            </h3>
           </div>
-        </div>
+          <div id="ai-chat-desktop" phx-update="stream" class="flex-1 overflow-y-auto p-3 space-y-2">
+            <div
+              :for={{id, msg} <- @streams.chat_messages}
+              :if={Map.get(msg, :is_ai)}
+              id={"desktop-#{id}"}
+              class="text-xs bg-purple-500/20 border-l-2 border-purple-400 rounded p-2 animate-fade-in"
+            >
+              <span class="text-purple-200">{msg.content || msg.body}</span>
+            </div>
+          </div>
+          <div class="p-3 border-t border-purple-500/30 text-[10px] text-purple-400/60 text-center">
+            Claude AI による思考・会話
+          </div>
+        </aside>
+
+        <!-- Main Game Area -->
+        <div class="flex-1 flex flex-col items-center justify-start p-1 sm:p-4 overflow-y-auto">
+          <!-- Player List - Hidden on mobile, shown on larger screens -->
+          <div class="hidden sm:block w-full max-w-2xl mb-4">
+            <div class="flex flex-wrap justify-center gap-2">
+              <%= for player <- @players do %>
+                <div class={"px-3 py-1 rounded text-xs #{if player.is_ai, do: "bg-purple-500/20 text-purple-300", else: "bg-blue-500/20 text-blue-300"}"}>
+                  <%= if player.is_ai do %>
+                    🤖 {player.name || player.ai_name}
+                  <% else %>
+                    👤 あなた
+                  <% end %>
+                  <span class="ml-1 text-[var(--color-landing-gold)]">φ{player.akasha}</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
         
     <!-- Waiting State -->
         <%= if @game_status == :waiting || @game_status == "waiting" do %>
@@ -583,9 +623,13 @@ defmodule ShinkankiWebWeb.GameLive do
             <div class="mt-4 text-center text-xs text-[var(--color-landing-text-secondary)]">
               ⚠️ 方針に反する行動をすると邪気が溜まります
             </div>
+
+            <div class="mt-3 text-center text-xs text-[var(--color-landing-text-secondary)]">
+              自動進行まで: <span class="text-[var(--color-landing-gold)] font-bold"><%= @phase_countdown %>秒</span>
+            </div>
           </div>
         <% end %>
-        
+
     <!-- 人代フェイズ (Hitoyo Phase) - 人代カード表示 -->
         <%= if @current_phase in ["hitoyo", :hitoyo, "event", :event] && @game_status in ["active", :active, "playing", :playing] do %>
           <div class="w-full max-w-md px-4 animate-fade-in">
@@ -615,18 +659,73 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             </div>
             
-    <!-- 処理中表示 -->
-            <div class="text-center text-sm text-[var(--color-landing-text-secondary)]">
-              <div class="animate-pulse">🎴 人代カードを処理中...</div>
+    <!-- 引かれた人代カードを表示 -->
+            <%= if @drawn_hitoyo_cards != [] do %>
+              <div class="space-y-3 mb-4">
+                <%= for card <- @drawn_hitoyo_cards do %>
+                  <div class="bg-gray-800/80 border border-purple-500/50 rounded-lg p-3 shadow-lg">
+                    <div class="flex items-start gap-3">
+                      <div class="text-2xl">
+                        <%= case card.category do %>
+                          <% :env_destruction -> %>💀
+                          <% :culture_decline -> %>📉
+                          <% :social_crisis -> %>⚠️
+                          <% :blessing -> %>✨
+                          <% _ -> %>🎴
+                        <% end %>
+                      </div>
+                      <div class="flex-1">
+                        <div class="font-bold text-purple-300 text-sm"><%= card.name %></div>
+                        <div class="text-xs text-[var(--color-landing-text-secondary)] mt-1">
+                          <%= card.description %>
+                        </div>
+                        <%= if card.effect && map_size(card.effect) > 0 do %>
+                          <div class="flex flex-wrap gap-2 mt-2">
+                            <%= if card.effect[:forest] && card.effect[:forest] != 0 do %>
+                              <span class={"text-xs px-2 py-0.5 rounded #{if card.effect[:forest] > 0, do: "bg-green-500/20 text-green-400", else: "bg-red-500/20 text-red-400"}"}>
+                                森 <%= if card.effect[:forest] > 0, do: "+", else: "" %><%= card.effect[:forest] %>
+                              </span>
+                            <% end %>
+                            <%= if card.effect[:culture] && card.effect[:culture] != 0 do %>
+                              <span class={"text-xs px-2 py-0.5 rounded #{if card.effect[:culture] > 0, do: "bg-pink-500/20 text-pink-400", else: "bg-red-500/20 text-red-400"}"}>
+                                文化 <%= if card.effect[:culture] > 0, do: "+", else: "" %><%= card.effect[:culture] %>
+                              </span>
+                            <% end %>
+                            <%= if card.effect[:social] && card.effect[:social] != 0 do %>
+                              <span class={"text-xs px-2 py-0.5 rounded #{if card.effect[:social] > 0, do: "bg-yellow-500/20 text-yellow-400", else: "bg-red-500/20 text-red-400"}"}>
+                                社会 <%= if card.effect[:social] > 0, do: "+", else: "" %><%= card.effect[:social] %>
+                              </span>
+                            <% end %>
+                            <%= if card.effect[:jaki] && card.effect[:jaki] != 0 do %>
+                              <span class={"text-xs px-2 py-0.5 rounded #{if card.effect[:jaki] > 0, do: "bg-purple-500/20 text-purple-400", else: "bg-blue-500/20 text-blue-400"}"}>
+                                邪気 <%= if card.effect[:jaki] > 0, do: "+", else: "" %><%= card.effect[:jaki] %>
+                              </span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-center text-sm text-[var(--color-landing-text-secondary)] mb-4">
+                <div>🎴 人代カードを読み込み中...</div>
+              </div>
+            <% end %>
+
+    <!-- 処理ボタン（30秒で自動進行） -->
+            <div class="space-y-2">
+              <button
+                phx-click="advance_hitoyo_phase"
+                class="w-full py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 active:scale-98 transition-all"
+              >
+                確認して次へ進む
+              </button>
+              <div class="text-center text-xs text-[var(--color-landing-text-secondary)]">
+                自動進行まで: <span class="text-purple-400 font-bold"><%= @phase_countdown %>秒</span>
+              </div>
             </div>
-            
-    <!-- 自動処理ボタン（デバッグ用・将来は自動） -->
-            <button
-              phx-click="advance_hitoyo_phase"
-              class="w-full mt-4 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 active:scale-98 transition-all"
-            >
-              人代カードを処理
-            </button>
           </div>
         <% end %>
         
@@ -676,7 +775,8 @@ defmodule ShinkankiWebWeb.GameLive do
               <!-- Action Progress Summary -->
               <div class="bg-white/5 rounded-lg p-3 max-w-md mx-auto mt-4">
                 <div class="text-xs text-[var(--color-landing-text-secondary)] mb-2">
-                  完了: {length(@action_logs)}/{length(@players)} 人
+                  <% acted_player_ids = @action_logs |> Enum.map(& &1.player_id) |> Enum.uniq() %>
+                  完了: {length(acted_player_ids)}/{length(@players)} 人
                 </div>
                 <div class="flex flex-wrap justify-center gap-1">
                   <%= for player <- @players do %>
@@ -901,13 +1001,18 @@ defmodule ShinkankiWebWeb.GameLive do
               </div>
             </div>
             
-    <!-- 次へ進むボタン -->
-            <button
-              phx-click="advance_breathing_phase"
-              class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
-            >
-              呼吸を終える
-            </button>
+    <!-- 次へ進むボタン（30秒で自動進行） -->
+            <div class="space-y-2">
+              <button
+                phx-click="advance_breathing_phase"
+                class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
+              >
+                呼吸を終える
+              </button>
+              <div class="text-center text-xs text-[var(--color-landing-text-secondary)]">
+                自動進行まで: <span class="text-[var(--color-landing-gold)] font-bold"><%= @phase_countdown %>秒</span>
+              </div>
+            </div>
           </div>
         <% end %>
         
@@ -975,17 +1080,22 @@ defmodule ShinkankiWebWeb.GameLive do
               🏷️ 称号システムは今後実装予定
             </div>
             
-    <!-- 次の年へ進む -->
-            <button
-              phx-click="advance_musuhi_phase"
-              class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
-            >
-              <%= if @game_state.turn >= 20 do %>
-                最終結果を見る
-              <% else %>
-                次の年へ（{@game_state.turn + 1}年目）
-              <% end %>
-            </button>
+    <!-- 次の年へ進む（30秒で自動進行） -->
+            <div class="space-y-2">
+              <button
+                phx-click="advance_musuhi_phase"
+                class="w-full py-3 bg-[var(--color-landing-gold)] text-[var(--color-landing-bg)] rounded-lg font-bold hover:opacity-90 active:scale-98 transition-all"
+              >
+                <%= if @game_state.turn >= 20 do %>
+                  最終結果を見る
+                <% else %>
+                  次の年へ（{@game_state.turn + 1}年目）
+                <% end %>
+              </button>
+              <div class="text-center text-xs text-[var(--color-landing-text-secondary)]">
+                自動進行まで: <span class="text-[var(--color-landing-gold)] font-bold"><%= @phase_countdown %>秒</span>
+              </div>
+            </div>
           </div>
         <% end %>
         
@@ -1006,6 +1116,7 @@ defmodule ShinkankiWebWeb.GameLive do
             </.link>
           </div>
         <% end %>
+        </div>
       </main>
       
     <!-- Action Log Toggle Button - Mobile: Bottom right, Desktop: Side -->
@@ -1867,7 +1978,12 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("set_policy", %{"policy" => policy}, socket) do
     game_session = socket.assigns.game_session
 
-    case Games.set_policy(game_session, policy) do
+    # タイマーをキャンセル
+    if socket.assigns[:phase_auto_advance_timer] do
+      Process.cancel_timer(socket.assigns.phase_auto_advance_timer)
+    end
+
+    case Games.set_policy(game_session.id, policy) do
       {:ok, updated_session} ->
         # 次のフェーズ（イベント）に進む
         case Games.advance_phase(updated_session.id) do
@@ -1880,7 +1996,15 @@ defmodule ShinkankiWebWeb.GameLive do
               message: "今年の方針「#{policy_name(policy)}」を決定しました"
             }
 
-            socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+            # 次のフェーズの自動処理を継続
+            Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
+
+            socket =
+              socket
+              |> assign(:phase_auto_advance_timer, nil)
+              |> assign(:phase_countdown, 30)
+              |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
             Process.send_after(self(), {:remove_toast, toast_id}, 3000)
             {:noreply, socket}
 
@@ -1896,68 +2020,97 @@ defmodule ShinkankiWebWeb.GameLive do
   # 呼吸フェーズ: 任意の還流
   def handle_event(
         "voluntary_circulation",
-        %{"player-id" => player_id, "amount" => amount},
+        %{"target" => target, "amount" => amount},
         socket
       ) do
     game_session = socket.assigns.game_session
+    user_id = socket.assigns.user_id
     amount = String.to_integer(amount)
 
-    case Games.voluntary_circulation(game_session, player_id, amount) do
-      {:ok, _updated_session} ->
-        toast_id = "toast-#{System.unique_integer([:positive])}"
+    # 現在のプレイヤーを取得
+    player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
-        new_toast = %{
-          id: toast_id,
-          kind: :info,
-          message: "#{amount}Akashaを還流しました（邪気-1）"
-        }
+    if player do
+      case Games.voluntary_circulation(player, amount, target) do
+        {:ok, _updated_player} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
+          target_name = case target do
+            "forest" -> "森"
+            "culture" -> "文化"
+            "social" -> "絆"
+            _ -> target
+          end
 
-        socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
-        Process.send_after(self(), {:remove_toast, toast_id}, 3000)
-        {:noreply, socket}
+          new_toast = %{
+            id: toast_id,
+            kind: :info,
+            message: "#{amount}空環を#{target_name}へ還流しました（邪気-1）"
+          }
 
-      {:error, reason} ->
-        toast_id = "toast-#{System.unique_integer([:positive])}"
+          socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          {:noreply, socket}
 
-        new_toast = %{
-          id: toast_id,
-          kind: :error,
-          message: "還流に失敗しました: #{reason}"
-        }
+        {:error, reason} ->
+          toast_id = "toast-#{System.unique_integer([:positive])}"
 
-        socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
-        Process.send_after(self(), {:remove_toast, toast_id}, 3000)
-        {:noreply, socket}
+          new_toast = %{
+            id: toast_id,
+            kind: :error,
+            message: "還流に失敗しました: #{reason}"
+          }
+
+          socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+          Process.send_after(self(), {:remove_toast, toast_id}, 3000)
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
-  # 呼吸フェーズ: 次のフェーズへ進む
   # 人代フェーズを処理
   def handle_event("advance_hitoyo_phase", _params, socket) do
     game_session = socket.assigns.game_session
+    drawn_cards = socket.assigns[:drawn_hitoyo_cards] || []
 
-    # 人代フェーズを実行
-    case Games.execute_hitoyo_phase(game_session.id) do
-      {:ok, _updated_session, hitoyo_cards} ->
-        # 引いた人代カードの名前をトーストで表示
-        card_names = Enum.map(hitoyo_cards, & &1.name) |> Enum.join("、")
-        toast_id = "toast-#{System.unique_integer([:positive])}"
-
-        new_toast = %{
-          id: toast_id,
-          kind: :warning,
-          message: "人代カード: #{card_names}"
-        }
-
-        socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
-        Process.send_after(self(), {:remove_toast, toast_id}, 5000)
-        {:noreply, socket}
-
-      {:error, reason} ->
-        require Logger
-        Logger.error("Failed to execute hitoyo phase: #{inspect(reason)}")
-        {:noreply, socket}
+    # タイマーをキャンセル
+    if socket.assigns[:phase_auto_advance_timer] do
+      Process.cancel_timer(socket.assigns.phase_auto_advance_timer)
     end
+
+    # すでに引いたカードがある場合はそれを使用、なければ新しく引く
+    {hitoyo_cards, _updated_session} =
+      if drawn_cards != [] do
+        {:ok, session} = Games.apply_drawn_hitoyo_cards(game_session.id, drawn_cards)
+        {drawn_cards, session}
+      else
+        {:ok, session, cards} = Games.execute_hitoyo_phase(game_session.id)
+        {cards, session}
+      end
+
+    # 引いた人代カードの名前をトーストで表示
+    card_names = Enum.map(hitoyo_cards, & &1.name) |> Enum.join("、")
+    toast_id = "toast-#{System.unique_integer([:positive])}"
+
+    new_toast = %{
+      id: toast_id,
+      kind: :warning,
+      message: "人代カード効果適用: #{card_names}"
+    }
+
+    # 次のフェーズの自動処理を継続
+    Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
+
+    socket =
+      socket
+      |> assign(:phase_auto_advance_timer, nil)
+      |> assign(:phase_countdown, 30)
+      |> assign(:drawn_hitoyo_cards, [])
+      |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
+    Process.send_after(self(), {:remove_toast, toast_id}, 5000)
+    {:noreply, socket}
   end
 
   # 磨きカードパネルの表示切替
@@ -2022,8 +2175,15 @@ defmodule ShinkankiWebWeb.GameLive do
   def handle_event("advance_breathing_phase", _params, socket) do
     game_session = socket.assigns.game_session
 
+    # タイマーをキャンセル
+    if socket.assigns[:phase_auto_advance_timer] do
+      Process.cancel_timer(socket.assigns.phase_auto_advance_timer)
+    end
+
     # 呼吸フェーズの処理を実行（新しい関数を使用）
     {:ok, _updated_session} = Games.execute_kokyu_phase(game_session.id)
+    # 次のフェーズへ
+    Games.advance_phase(game_session.id)
 
     toast_id = "toast-#{System.unique_integer([:positive])}"
 
@@ -2033,7 +2193,15 @@ defmodule ShinkankiWebWeb.GameLive do
       message: "呼吸フェーズを完了しました"
     }
 
-    socket = update(socket, :toasts, fn toasts -> [new_toast | toasts] end)
+    # 次のフェーズの自動処理を継続
+    Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
+
+    socket =
+      socket
+      |> assign(:phase_auto_advance_timer, nil)
+      |> assign(:phase_countdown, 30)
+      |> update(:toasts, fn toasts -> [new_toast | toasts] end)
+
     Process.send_after(self(), {:remove_toast, toast_id}, 3000)
     {:noreply, socket}
   end
@@ -2041,6 +2209,11 @@ defmodule ShinkankiWebWeb.GameLive do
   # 結びフェーズ: 次のフェーズ（年の終わり）へ進む
   def handle_event("advance_musuhi_phase", _params, socket) do
     game_session = socket.assigns.game_session
+
+    # タイマーをキャンセル
+    if socket.assigns[:phase_auto_advance_timer] do
+      Process.cancel_timer(socket.assigns.phase_auto_advance_timer)
+    end
 
     # 結びフェーズの処理を実行（game_session_idを渡す）
     {:ok, _updated_musuhi} = Games.execute_musuhi_phase(game_session.id)
@@ -2051,6 +2224,14 @@ defmodule ShinkankiWebWeb.GameLive do
         # 年の終わり処理を実行し、次のターンを開始
         turn = game_session.turn
         result = Games.execute_end_of_turn(game_session.id)
+
+        # 次のフェーズの自動処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session.id}, 500)
+
+        socket =
+          socket
+          |> assign(:phase_auto_advance_timer, nil)
+          |> assign(:phase_countdown, 30)
 
         case result do
           {:continue, _} ->
@@ -2097,8 +2278,8 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply, stream(socket, :chat_messages, [message])}
   end
 
-  # GamePubSubからの更新を受け取る
-  def handle_info({:game_state_updated, game_session}, socket) do
+  # GamePubSubからの更新を受け取る（DBベースのGameSession）
+  def handle_info({:game_state_updated, %Shinkanki.Games.GameSession{} = game_session}, socket) do
     # DBから最新のゲームセッションを取得
     updated_session = Games.get_game_session!(game_session.id)
     game_state = format_game_session(updated_session, socket.assigns.user_id)
@@ -2164,6 +2345,15 @@ defmodule ShinkankiWebWeb.GameLive do
 
   # 旧形式のメッセージ（後方互換性のため）
   def handle_info(%Phoenix.Socket.Broadcast{event: "game_state_updated", payload: game}, socket) do
+    handle_memory_game_state_update(game, socket)
+  end
+
+  # タプル形式のメッセージ（Shinkanki.PubSubからの直接ブロードキャスト）
+  def handle_info({:game_state_updated, %Shinkanki.Game{} = game}, socket) do
+    handle_memory_game_state_update(game, socket)
+  end
+
+  defp handle_memory_game_state_update(game, socket) do
     # Update game state when broadcast from GameServer
     new_status = game.status || :waiting
     new_phase = game.phase || :event
@@ -2203,6 +2393,92 @@ defmodule ShinkankiWebWeb.GameLive do
      update(socket, :toasts, fn toasts -> Enum.reject(toasts, &(&1.id == toast_id)) end)}
   end
 
+  # フェーズ確認用カウントダウン開始
+  def handle_info({:start_phase_countdown, game_session_id, phase}, socket) do
+    # 既存のタイマーがあればキャンセル
+    if socket.assigns[:phase_auto_advance_timer] do
+      Process.cancel_timer(socket.assigns.phase_auto_advance_timer)
+    end
+
+    # 30秒後に自動進行
+    timer_ref = Process.send_after(self(), {:phase_auto_advance, game_session_id, phase}, 30_000)
+    # 1秒ごとにカウントダウン更新
+    Process.send_after(self(), {:phase_countdown_tick, game_session_id, phase}, 1000)
+
+    socket =
+      socket
+      |> assign(:phase_auto_advance_timer, timer_ref)
+      |> assign(:phase_countdown, 30)
+
+    # 人代フェーズの場合はカードを引いて保存
+    socket =
+      if phase == "hitoyo" and socket.assigns[:drawn_hitoyo_cards] == [] do
+        game_session = Games.get_game_session!(game_session_id)
+        jaki_level = game_session.evil_pool || 0
+        hitoyo_cards = Shinkanki.Card.draw_hitoyo_cards(jaki_level)
+        assign(socket, :drawn_hitoyo_cards, hitoyo_cards)
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  # カウントダウン更新（1秒ごと）
+  def handle_info({:phase_countdown_tick, game_session_id, phase}, socket) do
+    current_countdown = socket.assigns[:phase_countdown] || 0
+
+    if current_countdown > 1 && socket.assigns[:phase_auto_advance_timer] do
+      # まだカウントダウン中
+      Process.send_after(self(), {:phase_countdown_tick, game_session_id, phase}, 1000)
+      {:noreply, assign(socket, :phase_countdown, current_countdown - 1)}
+    else
+      # カウントダウン終了
+      {:noreply, socket}
+    end
+  end
+
+  # 30秒経過後の自動進行
+  def handle_info({:phase_auto_advance, game_session_id, phase}, socket) do
+    # タイマーをクリア
+    socket = assign(socket, :phase_auto_advance_timer, nil)
+
+    case phase do
+      "hitoyo" ->
+        # 人代フェーズを自動で完了
+        Games.execute_hitoyo_phase(game_session_id)
+        # 次のフェーズの処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+
+      "kami_hakari" ->
+        # 神議りフェーズを自動で完了（最も低いパラメータを方針に）
+        game_session = Games.get_game_session!(game_session_id)
+        policy = ai_suggest_policy(game_session)
+        Games.set_policy(game_session_id, policy)
+        # 次のフェーズの処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+
+      "breathing" ->
+        # 呼吸フェーズを自動で完了
+        {:ok, _} = Games.execute_kokyu_phase(game_session_id)
+        Games.advance_phase(game_session_id)
+        # 次のフェーズの処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+
+      "musuhi" ->
+        # 結びフェーズを自動で完了
+        {:ok, _} = Games.execute_musuhi_phase(game_session_id)
+        Games.advance_phase(game_session_id)
+        # 次のフェーズの処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+
+      _ ->
+        :ok
+    end
+
+    {:noreply, assign(socket, :phase_countdown, 30)}
+  end
+
   # AI自動行動をスケジュール（新しい6フェーズシステム対応）
   def handle_info({:ai_auto_action, game_session_id}, socket) do
     # AIが自動で行動を実行
@@ -2211,62 +2487,52 @@ defmodule ShinkankiWebWeb.GameLive do
     current_phase = if turn_state, do: turn_state.phase, else: "hitoyo"
 
     case current_phase do
-      # 人代フェーズ: 自動で人代カードを処理
+      # 人代フェーズ: プレイヤーの確認を待つ（30秒で自動進行）
       phase when phase in ["hitoyo", "event"] ->
-        Games.execute_hitoyo_phase(game_session.id)
-        # フェーズが変わったか確認してからスケジュール
-        updated_session = Games.get_game_session!(game_session_id)
-        updated_turn_state = get_current_turn_state(updated_session)
-        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "hitoyo"
-        # フェーズが変わった場合のみ次のアクションをスケジュール
-        if new_phase != current_phase do
-          Process.send_after(self(), {:ai_auto_action, game_session_id}, 800)
+        # タイマーがなければ開始（30秒カウントダウン）
+        if is_nil(socket.assigns[:phase_auto_advance_timer]) do
+          send(self(), {:start_phase_countdown, game_session_id, "hitoyo"})
         end
 
-      # 神議りフェーズ: AIが方針を提案（最も低いパラメータを優先）
+      # 神議りフェーズ: プレイヤーの確認を待つ（30秒で自動進行）
       "kami_hakari" ->
-        policy = ai_suggest_policy(game_session)
-        Games.set_policy(game_session.id, policy)
-        # フェーズが変わったか確認してからスケジュール
-        updated_session = Games.get_game_session!(game_session_id)
-        updated_turn_state = get_current_turn_state(updated_session)
-        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "kami_hakari"
-
-        if new_phase != current_phase do
-          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+        # タイマーがなければ開始（30秒カウントダウン）
+        if is_nil(socket.assigns[:phase_auto_advance_timer]) do
+          send(self(), {:start_phase_countdown, game_session_id, "kami_hakari"})
         end
 
       # 営みフェーズ: AIプレイヤーがアクションを実行
       phase when phase in ["itonami", "action"] ->
         execute_ai_actions_smart(game_session)
+        # フェーズが変わったか確認してからスケジュール
+        updated_session = Games.get_game_session!(game_session_id)
+        updated_turn_state = get_current_turn_state(updated_session)
+        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "action"
 
-      # 呼吸フェーズ: 自動で還流処理
+        if new_phase != current_phase do
+          # 呼吸フェーズに移行：ユーザーが確認できるよう3秒待機
+          Process.send_after(self(), {:ai_auto_action, game_session_id}, 3000)
+        end
+
+      # 呼吸フェーズ: プレイヤーの確認を待つ（30秒で自動進行）
       phase when phase in ["kokyu", "breathing"] ->
-        Games.execute_kokyu_phase(game_session.id)
-        # フェーズが変わったか確認してからスケジュール
-        updated_session = Games.get_game_session!(game_session_id)
-        updated_turn_state = get_current_turn_state(updated_session)
-        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "kokyu"
-
-        if new_phase != current_phase do
-          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+        # タイマーがなければ開始（30秒カウントダウン）
+        if is_nil(socket.assigns[:phase_auto_advance_timer]) do
+          send(self(), {:start_phase_countdown, game_session_id, "breathing"})
         end
 
-      # 結びフェーズ: 自動で結びフェーズを完了
+      # 結びフェーズ: プレイヤーの確認を待つ（30秒で自動進行）
       "musuhi" ->
-        Games.execute_musuhi_phase(game_session.id)
-        # フェーズが変わったか確認してからスケジュール
-        updated_session = Games.get_game_session!(game_session_id)
-        updated_turn_state = get_current_turn_state(updated_session)
-        new_phase = if updated_turn_state, do: updated_turn_state.phase, else: "musuhi"
-
-        if new_phase != current_phase do
-          Process.send_after(self(), {:ai_auto_action, game_session_id}, 500)
+        # タイマーがなければ開始（30秒カウントダウン）
+        if is_nil(socket.assigns[:phase_auto_advance_timer]) do
+          send(self(), {:start_phase_countdown, game_session_id, "musuhi"})
         end
 
-      # 年送りフェーズ: 年末処理と次のターンへ
+      # 年送りフェーズ: 自動で次のターンへ
       phase when phase in ["toshiokuri", "end"] ->
         Games.execute_toshiokuri_phase(game_session.id)
+        # 次のターン開始後に自動処理を継続
+        Process.send_after(self(), {:ai_auto_action, game_session_id}, 2000)
 
       # 後方互換: discussionフェーズ
       "discussion" ->
@@ -2287,6 +2553,20 @@ defmodule ShinkankiWebWeb.GameLive do
     end
 
     {:noreply, socket}
+  end
+
+  # AIチャットメッセージを受信（Claude AIエージェントからの思考・会話）
+  def handle_info({:ai_chat_message, %{player_id: player_id, message: message, timestamp: timestamp}}, socket) do
+    # AIメッセージをチャットストリームに追加
+    ai_message = %{
+      id: "ai_#{player_id}_#{:erlang.system_time(:millisecond)}",
+      user_email: "AI",
+      content: message,
+      inserted_at: timestamp,
+      is_ai: true
+    }
+
+    {:noreply, stream(socket, :chat_messages, [ai_message])}
   end
 
   def handle_info(_msg, socket), do: {:noreply, socket}
@@ -3094,6 +3374,7 @@ defmodule ShinkankiWebWeb.GameLive do
 
       %{
         id: action.id,
+        player_id: action.player_id,
         player_name: player_name,
         is_ai: player && player.is_ai,
         action_type: action.action_type,

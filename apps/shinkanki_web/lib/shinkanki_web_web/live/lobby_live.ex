@@ -11,8 +11,16 @@ defmodule ShinkankiWebWeb.LobbyLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # ログイン状態を確認
+    # ログイン状態を確認（on_mountで設定されるか、ここで再取得）
     current_user = socket.assigns[:current_user]
+
+    # current_userがnilの場合、開発バイパスをチェック
+    current_user =
+      if is_nil(current_user) && Application.get_env(:rogs_identity, :dev_bypass_auth, false) do
+        get_or_create_dev_user()
+      else
+        current_user
+      end
 
     # ルーム作成フォーム
     changeset = Room.changeset(%Room{}, %{})
@@ -29,6 +37,18 @@ defmodule ShinkankiWebWeb.LobbyLive do
       |> load_rooms()
 
     {:ok, socket}
+  end
+
+  defp get_or_create_dev_user do
+    alias RogsIdentity.Accounts
+    email = "dev@example.com"
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        {:ok, user} = Accounts.register_user(%{email: email, password: "devpassword123"})
+        user
+      user ->
+        user
+    end
   end
 
   # ルーム一覧を読み込み

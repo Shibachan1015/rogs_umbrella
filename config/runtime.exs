@@ -4,6 +4,16 @@ import Config
 # 開発時: .envファイルまたは直接環境変数を設定
 # 本番時: Fly.io等のシークレットとして設定
 
+# --- Claude API設定 ---
+# AI CPUプレイヤーの思考・会話生成に使用
+if claude_api_key = System.get_env("ANTHROPIC_API_KEY") do
+  config :shinkanki, :claude_api_key, claude_api_key
+  config :shinkanki, :ai_provider, :claude
+else
+  # Claude APIキーがない場合はローカルAIを使用
+  config :shinkanki, :ai_provider, :local
+end
+
 if google_client_id = System.get_env("GOOGLE_CLIENT_ID") do
   config :ueberauth, Ueberauth.Strategy.Google.OAuth,
     client_id: google_client_id,

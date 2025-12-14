@@ -64,6 +64,8 @@ config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   secret_key_base: "fXs5MBA7YbZwilrl7rihhhMmEJ8GHMJ5f3uaoSMp8eVSv7LhhtAw+ykccnmnW0NG",
   server: false
 
+config :shinkanki, start_repo: false
+
 # In test we don't send emails
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Test
 

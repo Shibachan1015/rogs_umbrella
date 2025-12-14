@@ -10,8 +10,7 @@ defmodule Shinkanki.Application do
     children =
       [
         # Start the Ecto repository
-        # In test environment, we skip starting the Repo to allow pure logic tests without DB.
-        if(Application.compile_env(:shinkanki) != :test, do: Shinkanki.Repo, else: nil),
+        if Application.get_env(:shinkanki, :start_repo, true), do: Shinkanki.Repo,
         # Start the PubSub system
         {Phoenix.PubSub, name: Shinkanki.PubSub},
         # Start the Registry for Game Servers

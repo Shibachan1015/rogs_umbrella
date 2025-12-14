@@ -11,7 +11,7 @@ defmodule Shinkanki.Application do
       [
         # Start the Ecto repository
         # In test environment, we skip starting the Repo to allow pure logic tests without DB.
-        if(Mix.env() != :test, do: Shinkanki.Repo, else: nil),
+        if(Application.compile_env(:shinkanki) != :test, do: Shinkanki.Repo, else: nil),
         # Start the PubSub system
         {Phoenix.PubSub, name: Shinkanki.PubSub},
         # Start the Registry for Game Servers

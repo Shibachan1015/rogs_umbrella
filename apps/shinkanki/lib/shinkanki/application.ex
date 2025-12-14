@@ -10,7 +10,9 @@ defmodule Shinkanki.Application do
     children =
       [
         # Start the Ecto repository
-        if Application.get_env(:shinkanki, :start_repo, true), do: Shinkanki.Repo,
+        if Application.get_env(:shinkanki, :start_repo, true) do
+          Shinkanki.Repo
+        end,
         # Start the PubSub system
         {Phoenix.PubSub, name: Shinkanki.PubSub},
         # Start the Registry for Game Servers

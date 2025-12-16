@@ -65,6 +65,7 @@ config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   server: false
 
 config :shinkanki, start_repo: false
+config :shinkanki, start_game_session_cache: false
 
 # In test we don't send emails
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Test

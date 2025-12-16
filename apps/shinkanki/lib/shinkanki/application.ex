@@ -17,6 +17,10 @@ defmodule Shinkanki.Application do
         {Phoenix.PubSub, name: Shinkanki.PubSub},
         # Card cache (must be after Repo)
         Shinkanki.CardCache,
+        # Game session cache (Cachex) - disabled in test
+        if Application.get_env(:shinkanki, :start_game_session_cache, true) do
+          {Cachex, name: Shinkanki.GameSessionCache.cache_name()}
+        end,
         # Start the Registry for Game Servers
         {Registry, keys: :unique, name: Shinkanki.GameRegistry},
         # Start the DynamicSupervisor for Game Servers

@@ -6,6 +6,7 @@ defmodule Shinkanki.Games do
   import Ecto.Query, warn: false
   alias Shinkanki.Repo
   alias Shinkanki.GamePubSub
+  alias Shinkanki.GameSessionCache
 
   alias Shinkanki.Games.{
     GameSession,
@@ -95,25 +96,49 @@ defmodule Shinkanki.Games do
 
   @doc """
   ゲームセッションを取得（関連データをpreload）
+  Uses cache when available, falls back to database.
   """
   def get_game_session!(id) do
-    GameSession
-    |> Repo.get!(id)
-    |> Repo.preload([
-      :turn_states,
-      :game_actions,
-      players: [player_talents: :talent_card],
-      game_projects: [:project_template, :project_participations]
-    ])
+    case GameSessionCache.get(id) do
+      {:ok, cached_session} ->
+        cached_session
+
+      :not_found ->
+        session =
+          GameSession
+          |> Repo.get!(id)
+          |> Repo.preload([
+            :turn_states,
+            :game_actions,
+            players: [player_talents: :talent_card],
+            game_projects: [:project_template, :project_participations]
+          ])
+
+        # Cache the result
+        GameSessionCache.put(session)
+        session
+    end
   end
 
   @doc """
   ゲームセッションのパラメータを更新
+  Invalidates cache after update.
   """
   def update_game_session(%GameSession{} = game_session, attrs) do
-    game_session
-    |> GameSession.changeset(attrs)
-    |> Repo.update()
+    result =
+      game_session
+      |> GameSession.changeset(attrs)
+      |> Repo.update()
+
+    # Invalidate cache on successful update
+    case result do
+      {:ok, updated_session} ->
+        GameSessionCache.invalidate(updated_session.id)
+        {:ok, updated_session}
+
+      error ->
+        error
+    end
   end
 
   @doc """

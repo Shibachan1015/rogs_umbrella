@@ -97,13 +97,10 @@ defmodule RogsComm.Cache.MessageCache do
   def handle_info(:cleanup, state) do
     now = System.monotonic_time(:millisecond)
 
+    # Use Map.filter for cleaner, more efficient filtering
     new_state =
-      Enum.reduce(state, %{}, fn {room_id, {messages, timestamp}}, acc ->
-        if now - timestamp < @default_ttl do
-          Map.put(acc, room_id, {messages, timestamp})
-        else
-          acc
-        end
+      Map.filter(state, fn {_room_id, {_messages, timestamp}} ->
+        now - timestamp < @default_ttl
       end)
 
     # Schedule next cleanup

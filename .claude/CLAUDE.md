@@ -79,9 +79,10 @@ shinkanki_web（UI層・Phoenix LiveView）
    - `router.ex` にドメイン境界のコメント追加
 
 ### 未完了・保留
-1. **Fly.ioデプロイ**: 起動時クラッシュ（`Runtime terminating during boot`）
-   - 原因: 複数Endpointの設定問題の可能性
-   - 対応: config/runtime.exs で ShinkankiWebWeb.Endpoint のみ起動するよう設定済み
+1. **Fly.ioデプロイ**: ✅ 解決済み（2025-12-17確認）
+   - 起動クラッシュは解消、アプリは正常動作
+   - 軽微な警告: 静的アセットmanifest（rogs_identity, rogs_comm）がない
+   - CardCacheが0件（本番DBにカードデータがない可能性）
 
 ---
 
@@ -118,8 +119,8 @@ shinkanki_web（UI層・Phoenix LiveView）
 ## 軽度（技術的負債）
 
 3. **マイグレーション重複**
-   - 状態: 保留
-   - 問題: 7テーブルが複数アプリに空定義で重複
+   - 状態: ✅ 解決済み（2024-12-13）
+   - 空のマイグレーション14ファイル削除済み（rogs_comm, rogs_identityから各7ファイル）
 
 ## 機能追加・コンテンツ
 

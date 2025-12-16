@@ -354,26 +354,32 @@ defmodule ShinkankiWebWeb.GameLive do
         </div>
         
     <!-- Right: Akasha & Toggle buttons -->
-        <div class="flex items-center gap-1 sm:gap-2">
+        <div class="flex items-center gap-2 sm:gap-3">
           <div class="flex items-center gap-0.5 text-[10px] sm:text-sm">
             <span class="text-[var(--color-landing-gold)]">φ</span>
             <span class="font-bold text-[var(--color-landing-gold)]">
               {@game_state[:currency] || @game_state.currency || 0}
             </span>
           </div>
+          <!-- Stats button with label -->
           <button
             phx-click={JS.toggle(to: "#stats-panel")}
-            class="p-1 sm:p-1.5 rounded bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
+            class="flex items-center gap-1 px-2 py-1 rounded bg-[var(--color-landing-gold)]/20 hover:bg-[var(--color-landing-gold)]/30 text-[var(--color-landing-gold)] transition-colors active:scale-95 border border-[var(--color-landing-gold)]/30"
             aria-label="詳細を表示"
+            title="ゲーム状態の詳細を表示"
           >
             <.icon name="hero-chart-bar" class="w-3 h-3 sm:w-4 sm:h-4" />
+            <span class="hidden sm:inline text-xs">詳細</span>
           </button>
+          <!-- Chat button with label -->
           <button
             phx-click={JS.toggle(to: "#chat-panel")}
-            class="p-1 sm:p-1.5 rounded bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
+            class="flex items-center gap-1 px-2 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors active:scale-95 border border-blue-500/30"
             aria-label="チャットを表示"
+            title="チャットを開く"
           >
             <.icon name="hero-chat-bubble-left-right" class="w-3 h-3 sm:w-4 sm:h-4" />
+            <span class="hidden sm:inline text-xs">チャット</span>
           </button>
         </div>
       </header>
@@ -1207,35 +1213,65 @@ defmodule ShinkankiWebWeb.GameLive do
       
     <!-- Bottom Hand - Mobile: Fixed at bottom, Desktop: Normal flow -->
       <div class="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 bg-[rgba(15,20,25,0.98)] border-t border-[var(--color-landing-gold)]/30 p-2 sm:p-3 max-sm:shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-        <!-- Mobile: Simple list view -->
-        <div class="sm:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
-          <%= for card <- @hand_cards do %>
-            <% can_afford =
-              (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
-            <button
-              phx-click="select_card"
-              phx-value-card-id={card.id}
-              disabled={!can_afford}
-              class={"w-full flex items-center justify-between p-2.5 rounded-lg transition-all active:scale-98 " <>
-                if(@selected_card_id == card.id, do: "bg-[var(--color-landing-gold)]/20 ring-2 ring-[var(--color-landing-gold)] ", else: "bg-white/5 ") <>
-                if(can_afford, do: "hover:bg-white/10", else: "opacity-40")}
-            >
-              <div class="flex items-center gap-2">
-                <span class={"text-lg " <> card_category_emoji(card.category)}></span>
-                <span class="text-sm font-medium text-[var(--color-landing-pale)]">{card.title}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-[var(--color-landing-gold)]">
-                  φ{card.cost_akasha || card.cost}
-                </span>
-                <span class="text-[var(--color-landing-text-secondary)]">›</span>
-              </div>
-            </button>
+        <!-- Header for hand section -->
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-[var(--color-landing-text-secondary)]">
+            🎴 手札 ({length(@hand_cards)}枚)
+          </span>
+          <%= if @current_phase == :action do %>
+            <span class="text-xs text-[var(--color-landing-gold)]">
+              カードを選んでアクションを実行
+            </span>
           <% end %>
         </div>
-        
-    <!-- Desktop: Traditional card view -->
-        <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
+
+        <%= if Enum.empty?(@hand_cards) do %>
+          <!-- Empty state message -->
+          <div class="flex flex-col items-center justify-center py-4 text-center">
+            <span class="text-2xl mb-2">🃏</span>
+            <p class="text-sm text-[var(--color-landing-text-secondary)]">
+              <%= cond do %>
+                <% @current_phase == :action && @game_status == :playing -> %>
+                  AIがアクションを実行中です...
+                <% @current_phase == :event -> %>
+                  イベントフェーズ中
+                <% @current_phase == :hitoyo -> %>
+                  一夜フェーズ中
+                <% true -> %>
+                  使用可能なカードがありません
+              <% end %>
+            </p>
+          </div>
+        <% else %>
+          <!-- Mobile: Simple list view -->
+          <div class="sm:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
+            <%= for card <- @hand_cards do %>
+              <% can_afford =
+                (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
+              <button
+                phx-click="select_card"
+                phx-value-card-id={card.id}
+                disabled={!can_afford}
+                class={"w-full flex items-center justify-between p-2.5 rounded-lg transition-all active:scale-98 " <>
+                  if(@selected_card_id == card.id, do: "bg-[var(--color-landing-gold)]/20 ring-2 ring-[var(--color-landing-gold)] ", else: "bg-white/5 ") <>
+                  if(can_afford, do: "hover:bg-white/10", else: "opacity-40")}
+              >
+                <div class="flex items-center gap-2">
+                  <span class={"text-lg " <> card_category_emoji(card.category)}></span>
+                  <span class="text-sm font-medium text-[var(--color-landing-pale)]">{card.title}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-[var(--color-landing-gold)]">
+                    φ{card.cost_akasha || card.cost}
+                  </span>
+                  <span class="text-[var(--color-landing-text-secondary)]">›</span>
+                </div>
+              </button>
+            <% end %>
+          </div>
+
+          <!-- Desktop: Traditional card view -->
+          <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
           <%= for card <- @hand_cards do %>
             <% card_talents = get_card_talents(card.id, assigns) %>
             <%= if !Enum.empty?(card_talents) do %>
@@ -1273,9 +1309,10 @@ defmodule ShinkankiWebWeb.GameLive do
               />
             <% end %>
           <% end %>
-        </div>
+          </div>
+        <% end %>
       </div>
-      
+
     <!-- Talent Selector Modal - Mobile Optimized -->
       <%= if @show_talent_selector && @talent_selector_card_id do %>
         <div

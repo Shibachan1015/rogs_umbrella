@@ -74,14 +74,22 @@ defmodule Shinkanki.Games do
   ルームIDからゲームセッションを取得
   """
   def get_game_session_by_room_id(room_id) do
-    GameSession
-    |> where([gs], gs.room_id == ^room_id)
-    |> order_by([gs], desc: gs.inserted_at)
-    |> limit(1)
-    |> Repo.one()
-    |> case do
-      nil -> nil
-      game_session -> get_game_session!(game_session.id)
+    case GameSession
+         |> where([gs], gs.room_id == ^room_id)
+         |> order_by([gs], desc: gs.inserted_at)
+         |> limit(1)
+         |> Repo.one() do
+      nil ->
+        nil
+
+      game_session ->
+        # Directly preload instead of calling get_game_session! to avoid duplicate query
+        Repo.preload(game_session, [
+          :turn_states,
+          :game_actions,
+          players: [player_talents: :talent_card],
+          game_projects: [:project_template, :project_participations]
+        ])
     end
   end
 
@@ -92,9 +100,9 @@ defmodule Shinkanki.Games do
     GameSession
     |> Repo.get!(id)
     |> Repo.preload([
-      :players,
       :turn_states,
       :game_actions,
+      players: [player_talents: :talent_card],
       game_projects: [:project_template, :project_participations]
     ])
   end
@@ -738,12 +746,18 @@ defmodule Shinkanki.Games do
       |> Enum.map(& &1.player_id)
       |> Enum.uniq()
 
-    per_player = div(amount, max(length(player_ids), 1))
+    case player_ids do
+      [] ->
+        :ok
 
-    Enum.each(player_ids, fn player_id ->
-      player = Repo.get!(Player, player_id)
-      update_player_akasha(player, per_player)
-    end)
+      ids ->
+        per_player = div(amount, length(ids))
+
+        # Batch update: single query instead of N queries
+        from(p in Player, where: p.id in ^ids)
+        |> update([p], set: [akasha: fragment("GREATEST(0, ? + ?)", p.akasha, ^per_player)])
+        |> Repo.update_all([])
+    end
   end
 
   # ===================

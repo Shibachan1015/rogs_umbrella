@@ -36,53 +36,7 @@ defmodule RogsCommWeb.ChatLive do
          |> redirect(to: ~p"/")}
 
       room ->
-        display_name = socket.assigns[:display_name] || "anonymous"
-
-        socket =
-          socket
-          |> assign(:room, room)
-          |> assign(:room_id, room_id)
-          |> assign(:rooms, Rooms.list_rooms())
-          |> assign(:form, to_form(%{"content" => ""}))
-          |> assign(:name_form, to_form(%{"display_name" => display_name}))
-          |> assign(:search_form, to_form(%{"query" => ""}))
-          |> assign(:presences, %{})
-          |> assign(:typing_users, %{})
-          |> assign(:has_older_messages, true)
-          |> assign(:search_mode, false)
-          |> assign(:search_results, [])
-          |> assign(:rtc_state, default_rtc_state())
-          |> assign(:oldest_message_id, nil)
-          |> assign(:message_count, 0)
-          |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
-
-        if connected?(socket) do
-          topic = topic(room_id)
-          RogsCommWeb.Endpoint.subscribe(topic)
-          messages = Messages.list_messages(room_id, limit: 50)
-          oldest_id = if messages != [], do: List.first(messages).id, else: nil
-
-          presences =
-            try do
-              Presence.list(topic)
-            rescue
-              _ -> %{}
-            end
-
-          socket =
-            socket
-            |> assign(:presences, presences)
-            |> assign(:oldest_message_id, oldest_id)
-            |> assign(:message_count, length(messages))
-            |> stream(:messages, messages)
-
-          {:ok, socket}
-        else
-          {:ok,
-           socket
-           |> assign(:presences, %{})
-           |> stream(:messages, [])}
-        end
+        mount_with_room(socket, room)
     end
   end
 
@@ -93,6 +47,57 @@ defmodule RogsCommWeb.ChatLive do
      |> redirect(to: ~p"/")}
   end
 
+  defp mount_with_room(socket, room) do
+    display_name = socket.assigns[:display_name] || "anonymous"
+    room_id = room.id
+
+    socket =
+      socket
+      |> assign(:room, room)
+      |> assign(:room_id, room_id)
+      |> assign(:rooms, Rooms.list_rooms())
+      |> assign(:form, to_form(%{"content" => ""}))
+      |> assign(:name_form, to_form(%{"display_name" => display_name}))
+      |> assign(:search_form, to_form(%{"query" => ""}))
+      |> assign(:presences, %{})
+      |> assign(:typing_users, %{})
+      |> assign(:has_older_messages, true)
+      |> assign(:search_mode, false)
+      |> assign(:search_results, [])
+      |> assign(:rtc_state, default_rtc_state())
+      |> assign(:oldest_message_id, nil)
+      |> assign(:message_count, 0)
+      |> stream_configure(:messages, dom_id: &"message-#{&1.id}")
+
+    if connected?(socket) do
+      topic = topic(room_id)
+      RogsCommWeb.Endpoint.subscribe(topic)
+      messages = Messages.list_messages(room_id, limit: 50)
+      oldest_id = if messages != [], do: List.first(messages).id, else: nil
+
+      presences =
+        try do
+          Presence.list(topic)
+        rescue
+          _ -> %{}
+        end
+
+      socket =
+        socket
+        |> assign(:presences, presences)
+        |> assign(:oldest_message_id, oldest_id)
+        |> assign(:message_count, length(messages))
+        |> stream(:messages, messages)
+
+      {:ok, socket}
+    else
+      {:ok,
+        socket
+        |> assign(:presences, %{})
+        |> stream(:messages, [])}
+    end
+  end
+  
   @impl true
   def handle_event("submit", %{"content" => content}, socket) do
     trimmed = String.trim(content || "")
@@ -113,29 +118,7 @@ defmodule RogsCommWeb.ChatLive do
         user_email: user_email
       }
 
-      case Messages.create_message(params) do
-        {:ok, message} ->
-          payload = broadcast_payload(message)
-          RogsCommWeb.Endpoint.broadcast(topic(room_id), "new_message", payload)
-
-          {:noreply, assign(socket, :form, to_form(%{"content" => ""}))}
-
-        {:error, changeset} ->
-          error_message =
-            case changeset.errors do
-              [{:content, {msg, _}}] -> "メッセージ: #{msg}"
-              [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
-              _ -> "メッセージの送信に失敗しました"
-            end
-
-          Logger.error("ChatLive: Failed to create message",
-            user_id: user_id,
-            room_id: room_id,
-            errors: inspect(changeset.errors)
-          )
-
-          {:noreply, put_flash(socket, :error, error_message)}
-      end
+      handle_message_creation(socket, room_id, user_id, user_email, params)
     end
   end
 
@@ -162,75 +145,18 @@ defmodule RogsCommWeb.ChatLive do
     if trimmed_content == "" do
       {:noreply, put_flash(socket, :error, "メッセージ内容を入力してください")}
     else
-      case Messages.get_message!(message_id) do
-        message when message.room_id == room_id and message.user_id == user_id ->
-          case Messages.edit_message(message, %{content: trimmed_content}) do
-            {:ok, updated_message} ->
-              payload = %{
-                id: updated_message.id,
-                content: updated_message.content,
-                edited_at: updated_message.edited_at
-              }
-
-              RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
-              {:noreply, socket}
-
-            {:error, changeset} ->
-              error_message =
-                case changeset.errors do
-                  [{:content, {msg, _}}] -> "メッセージ: #{msg}"
-                  [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
-                  _ -> "メッセージの編集に失敗しました"
-                end
-
-              Logger.error("ChatLive: Failed to edit message",
-                user_id: user_id,
-                message_id: message_id,
-                room_id: room_id,
-                errors: inspect(changeset.errors)
-              )
-
-              {:noreply, put_flash(socket, :error, error_message)}
-          end
-
-        message when message.room_id != room_id ->
-          Logger.warning("ChatLive: Attempted to edit message from different room",
-            user_id: user_id,
-            message_id: message_id,
-            message_room_id: message.room_id,
-            current_room_id: room_id
-          )
-
-          {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
-
-        message when message.user_id != user_id ->
-          Logger.warning("ChatLive: Attempted to edit another user's message",
-            user_id: user_id,
-            message_id: message_id,
-            message_owner_id: message.user_id
-          )
-
-          {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
-
-        _ ->
-          Logger.warning("ChatLive: Attempted to edit unknown message",
+      try do
+        handle_message_edit(socket, message_id, trimmed_content, room_id, user_id)
+      rescue
+        Ecto.NoResultsError ->
+          user_id = socket.assigns[:current_user_id]
+          Logger.warning("ChatLive: Message not found for edit",
             user_id: user_id,
             message_id: message_id
           )
-
           {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
       end
     end
-  rescue
-    Ecto.NoResultsError ->
-      user_id = socket.assigns[:current_user_id]
-
-      Logger.warning("ChatLive: Message not found for edit",
-        user_id: user_id,
-        message_id: message_id
-      )
-
-      {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
   end
 
   def handle_event("delete_message", %{"message_id" => message_id}, socket) do
@@ -718,6 +644,102 @@ defmodule RogsCommWeb.ChatLive do
   end
 
   defp highlight_search_term(_content, _query), do: ""
+
+  defp handle_message_edit(socket, message_id, trimmed_content, room_id, user_id) do
+    with {:ok, message} <- get_message_and_validate_ownership(message_id, room_id, user_id),
+         {:ok, updated_message} <- Messages.edit_message(message, %{content: trimmed_content}) do
+      payload = %{
+        id: updated_message.id,
+        content: updated_message.content,
+        edited_at: updated_message.edited_at
+      }
+      RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
+      {:noreply, socket}
+    else
+      {:error, :message_not_in_this_room, message} ->
+        Logger.warning("ChatLive: Attempted to edit message from different room",
+          user_id: user_id,
+          message_id: message_id,
+          message_room_id: message.room_id,
+          current_room_id: room_id
+        )
+        {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
+      {:error, :not_message_owner, message} ->
+        Logger.warning("ChatLive: Attempted to edit another user's message",
+          user_id: user_id,
+          message_id: message_id,
+          message_owner_id: message.user_id
+        )
+        {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
+      {:error, :unknown_message_validation_failure} ->
+        Logger.warning("ChatLive: Attempted to edit unknown message",
+          user_id: user_id,
+          message_id: message_id
+        )
+        {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+      {:error, :message_not_found} ->
+        Logger.warning("ChatLive: Message not found for edit",
+          user_id: user_id,
+          message_id: message_id
+        )
+        {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+      {:error, changeset} ->
+        error_message =
+          case changeset.errors do
+            [{:content, {msg, _}}] -> "メッセージ: #{msg}"
+            [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
+            _ -> "メッセージの編集に失敗しました"
+          end
+        Logger.error("ChatLive: Failed to edit message",
+          user_id: user_id,
+          message_id: message_id,
+          room_id: room_id,
+          errors: inspect(changeset.errors)
+        )
+        {:noreply, put_flash(socket, :error, error_message)}
+    end
+  end
+
+  defp handle_message_creation(socket, room_id, user_id, _user_email, params) do
+    case Messages.create_message(params) do
+      {:ok, message} ->
+        payload = broadcast_payload(message)
+        RogsCommWeb.Endpoint.broadcast(topic(room_id), "new_message", payload)
+
+        {:noreply, assign(socket, :form, to_form(%{"content" => ""}))}
+
+      {:error, changeset} ->
+        error_message =
+          case changeset.errors do
+            [{:content, {msg, _}}] -> "メッセージ: #{msg}"
+            [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
+            _ -> "メッセージの送信に失敗しました"
+          end
+
+        Logger.error("ChatLive: Failed to create message",
+          user_id: user_id,
+          room_id: room_id,
+          errors: inspect(changeset.errors)
+        )
+
+        {:noreply, put_flash(socket, :error, error_message)}
+    end
+  end
+
+  defp get_message_and_validate_ownership(message_id, room_id, user_id) do
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        {:ok, message}
+      message when message.room_id != room_id ->
+        {:error, :message_not_in_this_room, message}
+      message when message.user_id != user_id ->
+        {:error, :not_message_owner, message}
+      _ ->
+        {:error, :unknown_message_validation_failure}
+    end
+  rescue
+    Ecto.NoResultsError -> {:error, :message_not_found}
+  end
 
   @impl true
   def render(assigns) do

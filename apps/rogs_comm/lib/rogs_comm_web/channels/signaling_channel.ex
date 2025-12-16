@@ -41,64 +41,7 @@ defmodule RogsCommWeb.SignalingChannel do
     # Rate limit check: 5 events per second per user
     case RateLimiter.check(user_id, limit: 5, window_seconds: 1) do
       {:ok, :allowed} ->
-        case normalize_payload(event, payload, socket) do
-          {:ok, normalized} ->
-            # Log signaling session
-            room_id = socket.assigns.room_id
-            from_user_id = socket.assigns.user_id
-            to_user_id = Map.get(normalized, "to")
-
-            case Signaling.create_session(%{
-                   room_id: room_id,
-                   from_user_id: from_user_id,
-                   to_user_id: to_user_id,
-                   event_type: event,
-                   payload: normalized
-                 }) do
-              {:ok, _session} ->
-                :ok
-
-              {:error, changeset} ->
-                Logger.warning("SignalingChannel: Failed to log signaling session",
-                  user_id: user_id,
-                  room_id: room_id,
-                  event: event,
-                  errors: inspect(changeset.errors)
-                )
-            end
-
-            # If 'to' is specified, validate that the target user is in the room
-            case to_user_id do
-              nil ->
-                # Broadcast to all in room
-                broadcast(socket, event, normalized)
-                {:noreply, socket}
-
-              target_user_id when is_binary(target_user_id) ->
-                # Validate target user is in room (basic check - could be enhanced with Presence)
-                broadcast(socket, event, normalized)
-                {:noreply, socket}
-
-              _ ->
-                Logger.warning("SignalingChannel: Invalid target user",
-                  user_id: user_id,
-                  room_id: socket.assigns.room_id,
-                  target_user_id: to_user_id
-                )
-
-                {:reply, {:error, %{reason: "invalid target user"}}, socket}
-            end
-
-          {:error, reason} ->
-            Logger.error("SignalingChannel: Failed to normalize payload",
-              user_id: user_id,
-              room_id: socket.assigns.room_id,
-              event: event,
-              reason: reason
-            )
-
-            {:reply, {:error, %{reason: reason}}, socket}
-        end
+        process_rtc_event(socket, event, payload, user_id)
 
       {:error, :rate_limited} ->
         Logger.warning("SignalingChannel: Rate limit exceeded",
@@ -152,4 +95,62 @@ defmodule RogsCommWeb.SignalingChannel do
   defp validate_payload("answer", %{"sdp" => sdp}) when is_binary(sdp), do: :ok
   defp validate_payload("ice-candidate", %{"candidate" => cand}) when is_binary(cand), do: :ok
   defp validate_payload(_event, _payload), do: {:error, "invalid payload"}
+
+  defp process_rtc_event(socket, event, payload, user_id) do
+    case normalize_payload(event, payload, socket) do
+      {:ok, normalized} ->
+        room_id = socket.assigns.room_id
+        to_user_id = Map.get(normalized, "to")
+
+        log_signaling_session(room_id, user_id, to_user_id, event, normalized)
+
+        case to_user_id do
+          nil ->
+            broadcast(socket, event, normalized)
+            {:noreply, socket}
+          
+          target_user_id when is_binary(target_user_id) ->
+            broadcast(socket, event, normalized)
+            {:noreply, socket}
+
+          _ ->
+            Logger.warning("SignalingChannel: Invalid target user",
+              user_id: user_id,
+              room_id: socket.assigns.room_id,
+              target_user_id: to_user_id
+            )
+            {:reply, {:error, %{reason: "invalid target user"}}, socket}
+        end
+        
+      {:error, reason} ->
+        Logger.error("SignalingChannel: Failed to normalize payload",
+          user_id: user_id,
+          room_id: socket.assigns.room_id,
+          event: event,
+          reason: reason
+        )
+        {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  defp log_signaling_session(room_id, from_user_id, to_user_id, event, normalized) do
+    case Signaling.create_session(%{
+           room_id: room_id,
+           from_user_id: from_user_id,
+           to_user_id: to_user_id,
+           event_type: event,
+           payload: normalized
+         }) do
+      {:ok, _session} ->
+        :ok
+
+      {:error, changeset} ->
+        Logger.warning("SignalingChannel: Failed to log signaling session",
+          user_id: from_user_id,
+          room_id: room_id,
+          event: event,
+          errors: inspect(changeset.errors)
+        )
+    end
+  end
 end

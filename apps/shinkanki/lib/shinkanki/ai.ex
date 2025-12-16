@@ -37,30 +37,7 @@ defmodule Shinkanki.AI do
     # Filter cards that can be played (affordable and in hand)
     playable_cards =
       hand
-      |> Enum.map(fn card_id ->
-        case Card.get_action(card_id) do
-          nil ->
-            # Check if it's a project
-            case Card.get_project(card_id) do
-              nil ->
-                nil
-
-              project ->
-                if project.id in game.available_projects and game.currency >= project.cost do
-                  {project, card_id}
-                else
-                  nil
-                end
-            end
-
-          action ->
-            if game.currency >= action.cost do
-              {action, card_id}
-            else
-              nil
-            end
-        end
-      end)
+      |> Enum.map(&get_playable_card(game, &1))
       |> Enum.reject(&is_nil/1)
 
     case playable_cards do
@@ -95,13 +72,7 @@ defmodule Shinkanki.AI do
     cost_ratio = if card.cost > 0, do: life_index_gain / card.cost, else: life_index_gain
 
     # Bonus for cards that help maintain balance (prevent any stat from going too low)
-    balance_bonus =
-      cond do
-        (game.forest < 20 and effect[:forest]) && effect[:forest] > 0 -> 5
-        (game.culture < 20 and effect[:culture]) && effect[:culture] > 0 -> 5
-        (game.social < 20 and effect[:social]) && effect[:social] > 0 -> 5
-        true -> 0
-      end
+    balance_bonus = calculate_balance_bonus(game, effect)
 
     life_index_gain + cost_ratio * 2 + balance_bonus
   end
@@ -124,5 +95,43 @@ defmodule Shinkanki.AI do
     compatible_talents
     |> Enum.take(2)
     |> Enum.map(& &1.id)
+  end
+
+  defp get_playable_card(game, card_id) do
+    case Card.get_action(card_id) do
+      nil -> get_playable_project(game, card_id)
+      action -> get_playable_action(game, action, card_id)
+    end
+  end
+
+  defp get_playable_project(game, card_id) do
+    case Card.get_project(card_id) do
+      nil -> nil
+      project ->
+        if project.id in game.available_projects and game.currency >= project.cost do
+          {project, card_id}
+        else
+          nil
+        end
+    end
+  end
+
+  defp get_playable_action(game, action, card_id) do
+    if game.currency >= action.cost do
+      {action, card_id}
+    else
+      nil
+    end
+  end
+
+  # Returns 5 if any stat is low and the effect helps it, otherwise 0
+  # Uses cond to return only the first match (not cumulative)
+  defp calculate_balance_bonus(game, effect) do
+    cond do
+      game.forest < 20 and effect[:forest] && effect[:forest] > 0 -> 5
+      game.culture < 20 and effect[:culture] && effect[:culture] > 0 -> 5
+      game.social < 20 and effect[:social] && effect[:social] > 0 -> 5
+      true -> 0
+    end
   end
 end

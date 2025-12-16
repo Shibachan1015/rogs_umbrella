@@ -91,66 +91,10 @@ defmodule RogsCommWeb.ChatChannel do
   @impl true
   def handle_in("new_message", %{"content" => content}, socket) when is_binary(content) do
     user_id = socket.assigns[:user_id] || Ecto.UUID.generate()
+    room_id = socket.assigns.room_id
+    user_email = socket.assigns[:user_email] || "anonymous"
 
-    # Rate limit check: 10 messages per 5 seconds per user
-    case RateLimiter.check(user_id, limit: 10, window_seconds: 5) do
-      {:ok, :allowed} ->
-        room_id = socket.assigns.room_id
-        user_email = socket.assigns[:user_email] || "anonymous"
-
-        params = %{
-          content: content,
-          room_id: room_id,
-          user_id: user_id,
-          user_email: user_email
-        }
-
-        trimmed_content = String.trim(content)
-
-        if trimmed_content == "" do
-          {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
-        else
-          params = Map.put(params, :content, trimmed_content)
-
-          case Messages.create_message(params) do
-            {:ok, message} ->
-              payload = %{
-                id: message.id,
-                content: message.content,
-                user_id: message.user_id,
-                user_email: message.user_email,
-                inserted_at: message.inserted_at
-              }
-
-              broadcast(socket, "new_message", payload)
-              {:noreply, socket}
-
-            {:error, changeset} ->
-              reason =
-                case changeset.errors do
-                  [{:content, {msg, _}}] -> "message #{msg}"
-                  [{:content, msg}] when is_binary(msg) -> "message #{msg}"
-                  _ -> "failed to create message"
-                end
-
-              Logger.error("ChatChannel: Failed to create message",
-                user_id: user_id,
-                room_id: room_id,
-                errors: inspect(changeset.errors)
-              )
-
-              {:reply, {:error, %{reason: reason}}, socket}
-          end
-        end
-
-      {:error, :rate_limited} ->
-        Logger.warning("ChatChannel: Rate limit exceeded",
-          user_id: user_id,
-          room_id: socket.assigns.room_id
-        )
-
-        {:reply, {:error, %{reason: "rate limit exceeded. please wait a moment"}}, socket}
-    end
+    process_new_message_with_rate_limit(socket, content, user_id, room_id, user_email)
   end
 
   def handle_in("new_message", _params, socket) do
@@ -167,75 +111,8 @@ defmodule RogsCommWeb.ChatChannel do
     if trimmed_content == "" do
       {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
     else
-      case Messages.get_message!(message_id) do
-        message when message.room_id == room_id and message.user_id == user_id ->
-          case Messages.edit_message(message, %{content: trimmed_content}) do
-            {:ok, updated_message} ->
-              payload = %{
-                id: updated_message.id,
-                content: updated_message.content,
-                edited_at: updated_message.edited_at
-              }
-
-              broadcast(socket, "message_edited", payload)
-              {:noreply, socket}
-
-            {:error, changeset} ->
-              reason =
-                case changeset.errors do
-                  [{:content, {msg, _}}] -> "message #{msg}"
-                  [{:content, msg}] when is_binary(msg) -> "message #{msg}"
-                  _ -> "failed to edit message"
-                end
-
-              Logger.error("ChatChannel: Failed to edit message",
-                user_id: user_id,
-                message_id: message_id,
-                room_id: room_id,
-                errors: inspect(changeset.errors)
-              )
-
-              {:reply, {:error, %{reason: reason}}, socket}
-          end
-
-        message when message.room_id != room_id ->
-          Logger.warning("ChatChannel: Attempted to edit message from different room",
-            user_id: user_id,
-            message_id: message_id,
-            message_room_id: message.room_id,
-            current_room_id: room_id
-          )
-
-          {:reply, {:error, %{reason: "message not found in this room"}}, socket}
-
-        message when message.user_id != user_id ->
-          Logger.warning("ChatChannel: Attempted to edit another user's message",
-            user_id: user_id,
-            message_id: message_id,
-            message_owner_id: message.user_id
-          )
-
-          {:reply, {:error, %{reason: "you can only edit your own messages"}}, socket}
-
-        _ ->
-          Logger.warning("ChatChannel: Attempted to edit unknown message",
-            user_id: user_id,
-            message_id: message_id
-          )
-
-          {:reply, {:error, %{reason: "message not found"}}, socket}
-      end
+      process_message_edit(socket, message_id, trimmed_content, room_id, user_id)
     end
-  rescue
-    Ecto.NoResultsError ->
-      user_id = socket.assigns.user_id
-
-      Logger.warning("ChatChannel: Message not found for edit",
-        user_id: user_id,
-        message_id: message_id
-      )
-
-      {:reply, {:error, %{reason: "message not found"}}, socket}
   end
 
   @impl true
@@ -336,7 +213,175 @@ defmodule RogsCommWeb.ChatChannel do
     {:noreply, socket}
   end
 
-  def handle_in("load_older_messages", _params, socket) do
-    {:reply, {:error, %{reason: "message_id is required"}}, socket}
+  defp handle_message_creation_and_broadcast(socket, room_id, user_id, user_email, params) do
+    case Messages.create_message(params) do
+      {:ok, message} ->
+        payload = %{
+          id: message.id,
+          content: message.content,
+          user_id: user_id,
+          user_email: user_email,
+          inserted_at: message.inserted_at
+        }
+
+        broadcast(socket, "new_message", payload)
+        {:noreply, socket}
+
+      {:error, changeset} ->
+        reason =
+          case changeset.errors do
+            [{:content, {msg, _}}] -> "message #{msg}"
+            [{:content, msg}] when is_binary(msg) -> "message #{msg}"
+            _ -> "failed to create message"
+          end
+
+        Logger.error("ChatChannel: Failed to create message",
+          user_id: user_id,
+          room_id: room_id,
+          errors: inspect(changeset.errors)
+        )
+
+        {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  defp process_new_message_with_rate_limit(socket, content, user_id, room_id, user_email) do
+    # Rate limit check: 10 messages per 5 seconds per user
+    case RateLimiter.check(user_id, limit: 10, window_seconds: 5) do
+      {:ok, :allowed} ->
+        params = %{
+          content: content,
+          room_id: room_id,
+          user_id: user_id,
+          user_email: user_email
+        }
+
+        trimmed_content = String.trim(content)
+
+        if trimmed_content == "" do
+          {:reply, {:error, %{reason: "message content cannot be empty"}}, socket}
+        else
+          params = Map.put(params, :content, trimmed_content)
+
+          handle_message_creation_and_broadcast(socket, room_id, user_id, user_email, params)
+        end
+
+      {:error, :rate_limited} ->
+        Logger.warning("ChatChannel: Rate limit exceeded",
+          user_id: user_id,
+          room_id: room_id
+        )
+
+        {:reply, {:error, %{reason: "rate limit exceeded. please wait a moment"}}, socket}
+    end
+  end
+
+  defp process_message_edit(socket, message_id, trimmed_content, room_id, user_id) do
+    try do
+      case get_message_and_validate_ownership(message_id, room_id, user_id) do
+        {:ok, message} ->
+          handle_valid_message_edit(socket, message, trimmed_content, user_id)
+
+        {:error, :message_not_in_this_room, message} ->
+          handle_message_from_different_room(socket, user_id, message_id, message.room_id, room_id)
+
+        {:error, :not_message_owner, message} ->
+          handle_message_from_another_user(socket, user_id, message_id, message.user_id)
+        
+        {:error, :unknown_message_validation_failure} ->
+          handle_unknown_message_edit_case(socket, user_id, message_id)
+        
+        {:error, :message_not_found} ->
+           Logger.warning("ChatChannel: Message not found for edit",
+            user_id: user_id,
+            message_id: message_id
+          )
+          {:reply, {:error, %{reason: "message not found"}}, socket}
+      end
+    rescue
+      Ecto.NoResultsError ->
+        user_id = socket.assigns.user_id
+        Logger.warning("ChatChannel: Message not found for edit",
+          user_id: user_id,
+          message_id: message_id
+        )
+        {:reply, {:error, %{reason: "message not found"}}, socket}
+    end
+  end
+
+  defp handle_valid_message_edit(socket, message, trimmed_content, user_id) do
+    case Messages.edit_message(message, %{content: trimmed_content}) do
+      {:ok, updated_message} ->
+        payload = %{
+          id: updated_message.id,
+          content: updated_message.content,
+          edited_at: updated_message.edited_at
+        }
+
+        broadcast(socket, "message_edited", payload)
+        {:noreply, socket}
+
+      {:error, changeset} ->
+        reason =
+          case changeset.errors do
+            [{:content, {msg, _}}] -> "message #{msg}"
+            [{:content, msg}] when is_binary(msg) -> "message #{msg}"
+            _ -> "failed to edit message"
+          end
+
+        Logger.error("ChatChannel: Failed to edit message",
+          user_id: user_id,
+          message_id: message.id,
+          room_id: message.room_id,
+          errors: inspect(changeset.errors)
+        )
+
+        {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  defp handle_message_from_different_room(socket, user_id, message_id, message_room_id, current_room_id) do
+    Logger.warning("ChatChannel: Attempted to edit message from different room",
+      user_id: user_id,
+      message_id: message_id,
+      message_room_id: message_room_id,
+      current_room_id: current_room_id
+    )
+
+    {:reply, {:error, %{reason: "message not found in this room"}}, socket}
+  end
+
+  defp handle_message_from_another_user(socket, user_id, message_id, message_owner_id) do
+    Logger.warning("ChatChannel: Attempted to edit another user's message",
+      user_id: user_id,
+      message_id: message_id,
+      message_owner_id: message_owner_id
+    )
+
+    {:reply, {:error, %{reason: "you can only edit your own messages"}}, socket}
+  end
+
+  defp handle_unknown_message_edit_case(socket, user_id, message_id) do
+    Logger.warning("ChatChannel: Attempted to edit unknown message",
+      user_id: user_id,
+      message_id: message_id
+    )
+
+    {:reply, {:error, %{reason: "message not found"}}, socket}
+  end
+
+  defp get_message_and_validate_ownership(message_id, room_id, user_id) do
+    case Messages.get_message!(message_id) do
+      message when message.room_id == room_id and message.user_id == user_id ->
+        {:ok, message}
+      message when message.room_id != room_id ->
+        {:error, :message_not_in_this_room, message}
+      message when message.user_id != user_id ->
+        {:error, :not_message_owner, message}
+      _ ->
+        {:error, :unknown_message_validation_failure}
+    end
+  rescue
+    Ecto.NoResultsError -> {:error, :message_not_found}
   end
 end

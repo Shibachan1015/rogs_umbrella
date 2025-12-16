@@ -3224,19 +3224,29 @@ defmodule ShinkankiWebWeb.GameLive do
   defp migaki_category_emoji(_), do: "✨"
 
   # プレイヤーのタレント（才能）を取得（DBベース）
+  # Note: player_talents should be preloaded in get_game_session!
   defp get_player_talents_from_session(game_session, user_id) do
     player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
     if player do
-      # プレイヤーにタレントが割り当てられているか確認
-      player_with_talents = Shinkanki.Repo.preload(player, player_talents: :talent_card)
+      # Check if player_talents is already loaded (from get_game_session! preload)
+      player_talents =
+        case player.player_talents do
+          %Ecto.Association.NotLoaded{} ->
+            # Fallback: preload if not already loaded (should not happen normally)
+            player_with_talents = Shinkanki.Repo.preload(player, player_talents: :talent_card)
+            player_with_talents.player_talents
 
-      if Enum.empty?(player_with_talents.player_talents) do
+          loaded_talents ->
+            loaded_talents
+        end
+
+      if Enum.empty?(player_talents) do
         # タレントがまだ割り当てられていない場合は、ダミーデータを返す（フォールバック）
         role_talents_fallback(player.role)
       else
-        # DBからタレントを取得
-        Enum.map(player_with_talents.player_talents, fn pt ->
+        # Use already preloaded talents (no additional query)
+        Enum.map(player_talents, fn pt ->
           %{
             id: pt.talent_card.id,
             name: pt.talent_card.name,

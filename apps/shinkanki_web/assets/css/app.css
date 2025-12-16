@@ -657,6 +657,30 @@ button, input, textarea, select, label {
   animation: spin 1s linear infinite;
 }
 
+/* Loading rooms state */
+.loading-rooms {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--color-mist);
+}
+
+.loading-rooms .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.loading-rooms p {
+  font-size: 0.9rem;
+}
+
 /* Toast notification animations */
 @keyframes slide-in-right {
   from {
@@ -1450,11 +1474,26 @@ html {
 }
 
 .landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.5rem;
   letter-spacing: 0.35em;
   color: var(--color-landing-gold);
   text-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
   white-space: nowrap;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.landing-logo:hover {
+  opacity: 0.85;
+}
+
+.landing-logo-img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
 }
 
 .landing-nav {
@@ -1599,28 +1638,73 @@ html {
 
 @media (max-width: 920px) {
   .landing-header {
-    flex-wrap: wrap;
-    padding: 1rem 1.5rem;
-    gap: 0.75rem;
+    flex-wrap: nowrap;
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* モバイルでコンテナのパディングを削除して画像を上に */
+  .landing-container {
+    padding-top: 0;
   }
 
   .hamburger-btn {
     display: flex;
     flex-shrink: 0;
-    order: 1;
+    order: 0;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .hamburger-line {
+    width: 16px;
+    height: 2px;
   }
 
   .landing-logo {
-    order: 0;
-    width: 100%;
+    order: 1;
+    flex: 1;
     text-align: center;
-    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
   }
 
   .landing-header .auth-buttons {
     flex-shrink: 0;
     order: 2;
-    margin-left: auto;
+    gap: 6px;
+  }
+
+  .landing-header .auth-buttons .user-info {
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+
+  .landing-header .auth-buttons .user-avatar {
+    width: 20px;
+    height: 20px;
+  }
+
+  .landing-header .auth-buttons .user-name {
+    font-size: 0.7rem;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .landing-header .auth-buttons .auth-btn {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* ambient-audio-shellもorder設定 */
+  .landing-header ~ .ambient-audio-shell,
+  .landing-hero .ambient-audio-shell {
+    /* 位置はそのまま */
   }
 
   .landing-nav {
@@ -1639,7 +1723,7 @@ html {
     transform: translateY(-10px);
     transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
     width: 100%;
-    order: 3;
+    order: 10;
   }
 
   .landing-nav.open {
@@ -1675,7 +1759,7 @@ html {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url("/images/hero-torii-deer.png");
+  background-image: url("/images/hero-torii-deer.webp");
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
@@ -2157,6 +2241,9 @@ html {
   color: var(--color-landing-text-secondary);
   letter-spacing: 0.2em;
   font-size: 0.85rem;
+  /* 画面外コンテンツの遅延レンダリング */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px;
 }
 
 .footer-subtext {
@@ -3365,11 +3452,11 @@ input[type="radio"] {
 
   /* Spacing adjustments */
   .landing-hero {
-    padding: 6rem 1rem 3rem;
+    padding: 3rem 1rem 2rem;
   }
 
   .landing-section {
-    padding: 4rem 1rem;
+    padding: 3rem 1rem;
   }
 
   /* Card grid adjustments */
@@ -6086,23 +6173,34 @@ kbd {
 
 /* Landing Page Mobile */
 @media (max-width: 640px) {
-  /* Header - Hamburger style for very small screens */
+  /* Header - Compact single row for mobile */
   .landing-header {
-    padding: 0.75rem 1rem;
-    flex-direction: column;
-    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
   }
 
   .landing-logo {
-    font-size: 1.2rem;
-    letter-spacing: 0.25em;
+    font-size: 1.1rem;
+    letter-spacing: 0.2em;
+    gap: 0.35rem;
+  }
+
+  .landing-logo-img {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .hamburger-btn {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
   }
 
   .landing-nav {
-    gap: 0.75rem;
+    gap: 0.5rem;
     font-size: 0.75rem;
-    flex-wrap: wrap;
-    justify-content: center;
   }
 
   .landing-nav a:not(.landing-cta) {
@@ -6114,10 +6212,10 @@ kbd {
     font-size: 0.75rem;
   }
 
-  /* Hero Section */
+  /* Hero Section - より上から始める */
   .landing-hero {
     min-height: 100svh;
-    padding: 5rem 1rem 3rem;
+    padding: 3.5rem 1rem 2rem;
   }
 
   .hero-kicker {
@@ -6952,6 +7050,9 @@ kbd {
   margin: 0 auto;
   padding: clamp(32px, 5vw, 64px) clamp(16px, 4vw, 32px);
   font-size: 0.9rem;
+  /* 画面外コンテンツの遅延レンダリング */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 2000px;
 }
 
 .akasha-header {
@@ -7024,7 +7125,7 @@ kbd {
 
 .akasha-gauge-fill {
   height: 100%;
-  width: 75%;
+  width: 87.5%; /* 7/8 */
   border-radius: inherit;
   background: linear-gradient(90deg, #74623e, #c7b370, #d4af37, #e27937, #c63b3b);
   box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
@@ -8909,5 +9010,441 @@ kbd {
     transform: none;
     width: auto;
     z-index: 9999;
+  }
+}
+
+/* ============================================================
+   Cookie Consent Banner
+   ============================================================ */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.98), rgba(15, 20, 25, 0.98));
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.cookie-banner-content {
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.cookie-banner-text {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cookie-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.cookie-link {
+  color: rgba(212, 175, 55, 0.8);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.cookie-link:hover {
+  color: var(--color-landing-gold);
+  text-decoration: underline;
+}
+
+.cookie-accept-btn {
+  background: linear-gradient(135deg, var(--color-landing-gold), #c7a02a);
+  color: #1a1f2e;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.cookie-accept-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+@media (max-width: 640px) {
+  .cookie-banner {
+    padding: 1rem;
+  }
+
+  .cookie-banner-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .cookie-banner-text {
+    font-size: 0.8rem;
+  }
+
+  .cookie-banner-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ========================================
+   神議りの間 (Kamihakari) - Community Forum
+   ======================================== */
+
+.kamihakari-container {
+  display: flex;
+  height: 100vh;
+  background: var(--color-landing-bg);
+  color: #f5f0e6; /* クリーム/ベージュ色 */
+}
+
+/* サイドバー */
+.kamihakari-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: rgba(15, 20, 30, 0.95);
+  border-right: 1px solid var(--color-landing-gold-muted);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-landing-gold-muted);
+}
+
+.sidebar-header h2 {
+  font-size: 1.5rem;
+  color: var(--color-landing-gold);
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+}
+
+.sidebar-subtitle {
+  font-size: 0.85rem;
+  color: #d4cfc5; /* 薄いベージュ */
+  margin: 0;
+}
+
+.channel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.channel-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.25rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.channel-item:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.channel-item.active {
+  background: rgba(212, 175, 55, 0.2);
+  border-left: 3px solid var(--color-landing-gold);
+}
+
+.channel-name {
+  display: block;
+  font-size: 1rem;
+  color: #f5f0e6; /* クリーム色 */
+  font-weight: 500;
+}
+
+.channel-topic {
+  display: block;
+  font-size: 0.75rem;
+  color: #d4cfc5; /* 薄いベージュ */
+  margin-top: 0.25rem;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--color-landing-gold-muted);
+}
+
+.back-to-lobby {
+  display: block;
+  color: #d4cfc5; /* 薄いベージュ */
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.back-to-lobby:hover {
+  color: var(--color-landing-gold);
+}
+
+/* メインチャットエリア */
+.kamihakari-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-landing-gold-muted);
+  background: rgba(15, 20, 30, 0.8);
+}
+
+.chat-channel-name {
+  font-size: 1.25rem;
+  color: var(--color-landing-gold);
+  margin: 0 0 0.25rem 0;
+}
+
+.chat-channel-topic {
+  font-size: 0.85rem;
+  color: #d4cfc5; /* 薄いベージュ */
+  margin: 0;
+}
+
+/* メッセージコンテナ */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.loading-messages,
+.empty-messages,
+.no-channel-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #d4cfc5; /* 薄いベージュ */
+}
+
+.empty-hint {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* メッセージアイテム */
+.message-item {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.message-item:last-child {
+  border-bottom: none;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-landing-gold), #c7a02a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-initial {
+  color: #1a1f2e;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.message-author {
+  font-weight: 600;
+  color: #f5f0e6; /* クリーム色 */
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #b0a89a; /* 薄めのベージュ */
+}
+
+.message-body {
+  color: #f5f0e6; /* クリーム色 */
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* メッセージ入力フォーム */
+.message-form {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-landing-gold-muted);
+  background: rgba(15, 20, 30, 0.8);
+}
+
+.message-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-landing-gold-muted);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #f5f0e6; /* クリーム色 */
+  font-size: 1rem;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: var(--color-landing-gold);
+}
+
+.message-input::placeholder {
+  color: #b0a89a; /* 薄めのベージュ */
+}
+
+.send-btn {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--color-landing-gold), #c7a02a);
+  color: #1a1f2e;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* ログインプロンプト */
+.login-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-landing-gold-muted);
+  background: rgba(15, 20, 30, 0.8);
+  color: #d4cfc5; /* 薄いベージュ */
+}
+
+.login-link {
+  color: var(--color-landing-gold);
+  text-decoration: underline;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .kamihakari-container {
+    flex-direction: column;
+  }
+
+  .kamihakari-sidebar {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-landing-gold-muted);
+  }
+
+  .sidebar-header {
+    padding: 1rem;
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .channel-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem 1rem;
+  }
+
+  .channel-item {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .channel-topic {
+    display: none;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .kamihakari-main {
+    height: calc(100vh - 150px);
+  }
+
+  .chat-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .messages-container {
+    padding: 0.75rem 1rem;
+  }
+
+  .message-form {
+    padding: 0.75rem 1rem;
+  }
+
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .avatar-initial {
+    font-size: 0.85rem;
   }
 }

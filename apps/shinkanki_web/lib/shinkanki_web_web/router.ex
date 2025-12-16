@@ -29,6 +29,7 @@ defmodule ShinkankiWebWeb.Router do
     # ==============================
     get "/", PageController, :home
     get "/rulebook", PageController, :rulebook
+    get "/privacy", PageController, :privacy
     get "/cards/talent", PageController, :talent_cards
     get "/cards/cocreation", PageController, :cocreation_cards
     get "/cards/action", PageController, :action_cards
@@ -44,6 +45,18 @@ defmodule ShinkankiWebWeb.Router do
     post "/users/log-in", UserSessionController, :create
     get "/users/auto-login", UserSessionController, :auto_login
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  # OAuth routes
+  scope "/auth", ShinkankiWebWeb do
+    pipe_through :browser
+
+    get "/:provider", OAuthController, :request
+    get "/:provider/callback", OAuthController, :callback
+  end
+
+  scope "/", ShinkankiWebWeb do
+    pipe_through :browser
 
     # ==============================
     # 認証済みユーザー用
@@ -52,6 +65,10 @@ defmodule ShinkankiWebWeb.Router do
       # --- rogs_comm ドメイン: ルーム・ロビー ---
       live "/lobby", LobbyLive
       live "/room/:slug", WaitingRoomLive
+
+      # --- 神議りの間（コミュニティフォーラム） ---
+      live "/kamihakari", KamihakariLive
+      live "/kamihakari/:channel", KamihakariLive
 
       # --- shinkanki ドメイン: ゲーム ---
       live "/game/:room_id", GameLive

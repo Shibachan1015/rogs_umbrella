@@ -5,7 +5,7 @@ defmodule ShinkankiWebWeb.UserSessionController do
 
   @remember_me_cookie "_rogs_identity_web_user_remember_me"
   @max_age 60 * 60 * 24 * 60
-  @remember_me_options [sign: true, max_age: @max_age, same_site: "Lax"]
+  @remember_me_options [sign: true, max_age: @max_age, same_site: "Strict", secure: true, http_only: true]
 
   def create(conn, %{"user" => user_params}) do
     %{"email" => email, "password" => password} = user_params

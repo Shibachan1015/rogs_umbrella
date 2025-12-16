@@ -11,6 +11,8 @@ defmodule ShinkankiWeb.Application do
       [
         ShinkankiWebWeb.Telemetry,
         {DNSCluster, query: Application.get_env(:shinkanki_web, :dns_cluster_query) || :ignore},
+        # レート制限
+        ShinkankiWeb.RateLimiter,
         # Use Shinkanki.PubSub to share game state updates with shinkanki app
         # Note: This assumes Shinkanki.PubSub is already started by shinkanki app
         # If not available, fallback to local PubSub

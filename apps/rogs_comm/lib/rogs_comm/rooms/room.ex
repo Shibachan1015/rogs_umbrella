@@ -15,6 +15,8 @@ defmodule RogsComm.Rooms.Room do
     field :topic, :string
     field :is_private, :boolean, default: false
     field :max_participants, :integer, default: 4
+    # "game" = ゲーム用ロビー, "kamihakari" = 神議りの間
+    field :category, :string, default: "game"
 
     # 削除関連フィールド
     field :host_id, :binary_id
@@ -29,17 +31,34 @@ defmodule RogsComm.Rooms.Room do
   @doc false
   def changeset(room, attrs) do
     room
-    |> cast(attrs, [:name, :slug, :topic, :is_private, :max_participants])
+    |> cast(attrs, [:name, :slug, :topic, :is_private, :max_participants, :category])
     |> ensure_slug()
     |> validate_required([:name, :slug, :max_participants])
     |> validate_length(:name, min: 3, max: 120)
     |> validate_length(:slug, min: 3, max: 50)
     |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    |> validate_number(:max_participants,
-      greater_than_or_equal_to: 2,
-      less_than_or_equal_to: 4
-    )
+    |> validate_inclusion(:category, ["game", "kamihakari"])
+    |> validate_max_participants()
     |> unique_constraint(:slug)
+  end
+
+  # 神議りの間は参加者数無制限（100人まで）、ゲームは2-4人
+  defp validate_max_participants(changeset) do
+    category = get_field(changeset, :category) || "game"
+
+    case category do
+      "kamihakari" ->
+        validate_number(changeset, :max_participants,
+          greater_than_or_equal_to: 1,
+          less_than_or_equal_to: 100
+        )
+
+      _ ->
+        validate_number(changeset, :max_participants,
+          greater_than_or_equal_to: 2,
+          less_than_or_equal_to: 4
+        )
+    end
   end
 
   defp ensure_slug(%Ecto.Changeset{} = changeset) do

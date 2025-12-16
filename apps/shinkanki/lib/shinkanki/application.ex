@@ -15,6 +15,8 @@ defmodule Shinkanki.Application do
         end,
         # Start the PubSub system
         {Phoenix.PubSub, name: Shinkanki.PubSub},
+        # Card cache (must be after Repo)
+        Shinkanki.CardCache,
         # Start the Registry for Game Servers
         {Registry, keys: :unique, name: Shinkanki.GameRegistry},
         # Start the DynamicSupervisor for Game Servers

@@ -34,9 +34,40 @@ defmodule ShinkankiWebWeb.LobbyLive do
       |> assign(:filter_has_space, false)
       |> assign(:form, to_form(changeset))
       |> assign(:show_create_form, false)
-      |> load_rooms()
+      |> assign(:rooms, nil)
+      |> assign(:loading_rooms, true)
+
+    # 非同期でルーム一覧を読み込み（初期表示高速化）
+    # category: "game" でフィルタ（神議りの間のチャンネルは除外）
+    socket =
+      if connected?(socket) do
+        start_async(socket, :load_rooms, fn ->
+          Rooms.list_rooms(category: "game", include_private: false, limit: 50)
+        end)
+      else
+        # SSR時は同期で読み込み（SEO対策）
+        load_rooms(socket)
+        |> assign(:loading_rooms, false)
+      end
 
     {:ok, socket}
+  end
+
+  # 非同期読み込み完了
+  @impl true
+  def handle_async(:load_rooms, {:ok, rooms}, socket) do
+    {:noreply,
+     socket
+     |> assign(:rooms, rooms)
+     |> assign(:loading_rooms, false)}
+  end
+
+  def handle_async(:load_rooms, {:exit, _reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:rooms, [])
+     |> assign(:loading_rooms, false)
+     |> put_flash(:error, "ルームの読み込みに失敗しました")}
   end
 
   defp get_or_create_dev_user do
@@ -51,10 +82,11 @@ defmodule ShinkankiWebWeb.LobbyLive do
     end
   end
 
-  # ルーム一覧を読み込み
+  # ルーム一覧を読み込み（ゲームルームのみ）
   defp load_rooms(socket) do
     rooms =
       Rooms.list_rooms(
+        category: "game",
         include_private: false,
         search: socket.assigns.search,
         has_space: socket.assigns.filter_has_space,
@@ -83,9 +115,10 @@ defmodule ShinkankiWebWeb.LobbyLive do
                   <a href="/cards/action">アクションカード</a>
                   <a href="/cards/hitoyo">人代カード</a>
                   <a href="/cards/migaki">磨きカード</a>
-                  <a href="/kuukan">空環（P）</a>
+                  <a href="/kuukan">空環</a>
                 </div>
               </div>
+              <a href="/kamihakari" class="nav-link">神議りの間</a>
             </nav>
           </div>
           
@@ -125,7 +158,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
               <p>ルームに参加するにはログインが必要です</p>
               <div class="login-prompt-actions">
                 <a
-                  href={"http://localhost:4001/auth/google?return_to=#{URI.encode_www_form("http://localhost:4000/lobby")}"}
+                  href={~p"/auth/google?return_to=/lobby"}
                   class="auth-btn oauth-btn oauth-google login-btn-large"
                 >
                   <svg class="oauth-icon-svg" viewBox="0 0 24 24">
@@ -146,7 +179,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
                   Googleでログイン
                 </a>
                 <a
-                  href={"http://localhost:4001/auth/github?return_to=#{URI.encode_www_form("http://localhost:4000/lobby")}"}
+                  href={~p"/auth/github?return_to=/lobby"}
                   class="auth-btn oauth-btn oauth-github login-btn-large"
                 >
                   <svg class="oauth-icon-svg" viewBox="0 0 24 24" fill="currentColor">
@@ -234,9 +267,17 @@ defmodule ShinkankiWebWeb.LobbyLive do
           <div class="rooms-section">
             <div class="section-header">
               <h2 class="section-title">公開ルーム</h2>
-              <span class="room-count">{length(@rooms)}件</span>
+              <span class="room-count">
+                <%= if @loading_rooms, do: "読み込み中...", else: "#{length(@rooms || [])}件" %>
+              </span>
             </div>
 
+            <%= if @loading_rooms do %>
+              <div class="loading-rooms">
+                <div class="loading-spinner"></div>
+                <p>ルームを読み込んでいます...</p>
+              </div>
+            <% else %>
             <%= if @rooms == [] do %>
               <div class="empty-rooms">
                 <%= if @search != "" do %>
@@ -253,6 +294,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
                   <.room_card room={room} logged_in={@logged_in} />
                 <% end %>
               </div>
+            <% end %>
             <% end %>
           </div>
         </main>

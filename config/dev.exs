@@ -25,6 +25,9 @@ config :swoosh, :api_client, false
 config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
+# セキュリティ: 開発環境フラグ（本番ビルドでは存在しない）
+config :rogs_identity, env: :dev
+
 # --- Webサーバーの設定 (ポート番号を動的にする) ---
 
 # 1. ゲームUIアプリ (ShinkankiWeb) - Main Port

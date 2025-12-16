@@ -29,8 +29,10 @@ if github_client_id = System.get_env("GITHUB_CLIENT_ID") do
 end
 
 # --- Production-Specific Configuration ---
+# Note: PHX_SERVER is set by Fly.io for releases, more reliable than MIX_ENV
+# which is not available as an environment variable in releases.
 
-if System.get_env("MIX_ENV") == "prod" do
+if System.get_env("PHX_SERVER") == "true" || System.get_env("RELEASE_NAME") do
   # Main Endpoint Configuration
   # This section configures the main web endpoint for the application.
   host = System.get_env("PHX_HOST") || "rogs-umbrella.fly.dev"
@@ -57,10 +59,17 @@ if System.get_env("MIX_ENV") == "prod" do
 
   ecto_pool_size = String.to_integer(System.get_env("POOL_SIZE") || "10")
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
+
+  # Fly.io internal network uses encrypted 6PN, but SSL can be enabled if needed
+  # Set DATABASE_SSL=true to enable SSL for database connections
+  database_ssl = System.get_env("DATABASE_SSL") in ~w(true 1)
+
   repo_opts = [
     url: database_url,
     pool_size: ecto_pool_size,
-    socket_options: maybe_ipv6
+    socket_options: maybe_ipv6,
+    ssl: database_ssl,
+    ssl_opts: if(database_ssl, do: [verify: :verify_none], else: [])
   ]
 
   config :shinkanki, Shinkanki.Repo, repo_opts

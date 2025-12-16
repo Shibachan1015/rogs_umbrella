@@ -41,7 +41,11 @@ defmodule Rogs.Umbrella.MixProject do
   defp deps do
     [
       # Required to run "mix format" on ~H/.heex files from the umbrella root
-      {:phoenix_live_view, ">= 0.0.0"}
+      {:phoenix_live_view, ">= 0.0.0"},
+      # Security & Static Analysis
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -58,7 +62,11 @@ defmodule Rogs.Umbrella.MixProject do
     [
       # run `mix setup` in all child apps
       setup: ["cmd mix setup"],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"],
+      # Security checks (light to heavy)
+      security: ["deps.audit", "hex.audit", "credo --strict", "sobelow --config"],
+      "security.quick": ["deps.audit", "hex.audit"],
+      "security.full": ["deps.audit", "hex.audit", "credo --strict", "sobelow --config", "test"]
     ]
   end
 end

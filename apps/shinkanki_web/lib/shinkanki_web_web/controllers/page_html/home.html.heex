@@ -2,7 +2,10 @@
 
 <div class="landing-body">
   <header class="landing-header" id="landing-header">
-    <div class="landing-logo" aria-label="神環記">神環記</div>
+    <a href="/" class="landing-logo" aria-label="神環記">
+      <img src={~p"/images/logo.png"} alt="" class="landing-logo-img" />
+      <span>神環記</span>
+    </a>
     <nav class="landing-nav" id="landing-nav">
       <a href="/rulebook" class="nav-link">ルールブック</a>
       <div class="nav-dropdown">
@@ -13,15 +16,28 @@
           <a href="/cards/action">アクションカード</a>
           <a href="/cards/hitoyo">人代カード</a>
           <a href="/cards/migaki">磨きカード</a>
-          <a href="/kuukan">空環（P）</a>
+          <a href="/kuukan">空環</a>
         </div>
       </div>
+      <a href="/kamihakari" class="nav-link">神議りの間</a>
     </nav>
+    <!-- ハンバーガーメニュー（モバイル用、ログイン状態に関係なく表示） -->
+    <button
+      class="hamburger-btn"
+      id="hamburger-btn"
+      aria-label="メニューを開く"
+      aria-expanded="false"
+    >
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+
     <%= if @current_user do %>
       <div class="auth-buttons">
         <span class="user-info">
           <%= if @current_user.avatar_url do %>
-            <img src={@current_user.avatar_url} alt="" class="user-avatar" />
+            <img src={@current_user.avatar_url} alt="" class="user-avatar" loading="lazy" decoding="async" />
           <% end %>
           <span class="user-name">{RogsIdentity.Accounts.display_name(@current_user)}</span>
         </span>
@@ -29,17 +45,6 @@
           ログアウト
         </.link>
       </div>
-    <% else %>
-      <button
-        class="hamburger-btn"
-        id="hamburger-btn"
-        aria-label="メニューを開く"
-        aria-expanded="false"
-      >
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
     <% end %>
   </header>
 
@@ -63,7 +68,7 @@
               </button>
               <div class="hero-login-menu" id="hero-login-menu">
                 <a
-                  href={"http://localhost:4001/auth/google?return_to=#{URI.encode_www_form("http://localhost:4000/")}"}
+                  href={~p"/auth/google?return_to=/"}
                   class="login-option"
                 >
                   <svg viewBox="0 0 24 24" width="20" height="20">
@@ -84,7 +89,7 @@
                   <span>Googleでログイン</span>
                 </a>
                 <a
-                  href={"http://localhost:4001/auth/github?return_to=#{URI.encode_www_form("http://localhost:4000/")}"}
+                  href={~p"/auth/github?return_to=/"}
                   class="login-option"
                 >
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -148,11 +153,11 @@
       </div>
     </section>
     
-<!-- 空環 Akasha 年代記セクション -->
+<!-- 神環の流れセクション -->
     <section id="akasha" class="akasha-chronicle" aria-labelledby="akasha-title">
       <div class="akasha-header">
-        <p class="akasha-kicker">RESONANT TALES</p>
-        <h2 id="akasha-title" class="akasha-title">空環 Akasha 年代記</h2>
+        <p class="akasha-kicker">THE GAME JOURNEY</p>
+        <h2 id="akasha-title" class="akasha-title">神環の流れ</h2>
         <p class="akasha-lede">
           邪気レベル 6 から始まる壊れかけた地球。森・文化・コミュニティを守りながら、
           呼吸するお金「空環」を巡らせ、20年後に訪れる世界の姿を書き換えていく協力型ボードゲームです。
@@ -164,13 +169,13 @@
         <div class="akasha-gauge-wrapper">
           <div class="akasha-gauge-label">
             <span>邪気トラック</span>
-            <span>現在値：<strong id="jaki-value">0</strong> / 8</span>
+            <span>現在値：<strong id="jaki-value">7</strong> / 8</span>
           </div>
           <div class="akasha-gauge-bar">
             <div class="akasha-gauge-fill" id="jaki-fill"></div>
           </div>
           <div class="akasha-gauge-markers">
-            <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span>
+            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
           </div>
         </div>
         <p class="akasha-note">
@@ -223,7 +228,7 @@
           <li class="akasha-flow-step">
             <div class="akasha-step-index">6</div>
             <div class="akasha-step-body">
-              <h4>年末処理</h4>
+              <h4>年送り</h4>
               <p>森・文化・コミュニティの指標を確認し、生命指数 L = F + K + S を記録。</p>
             </div>
           </li>

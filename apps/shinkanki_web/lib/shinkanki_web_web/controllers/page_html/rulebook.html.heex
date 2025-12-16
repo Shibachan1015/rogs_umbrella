@@ -6,7 +6,7 @@
         <%= if @current_user do %>
           <span class="user-info">
             <%= if @current_user.avatar_url do %>
-              <img src={@current_user.avatar_url} alt="" class="user-avatar" />
+              <img src={@current_user.avatar_url} alt="" class="user-avatar" loading="lazy" decoding="async" />
             <% end %>
             <span class="user-name">{RogsIdentity.Accounts.display_name(@current_user)}</span>
           </span>
@@ -15,7 +15,7 @@
           </.link>
         <% else %>
           <a
-            href="http://localhost:4001/auth/google?return_to=http://localhost:4000/rulebook"
+            href={~p"/auth/google?return_to=/rulebook"}
             class="auth-btn oauth-btn oauth-google"
           >
             <svg class="oauth-icon-svg" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
       <p><strong>神環記（しんかんき）</strong>は、壊れかけた世界を「みんなで20年かけて立て直す」協力型ボードゲームです。</p>
       <ul>
         <li>プレイヤーはそれぞれ、ちがう<strong>才能</strong>を持った存在として世界に降り立ちます。</li>
-        <li>世界はすでに<strong>邪気レベル6（0〜8段階中）</strong>。森・文化・コミュニティはかなり弱っています。</li>
+        <li>世界はすでに<strong>邪気レベル7（0〜8段階中）</strong>。森・文化・コミュニティはかなり弱っています。</li>
         <li>毎年ふってくる<strong>人代（ひとよ）カード</strong>が、環境を壊し、文化を切り捨て、人を分断しようとしてきます。</li>
         <li>
           プレイヤーは<strong>営み（いとなみ）</strong>と<strong>みがきカード</strong>を使って、
@@ -88,7 +88,7 @@
         <li>20年後、<strong>F + K + S の合計（いのち指数）</strong>によって、世界のエンディングが変わります。</li>
       </ul>
     </section>
-    
+
 <!-- 1. コンポーネント -->
     <section id="components">
       <h2>1. コンポーネント</h2>
@@ -155,7 +155,7 @@
         </ul>
       </div>
     </section>
-    
+
 <!-- 2. 世界の初期状態 -->
     <section id="setup">
       <h2>2. 世界の初期状態（セットアップ）</h2>
@@ -185,7 +185,7 @@
       </ol>
       <p class="highlight">これで準備完了です。<strong>1年目の「人代フェイズ」からゲームを始めます。</strong></p>
     </section>
-    
+
 <!-- 3. ゲームの目的 -->
     <section id="goal">
       <h2>3. ゲームの目的</h2>
@@ -206,7 +206,7 @@
         <li>コミュニティ（S）が0より下がった</li>
       </ul>
     </section>
-    
+
 <!-- 4. 1年の流れ -->
     <section id="turn">
       <h2>4. 1年の流れ（ターン構成）</h2>
@@ -220,7 +220,7 @@
         <li>年送り（としおくり）フェイズ</li>
       </ol>
     </section>
-    
+
 <!-- 5. 各フェイズの説明 -->
     <section id="phases">
       <h2>5. 各フェイズの説明</h2>
@@ -283,7 +283,7 @@
           <li>神議りで決めた方針と、人代カードを見ながら、今年実行するアクションを<strong>1〜3個</strong>えらびます。</li>
         </ol>
 
-        <h4>5-3-2. 空環（P）を出し合う</h4>
+        <h4>5-3-2. 空環を出し合う</h4>
         <p>各アクションカードには、「必要なP（空環）」が書かれています。</p>
         <ol>
           <li>プレイヤーどうしで、だれがどれだけPを出すかを相談します。（1人がまとめて出してもよい、2〜3人で分担してもよい）</li>
@@ -330,7 +330,7 @@
 
       <div class="phase" id="phase-kokyu">
         <h3>5-4. 呼吸（こきゅう）フェイズ</h3>
-        <p><strong>たまりすぎた空環（P）を世界に返し、めぐりを取り戻すフェイズ</strong>です。</p>
+        <p><strong>たまりすぎた空環を世界に返し、めぐりを取り戻すフェイズ</strong>です。</p>
         <ol>
           <li>各プレイヤーは、自分が持っているPの数を数えます。</li>
           <li>
@@ -396,7 +396,7 @@
         </ol>
       </div>
     </section>
-    
+
 <!-- 6. 才能カードについて -->
     <section id="talent">
       <h2>6. 才能カードについて</h2>
@@ -435,7 +435,7 @@
         </li>
       </ul>
     </section>
-    
+
 <!-- 7. ゲームの終了とエンディング -->
     <section id="ending">
       <h2>7. ゲームの終了とエンディング</h2>
@@ -457,7 +457,7 @@
         <li>Lの値に応じて、エンディングテキストを読みます。（エンディングの文章は、別冊「物語ブック」にまとめる想定です）</li>
       </ol>
     </section>
-    
+
 <!-- 8. かんたん版 -->
     <section id="simple">
       <h2>8. 最初に遊ぶときの「かんたん版」</h2>

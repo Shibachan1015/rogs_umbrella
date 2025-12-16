@@ -7,6 +7,8 @@
     <.live_title default="神環記" suffix=" - Record of the Gods">
       {assigns[:page_title]}
     </.live_title>
+    <link rel="icon" type="image/png" href={~p"/images/logo.png"} />
+    <link rel="apple-touch-icon" href={~p"/images/logo.png"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
@@ -32,5 +34,34 @@
   </head>
   <body class="bg-washi text-sumi antialiased">
     {@inner_content}
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-consent-banner" class="cookie-banner" style="display: none;">
+      <div class="cookie-banner-content">
+        <p class="cookie-banner-text">
+          このサイトでは、より良いサービス提供のためにCookieを使用しています。
+          サイトを利用することで、Cookieの使用に同意したものとみなされます。
+        </p>
+        <div class="cookie-banner-actions">
+          <a href="/privacy" class="cookie-link">プライバシーポリシー</a>
+          <button id="cookie-accept-btn" class="cookie-accept-btn">同意する</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const banner = document.getElementById('cookie-consent-banner');
+        const acceptBtn = document.getElementById('cookie-accept-btn');
+
+        if (!localStorage.getItem('cookie-consent')) {
+          banner.style.display = 'flex';
+        }
+
+        acceptBtn?.addEventListener('click', () => {
+          localStorage.setItem('cookie-consent', 'accepted');
+          banner.style.display = 'none';
+        });
+      })();
+    </script>
   </body>
 </html>

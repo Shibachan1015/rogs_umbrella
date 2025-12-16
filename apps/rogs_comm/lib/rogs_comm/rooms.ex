@@ -13,24 +13,33 @@ defmodule RogsComm.Rooms do
   ルーム一覧を取得します。
 
   ## Options
+    - `:category` - カテゴリでフィルタ ("game" or "kamihakari")
     - `:include_private` - プライベートルームを含める (デフォルト: true)
     - `:search` - ルーム名またはトピックで検索
     - `:has_space` - 空きがあるルームのみ (デフォルト: false)
     - `:limit` - 取得件数の上限
   """
   def list_rooms(opts \\ []) do
+    category = Keyword.get(opts, :category, nil)
     include_private? = Keyword.get(opts, :include_private, true)
     search = Keyword.get(opts, :search, nil)
     has_space? = Keyword.get(opts, :has_space, false)
     limit = Keyword.get(opts, :limit, nil)
 
     Room
+    |> maybe_filter_category(category)
     |> maybe_filter_private(include_private?)
     |> maybe_filter_search(search)
     |> maybe_filter_has_space(has_space?)
     |> order_by([r], desc: r.inserted_at)
     |> maybe_limit(limit)
     |> Repo.all()
+  end
+
+  defp maybe_filter_category(query, nil), do: query
+
+  defp maybe_filter_category(query, category) do
+    from r in query, where: r.category == ^category
   end
 
   defp maybe_filter_private(query, true), do: query
@@ -239,6 +248,7 @@ defmodule RogsComm.Rooms do
 
   @doc """
   空きルーム（0人で10分以上）を削除
+  ※神議りの間（kamihakari）は削除しない
   """
   def cleanup_empty_rooms do
     ten_minutes_ago =
@@ -248,13 +258,15 @@ defmodule RogsComm.Rooms do
 
     from(r in Room,
       where: r.current_participants == 0,
-      where: r.last_activity_at < ^ten_minutes_ago
+      where: r.last_activity_at < ^ten_minutes_ago,
+      where: r.category != "kamihakari"
     )
     |> Repo.delete_all()
   end
 
   @doc """
   無活動ルーム（12時間以上）を削除
+  ※神議りの間（kamihakari）は削除しない
   """
   def cleanup_inactive_rooms do
     twelve_hours_ago =
@@ -263,7 +275,8 @@ defmodule RogsComm.Rooms do
       |> DateTime.truncate(:second)
 
     from(r in Room,
-      where: r.last_activity_at < ^twelve_hours_ago
+      where: r.last_activity_at < ^twelve_hours_ago,
+      where: r.category != "kamihakari"
     )
     |> Repo.delete_all()
   end

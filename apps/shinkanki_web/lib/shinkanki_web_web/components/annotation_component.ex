@@ -74,7 +74,7 @@ defmodule ShinkankiWebWeb.AnnotationComponent do
       <% else %>
         <div class="annotation-login-prompt">
           <p>コメントするにはログインが必要です</p>
-          <a href="http://localhost:4001/auth/google" class="oauth-btn oauth-google">
+          <a href="/auth/google" class="oauth-btn oauth-google">
             Googleでログイン
           </a>
         </div>

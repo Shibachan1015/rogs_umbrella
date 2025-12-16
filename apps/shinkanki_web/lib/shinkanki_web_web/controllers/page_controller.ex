@@ -9,6 +9,10 @@ defmodule ShinkankiWebWeb.PageController do
     render(conn, :rulebook)
   end
 
+  def privacy(conn, _params) do
+    render(conn, :privacy)
+  end
+
   def talent_cards(conn, _params) do
     render(conn, :talent_cards)
   end

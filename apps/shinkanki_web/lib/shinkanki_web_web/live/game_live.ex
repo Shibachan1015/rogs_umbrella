@@ -196,12 +196,11 @@ defmodule ShinkankiWebWeb.GameLive do
     |> Enum.find(fn ts -> ts.turn_number == game_session.turn end)
   end
 
-  # 利用可能なアクションカードを取得
+  # 利用可能なアクションカードを取得（キャッシュから）
   defp get_available_action_cards(_game_session, turn_state) do
     if turn_state && turn_state.available_cards do
-      Shinkanki.Games.ActionCard
-      |> Shinkanki.Repo.all()
-      |> Enum.filter(fn card -> card.id in turn_state.available_cards end)
+      turn_state.available_cards
+      |> Shinkanki.CardCache.action_cards_by_ids()
       |> Enum.map(fn card ->
         # カテゴリに応じた色を設定
         color =
@@ -232,10 +231,10 @@ defmodule ShinkankiWebWeb.GameLive do
     end
   end
 
-  # 現在のイベントカードを取得
+  # 現在のイベントカードを取得（キャッシュから）
   defp get_current_event(_game_session, turn_state) do
     if turn_state && turn_state.current_event_id do
-      event = Shinkanki.Repo.get!(Shinkanki.Games.EventCard, turn_state.current_event_id)
+      event = Shinkanki.CardCache.get_event_card(turn_state.current_event_id)
 
       %{
         id: event.id,
@@ -515,8 +514,8 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </aside>
 
-        <!-- Main Game Area -->
-        <div class="flex-1 flex flex-col items-center justify-start p-1 sm:p-4 overflow-y-auto">
+        <!-- Main Game Area - Extra bottom padding on mobile for fixed hand -->
+        <div class="flex-1 flex flex-col items-center justify-start p-1 sm:p-4 overflow-y-auto pb-48 sm:pb-4">
           <!-- Player List - Hidden on mobile, shown on larger screens -->
           <div class="hidden sm:block w-full max-w-2xl mb-4">
             <div class="flex flex-wrap justify-center gap-2">
@@ -1119,10 +1118,10 @@ defmodule ShinkankiWebWeb.GameLive do
         </div>
       </main>
       
-    <!-- Action Log Toggle Button - Mobile: Bottom right, Desktop: Side -->
+    <!-- Action Log Toggle Button - Mobile: Above fixed hand, Desktop: Side -->
       <button
         phx-click={JS.toggle(to: "#action-log-panel")}
-        class="lg:hidden fixed right-2 bottom-48 z-40 w-10 h-10 flex items-center justify-center bg-[rgba(15,20,25,0.95)] border border-[var(--color-landing-gold)]/40 rounded-full text-[var(--color-landing-gold)] hover:bg-[rgba(25,30,35,0.95)] shadow-lg"
+        class="lg:hidden fixed right-2 bottom-[40vh] z-50 w-10 h-10 flex items-center justify-center bg-[rgba(15,20,25,0.95)] border border-[var(--color-landing-gold)]/40 rounded-full text-[var(--color-landing-gold)] hover:bg-[rgba(25,30,35,0.95)] shadow-lg"
         aria-label="アクションログを表示"
       >
         <span class="text-sm">📋</span>
@@ -1206,10 +1205,10 @@ defmodule ShinkankiWebWeb.GameLive do
         </div>
       </aside>
       
-    <!-- Bottom Hand - Mobile: Vertical list, Desktop: Horizontal cards -->
-      <div class="bg-[rgba(15,20,25,0.95)] border-t border-[var(--color-landing-gold)]/20 p-2 sm:p-3">
+    <!-- Bottom Hand - Mobile: Fixed at bottom, Desktop: Normal flow -->
+      <div class="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 bg-[rgba(15,20,25,0.98)] border-t border-[var(--color-landing-gold)]/30 p-2 sm:p-3 max-sm:shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
         <!-- Mobile: Simple list view -->
-        <div class="sm:hidden space-y-1.5 max-h-40 overflow-y-auto">
+        <div class="sm:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
           <%= for card <- @hand_cards do %>
             <% can_afford =
               (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
@@ -1547,9 +1546,12 @@ defmodule ShinkankiWebWeb.GameLive do
       player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
       if player do
-        # アクションカードを取得
-        action_card = Shinkanki.Repo.get!(Shinkanki.Games.ActionCard, card_id)
+        # アクションカードを取得（キャッシュから）
+        action_card = Shinkanki.CardCache.get_action_card(card_id)
 
+        if is_nil(action_card) do
+          {:noreply, put_flash(socket, :error, "カードが見つかりませんでした")}
+        else
         # タレントが選択されていれば、タレント付きで実行
         result =
           if Enum.empty?(selected_talents) do
@@ -1629,6 +1631,7 @@ defmodule ShinkankiWebWeb.GameLive do
             Process.send_after(self(), {:remove_toast, toast_id}, 3000)
 
             {:noreply, socket}
+        end
         end
       else
         {:noreply, socket}
@@ -1858,11 +1861,14 @@ defmodule ShinkankiWebWeb.GameLive do
     player = Enum.find(game_session.players, fn p -> p.user_id == user_id end)
 
     if player do
-      # アクションカードを取得
-      action_card = Shinkanki.Repo.get!(Shinkanki.Games.ActionCard, card_id)
+      # アクションカードを取得（キャッシュから）
+      action_card = Shinkanki.CardCache.get_action_card(card_id)
 
-      # プレイヤーがまだアクションを実行していないかチェック
-      if Games.player_has_acted?(game_session.id, player.id, game_session.turn) do
+      if is_nil(action_card) do
+        {:noreply, put_flash(socket, :error, "カードが見つかりませんでした")}
+      else
+        # プレイヤーがまだアクションを実行していないかチェック
+        if Games.player_has_acted?(game_session.id, player.id, game_session.turn) do
         toast_id = "toast-#{System.unique_integer([:positive])}"
 
         new_toast = %{
@@ -1934,6 +1940,7 @@ defmodule ShinkankiWebWeb.GameLive do
 
             {:noreply, socket}
         end
+      end
       end
     else
       {:noreply, socket}
@@ -2353,41 +2360,6 @@ defmodule ShinkankiWebWeb.GameLive do
     handle_memory_game_state_update(game, socket)
   end
 
-  defp handle_memory_game_state_update(game, socket) do
-    # Update game state when broadcast from GameServer
-    new_status = game.status || :waiting
-    new_phase = game.phase || :event
-    previous_currency = socket.assigns.game_state[:currency] || 0
-
-    # Show demurrage modal when entering demurrage phase
-    entering_demurrage = new_phase == :demurrage && socket.assigns.current_phase != :demurrage
-
-    socket =
-      socket
-      |> assign(:game_state, format_game_state(game))
-      |> assign(:current_phase, new_phase)
-      |> assign(:current_event, format_current_event(game))
-      |> assign(:game_status, new_status)
-      |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
-      |> assign(:player_talents, get_player_talents(game, socket.assigns.user_id))
-      |> assign(:active_projects, get_active_projects(game))
-      |> assign(:can_start, Shinkanki.can_start?(socket.assigns.room_id))
-      # Show ending screen if game ended
-      |> assign(:show_ending, new_status in [:won, :lost])
-      |> assign(:ending_type, game.ending_type)
-      # Show demurrage modal when entering demurrage phase
-      |> assign(
-        :show_demurrage,
-        if(entering_demurrage, do: true, else: socket.assigns.show_demurrage)
-      )
-      |> assign(
-        :previous_currency,
-        if(entering_demurrage, do: previous_currency, else: socket.assigns.previous_currency)
-      )
-
-    {:noreply, socket}
-  end
-
   def handle_info({:remove_toast, toast_id}, socket) do
     {:noreply,
      update(socket, :toasts, fn toasts -> Enum.reject(toasts, &(&1.id == toast_id)) end)}
@@ -2571,6 +2543,41 @@ defmodule ShinkankiWebWeb.GameLive do
 
   def handle_info(_msg, socket), do: {:noreply, socket}
 
+  defp handle_memory_game_state_update(game, socket) do
+    # Update game state when broadcast from GameServer
+    new_status = game.status || :waiting
+    new_phase = game.phase || :event
+    previous_currency = socket.assigns.game_state[:currency] || 0
+
+    # Show demurrage modal when entering demurrage phase
+    entering_demurrage = new_phase == :demurrage && socket.assigns.current_phase != :demurrage
+
+    socket =
+      socket
+      |> assign(:game_state, format_game_state(game))
+      |> assign(:current_phase, new_phase)
+      |> assign(:current_event, format_current_event(game))
+      |> assign(:game_status, new_status)
+      |> assign(:hand_cards, get_hand_cards(game, socket.assigns.user_id))
+      |> assign(:player_talents, get_player_talents(game, socket.assigns.user_id))
+      |> assign(:active_projects, get_active_projects(game))
+      |> assign(:can_start, Shinkanki.can_start?(socket.assigns.room_id))
+      # Show ending screen if game ended
+      |> assign(:show_ending, new_status in [:won, :lost])
+      |> assign(:ending_type, game.ending_type)
+      # Show demurrage modal when entering demurrage phase
+      |> assign(
+        :show_demurrage,
+        if(entering_demurrage, do: true, else: socket.assigns.show_demurrage)
+      )
+      |> assign(
+        :previous_currency,
+        if(entering_demurrage, do: previous_currency, else: socket.assigns.previous_currency)
+      )
+
+    {:noreply, socket}
+  end
+
   # AIが方針を提案（最も低いパラメータを優先）
   defp ai_suggest_policy(game_session) do
     f = game_session.forest
@@ -2645,11 +2652,8 @@ defmodule ShinkankiWebWeb.GameLive do
 
   # AIがベストなカードを選択（役割とゲーム状況に基づく）
   defp ai_select_best_card(game_session, ai_player, available_card_ids) do
-    # カード情報を取得
-    cards =
-      Shinkanki.Games.ActionCard
-      |> Shinkanki.Repo.all()
-      |> Enum.filter(fn card -> card.id in available_card_ids end)
+    # カード情報を取得（キャッシュから）
+    cards = Shinkanki.CardCache.action_cards_by_ids(available_card_ids)
 
     if Enum.empty?(cards) do
       Enum.random(available_card_ids)
@@ -3164,12 +3168,11 @@ defmodule ShinkankiWebWeb.GameLive do
   # DB連携ヘルパー関数
   # ===================
 
-  # 場に出ているアクションカードを手札として取得（DBベース）
+  # 場に出ているアクションカードを手札として取得（キャッシュから）
   defp get_hand_cards_from_session(_game_session, turn_state) do
     if turn_state && turn_state.available_cards do
-      Shinkanki.Games.ActionCard
-      |> Shinkanki.Repo.all()
-      |> Enum.filter(fn card -> card.id in turn_state.available_cards end)
+      turn_state.available_cards
+      |> Shinkanki.CardCache.action_cards_by_ids()
       |> Enum.map(fn card ->
         %{
           id: card.id,
@@ -3361,10 +3364,10 @@ defmodule ShinkankiWebWeb.GameLive do
           "不明"
         end
 
-      # アクションカード情報を取得
+      # アクションカード情報を取得（キャッシュから）
       card_name =
         if action.action_card_id do
-          case Shinkanki.Repo.get(Shinkanki.Games.ActionCard, action.action_card_id) do
+          case Shinkanki.CardCache.get_action_card(action.action_card_id) do
             nil -> nil
             card -> card.name
           end

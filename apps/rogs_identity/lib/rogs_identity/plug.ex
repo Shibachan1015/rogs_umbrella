@@ -46,9 +46,13 @@ defmodule RogsIdentity.Plug do
   Sets `conn.assigns.current_user` and `conn.assigns.current_scope`.
   In development, can bypass authentication with :dev_bypass_auth config.
   """
+  # セキュリティ: 開発バイパスはコンパイル時に決定（本番では絶対に有効化されない）
+  @dev_bypass_enabled Application.compile_env(:rogs_identity, :dev_bypass_auth, false) and
+                        Application.compile_env(:rogs_identity, :env) == :dev
+
   def fetch_current_user(conn, _opts) do
-    # 開発環境でのバイパスチェック
-    if Application.get_env(:rogs_identity, :dev_bypass_auth, false) do
+    # 開発環境でのバイパスチェック（コンパイル時に決定済み）
+    if @dev_bypass_enabled do
       fetch_current_user_with_bypass(conn)
     else
       fetch_current_user_normal(conn)

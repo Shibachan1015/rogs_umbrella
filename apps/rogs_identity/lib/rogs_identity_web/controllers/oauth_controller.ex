@@ -33,7 +33,7 @@ defmodule RogsIdentityWeb.OAuthController do
 
     case Accounts.find_or_create_oauth_user(user_attrs) do
       {:ok, user} ->
-        return_to = get_return_to(conn) || "http://localhost:4000/lobby"
+        return_to = get_safe_return_to(conn)
         token = RogsIdentity.Accounts.generate_user_session_token(user)
 
         conn
@@ -43,9 +43,9 @@ defmodule RogsIdentityWeb.OAuthController do
         |> put_resp_cookie("_rogs_identity_web_user_remember_me", token,
           sign: true,
           max_age: 14 * 24 * 60 * 60,
-          same_site: "Lax"
+          same_site: "Strict"
         )
-        |> redirect(external: return_to)
+        |> redirect(to: return_to)
 
       {:error, _changeset} ->
         conn
@@ -69,4 +69,23 @@ defmodule RogsIdentityWeb.OAuthController do
   defp get_return_to(conn) do
     get_session(conn, :oauth_return_to)
   end
+
+  # セキュリティ: リダイレクト先を検証し、安全なパスのみ許可
+  defp get_safe_return_to(conn) do
+    case get_return_to(conn) do
+      nil -> "/lobby"
+      path when is_binary(path) ->
+        if safe_return_path?(path), do: path, else: "/lobby"
+      _ -> "/lobby"
+    end
+  end
+
+  # 安全なパスの検証: 相対パスのみ許可、外部URLを拒否
+  defp safe_return_path?(path) when is_binary(path) do
+    String.starts_with?(path, "/") and
+      not String.contains?(path, "://") and
+      not String.starts_with?(path, "//")
+  end
+
+  defp safe_return_path?(_), do: false
 end

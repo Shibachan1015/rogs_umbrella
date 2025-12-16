@@ -694,21 +694,30 @@ defmodule RogsCommWeb.ChatLive do
   defp speaker_status_message(true), do: "スピーカーをミュートにしました"
   defp speaker_status_message(false), do: "スピーカーを有効にしました"
 
+  # セキュリティ: XSS対策 - コンテンツをHTMLエスケープしてからハイライト
   defp highlight_search_term(content, query) when is_binary(content) and is_binary(query) do
+    # まずコンテンツをHTMLエスケープ
+    escaped_content = Phoenix.HTML.html_escape(content) |> Phoenix.HTML.safe_to_string()
+
     if String.trim(query) == "" do
-      content
+      escaped_content
     else
       # Escape special regex characters in query
       escaped_query = Regex.escape(query)
       pattern = ~r/#{escaped_query}/iu
 
-      Regex.replace(pattern, content, fn match ->
+      Regex.replace(pattern, escaped_content, fn match ->
+        # matchは既にエスケープ済みなので安全
         ~s(<mark class="bg-kin/30 text-sumi px-1 rounded border border-kin">#{match}</mark>)
       end)
     end
   end
 
-  defp highlight_search_term(content, _query), do: content
+  defp highlight_search_term(content, _query) when is_binary(content) do
+    Phoenix.HTML.html_escape(content) |> Phoenix.HTML.safe_to_string()
+  end
+
+  defp highlight_search_term(_content, _query), do: ""
 
   @impl true
   def render(assigns) do

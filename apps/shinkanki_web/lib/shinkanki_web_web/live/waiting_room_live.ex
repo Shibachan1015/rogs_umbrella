@@ -874,6 +874,9 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     handle_game_state_updated(game, socket)
   end
 
+  @impl true
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp handle_game_state_updated(game, socket) do
     user_id = socket.assigns.user_id
 
@@ -892,9 +895,6 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
        |> assign(:can_start, can_start_game?(game))}
     end
   end
-
-  @impl true
-  def handle_info(_msg, socket), do: {:noreply, socket}
 
   # ヘルパー関数
   defp get_players(%{players: players, player_order: order}) when is_map(players) do

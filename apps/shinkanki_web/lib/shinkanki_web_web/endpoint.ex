@@ -8,7 +8,10 @@ defmodule ShinkankiWebWeb.Endpoint do
     store: :cookie,
     key: "_shinkanki_web_key",
     signing_salt: "tU6I8Lra",
-    same_site: "Lax"
+    same_site: "Lax",
+    secure: true,
+    http_only: true,
+    max_age: 60 * 60 * 24 * 14
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
@@ -24,7 +27,8 @@ defmodule ShinkankiWebWeb.Endpoint do
     at: "/",
     from: :shinkanki_web,
     gzip: not code_reloading?,
-    only: ShinkankiWebWeb.static_paths()
+    only: ShinkankiWebWeb.static_paths(),
+    cache_control_for_etags: "public, max-age=31536000, immutable"
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

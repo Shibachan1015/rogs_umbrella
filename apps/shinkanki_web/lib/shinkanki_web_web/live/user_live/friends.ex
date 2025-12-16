@@ -11,28 +11,85 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
     user = get_user_from_session(session)
 
     if user do
-      # Presenceを購読してオンライン状態を追跡
-      if connected?(socket) do
-        Presence.subscribe()
-        Presence.track_user(user)
-        Messages.subscribe_invitations(user.id)
-      end
+      # 初期状態（ローディング中）
+      socket =
+        socket
+        |> assign(:current_scope, nil)
+        |> assign(:current_user, user)
+        |> assign(:tab, :friends)
+        |> assign(:online_ids, MapSet.new())
+        |> assign(:invitations, [])
+        |> assign(:unread_messages, 0)
+        |> assign(:friends, nil)
+        |> assign(:pending_requests, [])
+        |> assign(:sent_requests, [])
+        |> assign(:recent_players, [])
+        |> assign(:friends_count, 0)
+        |> assign(:pending_count, 0)
+        |> assign(:loading, true)
 
-      {:ok,
-       socket
-       |> assign(:current_scope, nil)
-       |> assign(:current_user, user)
-       |> assign(:tab, :friends)
-       |> assign(:online_ids, get_online_ids())
-       |> assign(:invitations, Messages.list_pending_invitations(user.id))
-       |> assign(:unread_messages, Messages.count_all_unread(user.id))
-       |> load_friends_data()}
+      # 非同期でデータを読み込み
+      socket =
+        if connected?(socket) do
+          Presence.subscribe()
+          Presence.track_user(user)
+          Messages.subscribe_invitations(user.id)
+
+          socket
+          |> start_async(:load_friends_data, fn ->
+            user_id = user.id
+            %{
+              friends: Friends.list_friends(user_id),
+              pending_requests: Friends.list_pending_requests(user_id),
+              sent_requests: Friends.list_sent_requests(user_id),
+              recent_players: Friends.list_recent_players(user_id, limit: 10),
+              friends_count: Friends.count_friends(user_id),
+              pending_count: Friends.count_pending_requests(user_id),
+              invitations: Messages.list_pending_invitations(user_id),
+              unread_messages: Messages.count_all_unread(user_id),
+              online_ids: get_online_ids()
+            }
+          end)
+        else
+          # SSR時は同期で読み込み
+          load_friends_data(socket)
+          |> assign(:online_ids, get_online_ids())
+          |> assign(:invitations, Messages.list_pending_invitations(user.id))
+          |> assign(:unread_messages, Messages.count_all_unread(user.id))
+          |> assign(:loading, false)
+        end
+
+      {:ok, socket}
     else
       {:ok,
        socket
        |> put_flash(:error, "ログインが必要です")
        |> redirect(to: ~p"/users/log-in")}
     end
+  end
+
+  # 非同期読み込み完了
+  @impl true
+  def handle_async(:load_friends_data, {:ok, data}, socket) do
+    {:noreply,
+     socket
+     |> assign(:friends, data.friends)
+     |> assign(:pending_requests, data.pending_requests)
+     |> assign(:sent_requests, data.sent_requests)
+     |> assign(:recent_players, data.recent_players)
+     |> assign(:friends_count, data.friends_count)
+     |> assign(:pending_count, data.pending_count)
+     |> assign(:invitations, data.invitations)
+     |> assign(:unread_messages, data.unread_messages)
+     |> assign(:online_ids, data.online_ids)
+     |> assign(:loading, false)}
+  end
+
+  def handle_async(:load_friends_data, {:exit, _reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:loading, false)
+     |> put_flash(:error, "データの読み込みに失敗しました")}
   end
 
   defp get_online_ids do
@@ -155,16 +212,23 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
 
           <%!-- タブコンテンツ --%>
           <div class="tab-content">
-            <%= case @tab do %>
-              <% :friends -> %>
-                <.friends_list friends={@friends} online_ids={@online_ids} />
-              <% :requests -> %>
-                <.requests_panel
-                  pending_requests={@pending_requests}
-                  sent_requests={@sent_requests}
-                />
-              <% :recent -> %>
-                <.recent_players_list players={@recent_players} current_user_id={@current_user.id} />
+            <%= if @loading do %>
+              <div class="loading-rooms">
+                <div class="loading-spinner"></div>
+                <p>読み込み中...</p>
+              </div>
+            <% else %>
+              <%= case @tab do %>
+                <% :friends -> %>
+                  <.friends_list friends={@friends || []} online_ids={@online_ids} />
+                <% :requests -> %>
+                  <.requests_panel
+                    pending_requests={@pending_requests}
+                    sent_requests={@sent_requests}
+                  />
+                <% :recent -> %>
+                  <.recent_players_list players={@recent_players} current_user_id={@current_user.id} />
+              <% end %>
             <% end %>
           </div>
         </div>

@@ -1,4 +1,7 @@
 defmodule Shinkanki.ActionLog do
+  @moduledoc """
+  Schema for logging in-game actions within a game session.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -258,7 +258,7 @@ defmodule Shinkanki.Game do
          {:unlocked, true} <- {:unlocked, project_id in game.available_projects},
          {:talent, true} <- {:talent, Enum.member?(player.talents, talent_id)},
          {:not_used, true} <- {:not_used, not Enum.member?(player.used_talents, talent_id)},
-         {:not_completed, true} <- {:not_completed, not is_project_completed?(game, project_id)} do
+         {:not_completed, true} <- {:not_completed, not project_completed?(game, project_id)} do
       new_progress = get_project_progress(game, project_id) + 1
 
       progress_entry = %{
@@ -1215,7 +1215,7 @@ defmodule Shinkanki.Game do
     end
   end
 
-  defp is_project_completed?(game, project_id) do
+  defp project_completed?(game, project_id) do
     # Check if project is in completed_projects list
     project_id in game.completed_projects
   end

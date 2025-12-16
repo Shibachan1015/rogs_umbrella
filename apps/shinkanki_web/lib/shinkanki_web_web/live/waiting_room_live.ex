@@ -149,7 +149,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
       |> assign(:players, get_players(game_state))
       |> assign(:is_ready, get_player_ready(game_state, user_id))
       |> assign(:all_ready, all_players_ready?(game_state))
-      |> assign(:is_host, is_host?(game_state, user_id))
+      |> assign(:is_host, host?(game_state, user_id))
       |> assign(:is_room_host, is_room_host)
       |> assign(:can_start, can_start_game?(game_state))
       |> assign(:chat_form, chat_form)
@@ -923,7 +923,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
   defp get_player_ready(_, _), do: false
 
   defp all_players_ready?(%{players: players, player_order: order})
-       when is_map(players) and length(order) > 0 do
+       when is_map(players) and order != [] do
     Enum.all?(order, fn player_id ->
       case Map.get(players, player_id) do
         nil -> false
@@ -934,10 +934,10 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
 
   defp all_players_ready?(_), do: false
 
-  defp is_host?(%{player_order: [first | _]}, user_id), do: first == user_id
-  defp is_host?(_, _), do: false
+  defp host?(%{player_order: [first | _]}, user_id), do: first == user_id
+  defp host?(_, _), do: false
 
-  defp can_start_game?(%{player_order: order}) when length(order) >= 1, do: true
+  defp can_start_game?(%{player_order: [_ | _]}), do: true
   defp can_start_game?(_), do: false
 
   defp load_messages(room_id) do

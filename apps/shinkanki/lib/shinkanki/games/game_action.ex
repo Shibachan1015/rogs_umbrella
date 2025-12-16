@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.GameAction do
+  @moduledoc """
+  Schema for individual game actions performed by players within a game session.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

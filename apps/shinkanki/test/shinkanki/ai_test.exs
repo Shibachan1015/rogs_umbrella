@@ -1,8 +1,6 @@
 defmodule Shinkanki.AITest do
   use ExUnit.Case
 
-  # TODO: Fix tests to handle Game.start_game requirement
-  @moduletag :skip
   alias Shinkanki.{Game, AI}
 
   describe "select_action/2" do
@@ -70,7 +68,7 @@ defmodule Shinkanki.AITest do
 
       # Get player's talents
       player = Map.get(game.players, "ai_player")
-      assert length(player.talents) > 0
+      refute Enum.empty?(player.talents)
 
       # AI should select action with compatible talents
       case AI.select_action(game, "ai_player") do

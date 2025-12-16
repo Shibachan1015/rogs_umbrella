@@ -1,4 +1,7 @@
 defmodule Shinkanki.Annotations.PageAnnotation do
+  @moduledoc """
+  Schema for user-created annotations on specific sections of a page.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

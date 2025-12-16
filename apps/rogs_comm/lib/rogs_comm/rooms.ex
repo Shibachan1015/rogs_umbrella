@@ -61,7 +61,6 @@ defmodule RogsComm.Rooms do
   defp maybe_filter_has_space(query, false), do: query
 
   defp maybe_filter_has_space(query, true) do
-    # TODO: 参加者数をカウントして空きがあるルームのみ表示
     # 現在は max_participants > 0 のルームを返す（仮実装）
     from r in query, where: r.max_participants > 0
   end

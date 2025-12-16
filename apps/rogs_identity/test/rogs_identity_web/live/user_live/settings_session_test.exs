@@ -103,7 +103,7 @@ defmodule RogsIdentityWeb.UserLive.SettingsSessionTest do
       sessions = Accounts.list_user_session_tokens(user, current_token)
 
       # Should have at least one session
-      assert length(sessions) >= 1
+      refute Enum.empty?(sessions)
 
       # Current session should be marked
       current_session = Enum.find(sessions, fn s -> s.is_current end)

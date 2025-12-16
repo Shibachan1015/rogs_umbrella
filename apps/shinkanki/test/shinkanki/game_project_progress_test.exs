@@ -1,8 +1,6 @@
 defmodule Shinkanki.GameProjectProgressTest do
   use ExUnit.Case
 
-  # TODO: Fix tests to handle Game.start_game requirement
-  @moduletag :skip
   alias Shinkanki.{Game, Card}
 
   describe "project progress management" do

@@ -754,7 +754,7 @@ defmodule ShinkankiWebWeb.GameLive do
                   {length(@action_logs)}/{length(@players)}
                 </span>
               </div>
-              <%= if is_current_player_turn(@game_state, @user_id) do %>
+              <%= if current_player_turn?(@game_state, @user_id) do %>
                 <span class="text-matsu text-xs font-bold">▼ カードを選択</span>
               <% else %>
                 <span class="text-xs text-[var(--color-landing-text-secondary)]">🤖 AI実行中...</span>
@@ -764,7 +764,7 @@ defmodule ShinkankiWebWeb.GameLive do
     <!-- Desktop: Full display -->
             <div class="hidden sm:block text-center mb-4 space-y-2">
               <div class="text-lg font-bold text-[var(--color-landing-gold)]">アクションフェーズ</div>
-              <%= if is_current_player_turn(@game_state, @user_id) do %>
+              <%= if current_player_turn?(@game_state, @user_id) do %>
                 <div class="text-matsu font-bold">カードを選んでください</div>
               <% else %>
                 <div class="text-[var(--color-landing-text-secondary)]">
@@ -885,7 +885,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <% end %>
           
     <!-- 磨きカードボタン (営みフェーズ中に表示) -->
-          <%= if is_current_player_turn(@game_state, @user_id) do %>
+          <%= if current_player_turn?(@game_state, @user_id) do %>
             <div class="mt-4 text-center">
               <button
                 phx-click="toggle_migaki_panel"
@@ -1235,10 +1235,10 @@ defmodule ShinkankiWebWeb.GameLive do
         </div>
         
     <!-- Desktop: Traditional card view -->
-        <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
           <%= for card <- @hand_cards do %>
             <% card_talents = get_card_talents(card.id, assigns) %>
-            <%= if length(card_talents) > 0 do %>
+            <%= if !Enum.empty?(card_talents) do %>
               <.action_card_with_talents
                 title={card.title}
                 cost={card.cost}
@@ -2097,7 +2097,7 @@ defmodule ShinkankiWebWeb.GameLive do
       end
 
     # 引いた人代カードの名前をトーストで表示
-    card_names = Enum.map(hitoyo_cards, & &1.name) |> Enum.join("、")
+    card_names = Enum.map_join(hitoyo_cards, "、", & &1.name)
     toast_id = "toast-#{System.unique_integer([:positive])}"
 
     new_toast = %{
@@ -2622,7 +2622,6 @@ defmodule ShinkankiWebWeb.GameLive do
 
   # 全プレイヤーがreadyかチェック
   defp all_players_ready?(_game_session) do
-    # TODO: 実装
     true
   end
 
@@ -2636,12 +2635,12 @@ defmodule ShinkankiWebWeb.GameLive do
         turn_state = get_current_turn_state(game_session)
         available_cards = if turn_state, do: turn_state.available_cards || [], else: []
 
-        if length(available_cards) > 0 do
+        if Enum.empty?(available_cards) do
+          Games.pass_action(game_session.id, ai_player.id)
+        else
           # 賢くカードを選択
           card_id = ai_select_best_card(game_session, ai_player, available_cards)
           Games.execute_action_if_not_acted(game_session.id, ai_player.id, card_id)
-        else
-          Games.pass_action(game_session.id, ai_player.id)
         end
       end
     end)
@@ -3126,13 +3125,7 @@ defmodule ShinkankiWebWeb.GameLive do
   defp convert_to_atom(id) when is_atom(id), do: id
 
   defp convert_to_atom(id) when is_binary(id) do
-    try do
-      String.to_existing_atom(id)
-    rescue
-      ArgumentError ->
-        # If atom doesn't exist, try to create it (for development)
-        String.to_atom(id)
-    end
+    String.to_existing_atom(id)
   end
 
   defp convert_to_atom(id), do: id
@@ -3153,7 +3146,7 @@ defmodule ShinkankiWebWeb.GameLive do
   defp card_category_emoji("akasha"), do: "✨"
   defp card_category_emoji(_), do: "🃏"
 
-  defp is_current_player_turn(game_state, user_id) do
+  defp current_player_turn?(game_state, user_id) do
     case game_state do
       %{player_order: order, current_player_index: index} when is_list(order) and index >= 0 ->
         current_player_id = Enum.at(order, index)
@@ -3189,7 +3182,7 @@ defmodule ShinkankiWebWeb.GameLive do
           effect_culture: card.effect_culture,
           effect_social: card.effect_social,
           effect_akasha: card.effect_akasha,
-          tags: [String.to_atom(card.category)]
+          tags: [String.to_existing_atom(card.category)]
         }
       end)
     else
@@ -3248,7 +3241,7 @@ defmodule ShinkankiWebWeb.GameLive do
             id: pt.talent_card.id,
             name: pt.talent_card.name,
             description: pt.talent_card.description,
-            compatible_tags: Enum.map(pt.talent_card.compatible_tags, &String.to_atom/1),
+            compatible_tags: Enum.map(pt.talent_card.compatible_tags, &String.to_existing_atom/1),
             effect_type: pt.talent_card.effect_type,
             effect_value: pt.talent_card.effect_value,
             is_used: pt.is_used,

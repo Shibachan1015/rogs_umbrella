@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.EventCard do
+  @moduledoc """
+  Schema and functions for event cards used in the game, including effects and choice handling.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

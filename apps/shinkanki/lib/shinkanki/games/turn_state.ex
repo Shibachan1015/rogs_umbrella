@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.TurnState do
+  @moduledoc """
+  Schema and functions for managing the state of a single turn within a game session, including current phase and available cards.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

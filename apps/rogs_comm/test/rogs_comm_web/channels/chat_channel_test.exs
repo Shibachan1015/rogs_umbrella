@@ -376,7 +376,7 @@ defmodule RogsCommWeb.ChatChannelTest do
         has_more: has_more
       }
 
-      assert length(older_messages) > 0
+      refute Enum.empty?(older_messages)
       assert is_boolean(has_more)
     end
 

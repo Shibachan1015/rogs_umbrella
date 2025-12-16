@@ -1,4 +1,7 @@
 defmodule RogsIdentity.Accounts.UserToken do
+  @moduledoc """
+  Schema and functions for managing user authentication tokens (session, magic link, email change, password reset).
+  """
   use Ecto.Schema
   import Ecto.Query
   alias RogsIdentity.Accounts.UserToken

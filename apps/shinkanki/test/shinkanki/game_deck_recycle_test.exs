@@ -24,7 +24,7 @@ defmodule Shinkanki.GameDeckRecycleTest do
 
       # Draw cards - should trigger reshuffle
       hand = Map.get(game.hands, "p1", [])
-      assert length(hand) > 0
+      refute Enum.empty?(hand)
 
       # Play a card to add to discard
       card_id = List.first(hand)
@@ -35,11 +35,11 @@ defmodule Shinkanki.GameDeckRecycleTest do
       game_with_empty_deck = %{game_after_play | deck: [], status: :waiting}
 
       # If discard pile has cards, joining another player should trigger reshuffle
-      if length(game_with_empty_deck.discard_pile) > 0 do
+      if !Enum.empty?(game_with_empty_deck.discard_pile) do
         {:ok, game_after_join} = Game.join(game_with_empty_deck, "p2", "Player 2")
 
         # After reshuffle, deck should have cards or discard_pile should be empty
-        assert length(game_after_join.deck) > 0 || length(game_after_join.discard_pile) == 0
+        assert !Enum.empty?(game_after_join.deck) || Enum.empty?(game_after_join.discard_pile)
       end
     end
 

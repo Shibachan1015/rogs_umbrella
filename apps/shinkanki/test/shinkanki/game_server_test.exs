@@ -60,10 +60,7 @@ defmodule Shinkanki.GameServerTest do
       assert Shinkanki.get_current_state("non_existent_room") == nil
     end
 
-    @tag :skip
     test "handles win condition flow", %{room_id: room_id} do
-      # TODO: Fix this test - game needs proper turn advancement through new phase system
-      # The new phase flow requires manual advancement through all phases
       start_playing_game(room_id)
 
       # Force game to turn 20 with high stats (via multiple manual updates or just one if we exposed set_state,

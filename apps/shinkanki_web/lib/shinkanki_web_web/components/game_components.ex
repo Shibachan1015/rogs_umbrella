@@ -1,4 +1,7 @@
 defmodule ShinkankiWebWeb.GameComponents do
+  @moduledoc """
+  Shared UI components for the game, including cards, modals, and phase indicators.
+  """
   use Phoenix.Component
 
   import ShinkankiWebWeb.CoreComponents

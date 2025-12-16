@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.ActionCard do
+  @moduledoc """
+  Schema and functions for action cards used in the game, including effects and cost checks.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

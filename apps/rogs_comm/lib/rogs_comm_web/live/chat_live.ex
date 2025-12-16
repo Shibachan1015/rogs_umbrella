@@ -300,13 +300,13 @@ defmodule RogsCommWeb.ChatLive do
     older_messages = Messages.list_messages_before(room_id, message_id, limit: 50)
 
     socket =
-      if length(older_messages) > 0 do
+      if Enum.empty?(older_messages) do
+        socket
+        |> assign(:has_older_messages, false)
+      else
         socket
         |> stream(:messages, older_messages, at: 0)
         |> assign(:has_older_messages, length(older_messages) == 50)
-      else
-        socket
-        |> assign(:has_older_messages, false)
       end
 
     {:noreply, socket}

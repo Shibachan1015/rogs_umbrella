@@ -1,4 +1,7 @@
 defmodule RogsIdentity.Accounts.UserNotifier do
+  @moduledoc """
+  Handles sending various email notifications to users, such as confirmation, login, and password reset instructions.
+  """
   import Swoosh.Email
 
   alias RogsIdentity.Mailer

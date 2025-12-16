@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.GameSession do
+  @moduledoc """
+  Schema and functions for managing the overall state of a game session, including parameters, players, and current phase.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -16,10 +16,9 @@ defmodule RogsIdentityWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug :protect_from_forgery
     plug RogsIdentityWeb.UserAuth, action: :fetch_current_scope_for_api
     plug RogsIdentityWeb.Plug.SecurityHeaders
-    # Note: CSRF protection is not needed for API endpoints using token-based auth
-    # The session-based authentication already provides protection
   end
 
   pipeline :api_authenticated do

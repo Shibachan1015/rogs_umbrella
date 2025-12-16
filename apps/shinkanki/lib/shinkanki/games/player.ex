@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.Player do
+  @moduledoc """
+  Schema and functions representing a player in a game session, including their attributes, role, and actions.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

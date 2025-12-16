@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.TalentCard do
+  @moduledoc """
+  Schema and functions for talent cards used in the game, including compatible tags and effect application.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

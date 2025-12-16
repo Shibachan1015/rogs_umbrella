@@ -1,8 +1,6 @@
 defmodule Shinkanki.GameEventTest do
   use ExUnit.Case
 
-  # TODO: Fix tests to handle Game.start_game requirement
-  @moduletag :skip
   alias Shinkanki.{Game, Card}
 
   describe "event card system" do
@@ -48,7 +46,7 @@ defmodule Shinkanki.GameEventTest do
       new_game = Game.next_turn(game)
 
       # Check that event is logged
-      assert length(new_game.logs) > 0
+      refute Enum.empty?(new_game.logs)
 
       assert Enum.any?(new_game.logs, fn log ->
                String.contains?(log, "Event:")
@@ -114,11 +112,11 @@ defmodule Shinkanki.GameEventTest do
       temptation_events = Enum.filter(events, fn e -> :temptation in (e.tags || []) end)
       special_events = Enum.filter(events, fn e -> :special in (e.tags || []) end)
 
-      assert length(disaster_events) > 0
-      assert length(festival_events) > 0
-      assert length(blessing_events) > 0
-      assert length(temptation_events) > 0
-      assert length(special_events) > 0
+      assert refute Enum.empty?(disaster_events)
+      assert refute Enum.empty?(festival_events)
+      assert refute Enum.empty?(blessing_events)
+      assert refute Enum.empty?(temptation_events)
+      assert refute Enum.empty?(special_events)
       assert length(events) == 25
     end
 

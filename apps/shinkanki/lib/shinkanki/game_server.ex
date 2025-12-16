@@ -1,4 +1,7 @@
 defmodule Shinkanki.GameServer do
+  @moduledoc """
+  GenServer for managing a single game session's state and handling game logic interactions.
+  """
   use GenServer
   alias Shinkanki.{Game, ActionLog, AI}
   alias Shinkanki.AI.ClaudeAgent

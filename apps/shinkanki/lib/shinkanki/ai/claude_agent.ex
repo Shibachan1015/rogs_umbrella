@@ -406,16 +406,14 @@ defmodule Shinkanki.AI.ClaudeAgent do
   defp format_playable_cards([]), do: "（使用可能なカードがありません）"
 
   defp format_playable_cards(cards) do
-    cards
-    |> Enum.map(fn card ->
+    Enum.map_join(cards, "\n", fn card ->
       effect_str =
-        card.effect
-        |> Enum.map(fn {k, v} -> "#{stat_name(k)}#{if v >= 0, do: "+", else: ""}#{v}" end)
-        |> Enum.join(", ")
+        Enum.map_join(card.effect, ", ", fn {k, v} ->
+          "#{stat_name(k)}#{if v >= 0, do: "+", else: ""}#{v}"
+        end)
 
       "- #{card.id}: #{card.name}（コスト: #{card.cost}）効果: #{effect_str}"
     end)
-    |> Enum.join("\n")
   end
 
   defp stat_name(:forest), do: "F"

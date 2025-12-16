@@ -1,4 +1,7 @@
 defmodule Shinkanki.Games.PlayerTalent do
+  @moduledoc """
+  Schema representing a player's talent card within a game session, tracking its usage.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

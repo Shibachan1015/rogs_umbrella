@@ -39,11 +39,7 @@ defmodule Shinkanki.GameActionTest do
                Game.play_action(game, "player_1", card_not_in_hand, [])
     end
 
-    @tag :skip
     test "enforces talent usage limit (unique talents per action & once per turn)" do
-      # TODO: Fix this test after phase flow refactoring
-      # The new phase flow (hitoyo→kamihakari→itonami→kokyu→musuhi→toshiokuri)
-      # requires different handling for turn advancement
       talents = [:t_craft, :t_plan]
       game = Game.new("room")
       {:ok, game} = Game.join(game, "player_1", "Player One", "🎮", talents)

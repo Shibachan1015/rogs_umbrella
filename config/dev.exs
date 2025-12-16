@@ -37,6 +37,13 @@ config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
+  secure_browser_headers: %{
+    "content-security-policy" =>
+      "default-src 'self'; " <>
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " <>
+        "style-src 'self' 'unsafe-inline'; " <>
+        "connect-src 'self' ws: wss:"
+  },
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:shinkanki_web, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:shinkanki_web, ~w(--watch)]}
@@ -55,6 +62,13 @@ config :rogs_identity, RogsIdentityWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
+  secure_browser_headers: %{
+    "content-security-policy" =>
+      "default-src 'self'; " <>
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " <>
+        "style-src 'self' 'unsafe-inline'; " <>
+        "connect-src 'self' ws: wss:"
+  },
   watchers: []
 
 # 3. 通信アプリ (RogsComm)
@@ -64,6 +78,13 @@ config :rogs_comm, RogsCommWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
+  secure_browser_headers: %{
+    "content-security-policy" =>
+      "default-src 'self'; " <>
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " <>
+        "style-src 'self' 'unsafe-inline'; " <>
+        "connect-src 'self' ws: wss:"
+  },
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:rogs_comm, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:rogs_comm, ~w(--watch)]}

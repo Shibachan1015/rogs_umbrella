@@ -327,7 +327,9 @@ defmodule RogsIdentityWeb.UserLive.Settings do
   def handle_event("resend_confirmation", _params, socket) do
     user = socket.assigns.current_scope.user
 
-    if !Accounts.email_confirmed?(user) do
+    if Accounts.email_confirmed?(user) do
+      {:noreply, socket}
+    else
       Accounts.deliver_confirmation_instructions(
         user,
         &url(~p"/users/log-in/#{&1}")
@@ -340,8 +342,6 @@ defmodule RogsIdentityWeb.UserLive.Settings do
          "If your email is in our system, you will receive confirmation instructions shortly."
        )
        |> assign(:email_confirmed, Accounts.email_confirmed?(user))}
-    else
-      {:noreply, socket}
     end
   end
 

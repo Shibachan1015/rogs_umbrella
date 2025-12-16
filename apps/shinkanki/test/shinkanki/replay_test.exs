@@ -1,8 +1,6 @@
 defmodule Shinkanki.ReplayTest do
   use ExUnit.Case
 
-  # TODO: Fix tests to handle Game.start_game requirement
-  @moduletag :skip
   alias Shinkanki.{Game, ActionLog}
 
   describe "replay_game/1" do

@@ -1,4 +1,7 @@
 defmodule RogsIdentity.Accounts.User do
+  @moduledoc """
+  User schema and related changesets for authentication and profile management.
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

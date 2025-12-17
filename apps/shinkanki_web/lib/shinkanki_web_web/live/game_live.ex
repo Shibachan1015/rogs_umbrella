@@ -353,7 +353,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         </div>
         
-    <!-- Right: Akasha & Toggle buttons -->
+    <!-- Right: Akasha, Toggle buttons & Avatar -->
         <div class="flex items-center gap-2 sm:gap-3">
           <div class="flex items-center gap-0.5 text-[10px] sm:text-sm">
             <span class="text-[var(--color-landing-gold)]">φ</span>
@@ -381,6 +381,14 @@ defmodule ShinkankiWebWeb.GameLive do
             <.icon name="hero-chat-bubble-left-right" class="w-3 h-3 sm:w-4 sm:h-4" />
             <span class="hidden sm:inline text-xs">チャット</span>
           </button>
+          <!-- Profile Avatar -->
+          <%= if @current_user do %>
+            <.link navigate={~p"/profile"} class="flex-shrink-0" title="プロフィール">
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center text-base sm:text-lg hover:border-[var(--color-landing-gold)] hover:bg-white/15 transition-all cursor-pointer">
+                {RogsIdentity.Accounts.User.avatar(@current_user)}
+              </div>
+            </.link>
+          <% end %>
         </div>
       </header>
       

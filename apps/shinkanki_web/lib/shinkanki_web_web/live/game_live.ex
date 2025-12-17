@@ -1251,8 +1251,8 @@ defmodule ShinkankiWebWeb.GameLive do
             </p>
           </div>
         <% else %>
-          <!-- Mobile: Simple list view -->
-          <div class="lg:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
+          <!-- Unified: Simple list view -->
+          <div class="space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
             <%= for card <- @hand_cards do %>
               <% can_afford =
                 (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
@@ -1278,46 +1278,7 @@ defmodule ShinkankiWebWeb.GameLive do
             <% end %>
           </div>
 
-          <!-- Desktop: Traditional card view -->
-          <div class="hidden lg:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
-          <%= for card <- @hand_cards do %>
-            <% card_talents = get_card_talents(card.id, assigns) %>
-            <%= if !Enum.empty?(card_talents) do %>
-              <.action_card_with_talents
-                title={card.title}
-                cost={card.cost}
-                type={card.type}
-                talent_cards={card_talents}
-                tags={card[:tags] || card["tags"] || []}
-                phx-click="select_card"
-                phx-dblclick="use_card"
-                phx-value-card-id={card.id}
-                class={
-                  "w-16 h-24 md:w-20 md:h-28 flex-shrink-0 " <>
-                  if(@selected_card_id == card.id, do: "ring-2 ring-shu scale-105 ", else: "") <>
-                  if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
-                    do: "opacity-50", else: "cursor-pointer")
-                }
-              />
-            <% else %>
-              <.ofuda_card
-                id={card.id}
-                title={card.title}
-                cost={card.cost}
-                type={card.type}
-                phx-click="select_card"
-                phx-dblclick="use_card"
-                phx-value-card-id={card.id}
-                class={
-                  "w-16 h-24 md:w-20 md:h-28 flex-shrink-0 " <>
-                  if(@selected_card_id == card.id, do: "ring-2 ring-shu scale-105 ", else: "") <>
-                  if((@game_state[:currency] || @game_state.currency || 0) < card.cost_akasha,
-                    do: "opacity-50", else: "cursor-pointer")
-                }
-              />
-            <% end %>
-          <% end %>
-          </div>
+          <!-- Desktop: Traditional card view - REMOVED -->
         <% end %>
       </div>
 

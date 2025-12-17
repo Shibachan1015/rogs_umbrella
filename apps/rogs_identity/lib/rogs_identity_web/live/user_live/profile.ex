@@ -8,6 +8,11 @@ defmodule RogsIdentityWeb.UserLive.Profile do
   @impl true
   def mount(_params, session, socket) do
     user = socket.assigns.current_scope.user
+
+    if is_nil(user) do
+      {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/users/log-in")}
+    end
+
     current_token = session["user_token"]
     sessions = Accounts.list_user_session_tokens(user, current_token)
 

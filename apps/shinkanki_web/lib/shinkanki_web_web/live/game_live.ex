@@ -1252,7 +1252,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
         <% else %>
           <!-- Mobile: Simple list view -->
-          <div class="sm:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
+          <div class="lg:hidden space-y-1.5 max-h-[35vh] overflow-y-auto pb-safe">
             <%= for card <- @hand_cards do %>
               <% can_afford =
                 (@game_state[:currency] || @game_state.currency || 0) >= (card.cost_akasha || 0) %>
@@ -1279,7 +1279,7 @@ defmodule ShinkankiWebWeb.GameLive do
           </div>
 
           <!-- Desktop: Traditional card view -->
-          <div class="hidden sm:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
+          <div class="hidden lg:flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-thin w-full">
           <%= for card <- @hand_cards do %>
             <% card_talents = get_card_talents(card.id, assigns) %>
             <%= if !Enum.empty?(card_talents) do %>

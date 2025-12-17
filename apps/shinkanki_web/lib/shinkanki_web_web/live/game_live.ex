@@ -3169,7 +3169,9 @@ defmodule ShinkankiWebWeb.GameLive do
 
   # 場に出ているアクションカードを手札として取得（キャッシュから）
   defp get_hand_cards_from_session(_game_session, turn_state) do
+    IO.inspect(turn_state, label: "get_hand_cards_from_session: turn_state")
     if turn_state && turn_state.available_cards do
+      IO.inspect(turn_state.available_cards, label: "get_hand_cards_from_session: available_cards")
       turn_state.available_cards
       |> Shinkanki.CardCache.action_cards_by_ids()
       |> Enum.map(fn card ->

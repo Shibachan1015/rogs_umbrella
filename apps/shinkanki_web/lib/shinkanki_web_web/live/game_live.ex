@@ -80,12 +80,8 @@ defmodule ShinkankiWebWeb.GameLive do
     current_phase = if turn_state, do: turn_state.phase, else: "event"
     hand_cards = get_hand_cards_from_session(game_session, turn_state)
 
-    # Debug logging
     require Logger
-    Logger.info("[DEBUG] GameLive mount: turn_state=#{inspect(turn_state != nil)}, phase=#{current_phase}, hand_cards_count=#{length(hand_cards)}")
-    if turn_state do
-      Logger.info("[DEBUG] turn_state.available_cards=#{inspect(turn_state.available_cards)}")
-    end
+    Logger.info("[GameLive] mount: phase=#{current_phase}, hand_cards=#{length(hand_cards)}")
 
     socket =
       socket
@@ -1635,13 +1631,9 @@ defmodule ShinkankiWebWeb.GameLive do
   end
 
   def handle_event("select_card", %{"card-id" => card_id}, socket) do
-    # Debug logging
     require Logger
-    Logger.info("[DEBUG] select_card event: card_id=#{inspect(card_id)}, hand_cards_count=#{length(socket.assigns.hand_cards)}")
-    Logger.info("[DEBUG] hand_cards ids: #{inspect(Enum.map(socket.assigns.hand_cards, & &1.id))}")
-
-    # Show card detail modal
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
+    Logger.info("[GameLive] select_card: card_id=#{card_id}, found=#{card != nil}")
 
     if card do
       {:noreply,

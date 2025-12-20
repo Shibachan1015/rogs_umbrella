@@ -1316,17 +1316,14 @@ defmodule Shinkanki.Games do
 
     if current_phase in action_phases do
       all_acted = all_players_acted?(game_session_id, game_session.turn)
-      IO.puts("[DEBUG] check_and_advance_turn: phase=#{current_phase}, all_acted=#{all_acted}")
 
       if all_acted do
         # 全プレイヤーがアクション完了、呼吸フェーズへ移行
-        IO.puts("[DEBUG] Advancing phase from #{current_phase}")
         advance_phase(game_session_id)
       else
         {:ok, game_session}
       end
     else
-      IO.puts("[DEBUG] check_and_advance_turn: skipped, phase=#{current_phase}")
       {:ok, game_session}
     end
   end

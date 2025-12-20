@@ -108,4 +108,46 @@ defmodule ShinkankiWebWeb.Features.GameTest do
     # Still only one card should be selected
     |> assert_has(Query.css("[phx-click='select_card'].ring-2", count: 1))
   end
+
+  feature "user can use a card", %{session: session, user: user, room: room} do
+    session
+    |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
+    |> wait_for_live_view()
+    # Advance past event phase to action phase
+    |> click(Query.button("確認して次へ進む"))
+    # Wait for hand cards
+    |> assert_has(Query.css("[phx-click='select_card']", count: :any, minimum: 1))
+    # Click the first card to select it
+    |> click(Query.css("[phx-click='select_card']", at: 0))
+    # Click the "使用する" button
+    |> click(Query.button("使用する"))
+    # Talent selector modal appears - click "なしで続行" to skip talent selection
+    |> click(Query.button("なしで続行"))
+    # Confirmation modal should appear with "実行する" button
+    |> assert_has(Query.button("実行する"))
+    # Click to confirm
+    |> click(Query.button("実行する"))
+    # Toast message should appear confirming card was used
+    |> assert_has(Query.text("を使用しました", count: :any, minimum: 1))
+  end
+
+  feature "card count decreases after using a card", %{session: session, user: user, room: room} do
+    session
+    |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
+    |> wait_for_live_view()
+    # Advance past event phase
+    |> click(Query.button("確認して次へ進む"))
+    # Count initial cards
+    |> assert_has(Query.css("[phx-click='select_card']", count: :any, minimum: 1))
+    # Select and use a card
+    |> click(Query.css("[phx-click='select_card']", at: 0))
+    |> click(Query.button("使用する"))
+    # Skip talent selection
+    |> click(Query.button("なしで続行"))
+    |> click(Query.button("実行する"))
+    # Wait for toast to confirm action completed
+    |> assert_has(Query.text("を使用しました", count: :any, minimum: 1))
+  end
 end

@@ -52,7 +52,17 @@ defmodule Shinkanki.Game do
     # Event card system
     event_deck: [],
     event_discard_pile: [],
-    current_event: nil
+    current_event: nil,
+    # === 八岐大蛇システム ===
+    # Orochi level: 1-3 (starts at 1 = 1/3 of max power)
+    orochi_level: 1,
+    # Orochi awakening counter (increases when jaki hits 8)
+    orochi_awakening_count: 0,
+    # === 連携システム ===
+    # Pending renkei (cooperation) actions: %{card_id => %{initiator: player_id, participants: [player_id], kuukan_pledged: %{player_id => amount}}}
+    pending_renkei: %{},
+    # Completed renkei this turn (to prevent re-triggering)
+    completed_renkei: []
   ]
 
   @type t :: %__MODULE__{
@@ -80,7 +90,11 @@ defmodule Shinkanki.Game do
           event_deck: list(atom()),
           event_discard_pile: list(atom()),
           current_event: atom() | nil,
-          current_hitoyo: list(map())
+          current_hitoyo: list(map()),
+          orochi_level: integer(),
+          orochi_awakening_count: integer(),
+          pending_renkei: map(),
+          completed_renkei: list(atom())
         }
 
   @doc """
@@ -209,6 +223,7 @@ defmodule Shinkanki.Game do
   def update_stats(%__MODULE__{status: :playing} = game, changes) do
     game
     |> apply_changes(changes)
+    |> check_orochi_awakening()
     |> check_projects_unlock()
     |> update_life_index()
     |> check_win_loss()
@@ -1004,14 +1019,19 @@ defmodule Shinkanki.Game do
   defp get_next_phase(_), do: :hitoyo
 
   # === 人代フェーズ (Hitoyo Phase) ===
-  # Draw hitoyo cards based on jaki level
+  # Draw hitoyo cards based on jaki level and orochi level
   defp execute_phase(%__MODULE__{status: :playing, phase: :hitoyo} = game) do
-    hitoyo_cards = Card.draw_hitoyo_cards(game.jaki)
+    # 八岐大蛇システム: レベルに応じて人代カードの枚数と効果が変化
+    hitoyo_count = get_hitoyo_count(game.jaki, game.orochi_level)
+    hitoyo_cards = Card.draw_hitoyo_cards_count(hitoyo_count)
+
+    # 八岐大蛇レベルに応じて効果を強化
+    effect_multiplier = get_orochi_effect_multiplier(game.orochi_level)
 
     game
     |> Map.put(:current_hitoyo, hitoyo_cards)
-    |> apply_hitoyo_effects(hitoyo_cards)
-    |> add_log("人代フェーズ: #{length(hitoyo_cards)}枚のカードを引きました（邪気レベル: #{game.jaki}）")
+    |> apply_hitoyo_effects_with_orochi(hitoyo_cards, effect_multiplier)
+    |> add_log("人代フェーズ: #{length(hitoyo_cards)}枚（八岐大蛇Lv#{game.orochi_level}、邪気#{game.jaki}）")
     |> set_phase(:kamihakari)
   end
 
@@ -1111,11 +1131,51 @@ defmodule Shinkanki.Game do
 
   # === Helper functions for new phases ===
 
-  defp apply_hitoyo_effects(game, hitoyo_cards) do
+  # 八岐大蛇レベルと邪気に応じた人代カード枚数
+  # レベル1: 2枚固定（初期状態）
+  # レベル2: 2-3枚（邪気に応じて）
+  # レベル3: 3枚固定 + 特殊効果
+  defp get_hitoyo_count(jaki, orochi_level) do
+    base_count =
+      case orochi_level do
+        1 -> 2
+        2 -> if jaki >= 5, do: 3, else: 2
+        3 -> 3
+        _ -> 2
+      end
+
+    # 邪気がMAX(8)の場合、追加で1枚
+    if jaki >= 8, do: min(base_count + 1, 4), else: base_count
+  end
+
+  # 八岐大蛇レベルに応じた効果倍率
+  defp get_orochi_effect_multiplier(orochi_level) do
+    case orochi_level do
+      1 -> 1.0
+      2 -> 1.25
+      3 -> 1.5
+      _ -> 1.0
+    end
+  end
+
+  # 八岐大蛇の効果を適用した人代効果
+  defp apply_hitoyo_effects_with_orochi(game, hitoyo_cards, multiplier) do
     Enum.reduce(hitoyo_cards, game, fn card, acc ->
       if card.timing == :instant do
-        apply_changes(acc, card.effect)
-        |> add_log("人代「#{card.name}」の効果を適用")
+        # 効果を八岐大蛇レベルで強化（負の効果をより強く）
+        enhanced_effect =
+          Map.new(card.effect, fn {key, val} ->
+            if val < 0 do
+              # 負の効果は倍率を適用（切り捨て）
+              {key, trunc(val * multiplier)}
+            else
+              {key, val}
+            end
+          end)
+
+        apply_changes(acc, enhanced_effect)
+        |> check_orochi_awakening()
+        |> add_log("人代「#{card.name}」の効果を適用（×#{multiplier}）")
       else
         # Delayed effects are tracked but not applied immediately
         acc
@@ -1123,6 +1183,18 @@ defmodule Shinkanki.Game do
       end
     end)
   end
+
+  # 八岐大蛇の覚醒チェック（邪気が8に達したとき）
+  defp check_orochi_awakening(%__MODULE__{jaki: 8, orochi_level: level} = game) when level < 3 do
+    new_level = level + 1
+
+    game
+    |> Map.put(:orochi_level, new_level)
+    |> Map.put(:orochi_awakening_count, game.orochi_awakening_count + 1)
+    |> add_log("⚠️ 八岐大蛇が覚醒！レベル#{new_level}に上昇！")
+  end
+
+  defp check_orochi_awakening(game), do: game
 
   defp process_kokyu_phase(game) do
     # For now, auto-process kokyu for players with kuukan >= 5
@@ -1271,5 +1343,247 @@ defmodule Shinkanki.Game do
   """
   def in_phase?(%__MODULE__{} = game, phase) do
     game.phase == phase
+  end
+
+  # ============================================================
+  # === 連携（れんけい）カードシステム ===
+  # ============================================================
+
+  @doc """
+  連携カードを提案する（開始プレイヤーが呼び出す）
+  Returns {:ok, new_game} or {:error, reason}
+  """
+  def initiate_renkei(%__MODULE__{status: :playing} = game, player_id, renkei_card_id) do
+    with {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
+         {:card, %Card{type: :renkei} = card} <- {:card, Card.get_renkei(renkei_card_id)},
+         {:not_pending, true} <-
+           {:not_pending, not Map.has_key?(game.pending_renkei, renkei_card_id)},
+         {:not_completed, true} <-
+           {:not_completed, renkei_card_id not in game.completed_renkei},
+         {:can_pay, true} <- {:can_pay, Player.can_pay?(player, card.cost_per_player)} do
+      # 提案を登録
+      pending_entry = %{
+        initiator: player_id,
+        participants: [player_id],
+        kuukan_pledged: %{player_id => card.cost_per_player},
+        card: card,
+        created_at: DateTime.utc_now()
+      }
+
+      new_game =
+        game
+        |> Map.update!(:pending_renkei, &Map.put(&1, renkei_card_id, pending_entry))
+        |> add_log(
+          "#{player.name}が「#{card.name}」の連携を提案！（#{card.required_players}人必要）"
+        )
+
+      {:ok, new_game}
+    else
+      {:player, nil} -> {:error, :player_not_found}
+      {:card, nil} -> {:error, :renkei_card_not_found}
+      {:not_pending, false} -> {:error, :renkei_already_pending}
+      {:not_completed, false} -> {:error, :renkei_already_completed}
+      {:can_pay, false} -> {:error, :insufficient_kuukan}
+      _ -> {:error, :invalid_request}
+    end
+  end
+
+  def initiate_renkei(_game, _player_id, _renkei_card_id), do: {:error, :game_not_playing}
+
+  @doc """
+  連携カードに参加する
+  Returns {:ok, new_game} or {:error, reason}
+  """
+  def join_renkei(%__MODULE__{status: :playing} = game, player_id, renkei_card_id) do
+    with {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
+         {:pending, %{} = pending} <- {:pending, Map.get(game.pending_renkei, renkei_card_id)},
+         {:not_joined, true} <- {:not_joined, player_id not in pending.participants},
+         {:can_pay, true} <- {:can_pay, Player.can_pay?(player, pending.card.cost_per_player)} do
+      # 参加を追加
+      updated_pending = %{
+        pending
+        | participants: pending.participants ++ [player_id],
+          kuukan_pledged:
+            Map.put(pending.kuukan_pledged, player_id, pending.card.cost_per_player)
+      }
+
+      new_game =
+        game
+        |> Map.update!(:pending_renkei, &Map.put(&1, renkei_card_id, updated_pending))
+        |> add_log(
+          "#{player.name}が「#{pending.card.name}」の連携に参加！（#{length(updated_pending.participants)}/#{pending.card.required_players}）"
+        )
+
+      # 必要人数が集まったら自動発動
+      if length(updated_pending.participants) >= pending.card.required_players do
+        execute_renkei(new_game, renkei_card_id)
+      else
+        {:ok, new_game}
+      end
+    else
+      {:player, nil} -> {:error, :player_not_found}
+      {:pending, nil} -> {:error, :renkei_not_pending}
+      {:not_joined, false} -> {:error, :already_joined}
+      {:can_pay, false} -> {:error, :insufficient_kuukan}
+      _ -> {:error, :invalid_request}
+    end
+  end
+
+  def join_renkei(_game, _player_id, _renkei_card_id), do: {:error, :game_not_playing}
+
+  @doc """
+  連携カードを発動する（必要人数が集まったとき）
+  """
+  def execute_renkei(%__MODULE__{} = game, renkei_card_id) do
+    case Map.get(game.pending_renkei, renkei_card_id) do
+      nil ->
+        {:error, :renkei_not_pending}
+
+      pending ->
+        card = pending.card
+        participants = pending.participants
+        player_count = length(game.player_order)
+
+        # 全員参加かどうかをチェック
+        is_full_party = length(participants) >= player_count
+
+        # 基本効果を適用
+        game_with_effect = apply_changes(game, card.effect)
+
+        # 全員参加ボーナスを適用
+        game_with_bonus =
+          if is_full_party do
+            apply_renkei_full_party_bonus(game_with_effect, card.full_party_bonus)
+          else
+            game_with_effect
+          end
+
+        # 参加者から空環を差し引く
+        game_with_costs =
+          Enum.reduce(participants, game_with_bonus, fn pid, acc ->
+            case Map.get(acc.players, pid) do
+              nil ->
+                acc
+
+              player ->
+                cost = Map.get(pending.kuukan_pledged, pid, card.cost_per_player)
+                {:ok, updated_player} = Player.pay_kuukan(player, cost)
+                %{acc | players: Map.put(acc.players, pid, updated_player)}
+            end
+          end)
+
+        # 連携を完了としてマーク
+        bonus_msg = if is_full_party, do: "・全員ボーナス！", else: ""
+
+        new_game =
+          game_with_costs
+          |> Map.update!(:pending_renkei, &Map.delete(&1, renkei_card_id))
+          |> Map.update!(:completed_renkei, &[renkei_card_id | &1])
+          |> update_life_index()
+          |> check_win_loss()
+          |> add_log("🎉 連携「#{card.name}」発動！（#{length(participants)}人参加#{bonus_msg}）")
+
+        {:ok, new_game}
+    end
+  end
+
+  # 全員参加ボーナスを適用
+  defp apply_renkei_full_party_bonus(game, bonus) do
+    Enum.reduce(bonus, game, fn {key, val}, acc ->
+      case key do
+        :orochi_suppress ->
+          # 八岐大蛇の覚醒を1ターン抑制（実装は簡略化）
+          acc
+
+        :orochi_level_down when val == true ->
+          # 八岐大蛇レベルを1下げる（最低1）
+          new_level = max(acc.orochi_level - 1, 1)
+
+          acc
+          |> Map.put(:orochi_level, new_level)
+          |> add_log("⚔️ 八岐大蛇の力が弱まった！（レベル#{new_level}）")
+
+        :forest ->
+          %{acc | forest: clamp(acc.forest + val, 0, 10)}
+
+        :culture ->
+          %{acc | culture: clamp(acc.culture + val, 0, 10)}
+
+        :social ->
+          %{acc | social: clamp(acc.social + val, 0, 10)}
+
+        :jaki ->
+          %{acc | jaki: clamp(acc.jaki + val, 0, 8)}
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  @doc """
+  連携の提案をキャンセルする（提案者のみ可能）
+  """
+  def cancel_renkei(%__MODULE__{} = game, player_id, renkei_card_id) do
+    case Map.get(game.pending_renkei, renkei_card_id) do
+      nil ->
+        {:error, :renkei_not_pending}
+
+      %{initiator: ^player_id} = pending ->
+        new_game =
+          game
+          |> Map.update!(:pending_renkei, &Map.delete(&1, renkei_card_id))
+          |> add_log("「#{pending.card.name}」の連携がキャンセルされました")
+
+        {:ok, new_game}
+
+      _ ->
+        {:error, :not_initiator}
+    end
+  end
+
+  @doc """
+  利用可能な連携カードのリストを取得
+  """
+  def available_renkei_cards(%__MODULE__{} = game) do
+    Card.list_renkei()
+    |> Enum.reject(fn card ->
+      card.id in game.completed_renkei or Map.has_key?(game.pending_renkei, card.id)
+    end)
+  end
+
+  @doc """
+  現在保留中の連携を取得
+  """
+  def pending_renkei_list(%__MODULE__{} = game) do
+    Map.values(game.pending_renkei)
+  end
+
+  @doc """
+  八岐大蛇レベルを取得
+  """
+  def orochi_level(%__MODULE__{orochi_level: level}), do: level
+
+  @doc """
+  八岐大蛇の状態を取得（UI表示用）
+  """
+  def orochi_status(%__MODULE__{orochi_level: level, jaki: jaki}) do
+    status =
+      case level do
+        1 -> "目覚め始め"
+        2 -> "覚醒"
+        3 -> "完全覚醒"
+        _ -> "封印中"
+      end
+
+    next_awakening = if jaki >= 6, do: "⚠️ 覚醒間近", else: ""
+
+    %{
+      level: level,
+      max_level: 3,
+      status: status,
+      jaki: jaki,
+      warning: next_awakening
+    }
   end
 end

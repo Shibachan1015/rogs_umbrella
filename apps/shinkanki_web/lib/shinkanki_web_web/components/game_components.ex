@@ -2501,4 +2501,228 @@ defmodule ShinkankiWebWeb.GameComponents do
   defp effect_color(:jaki, _val), do: "bg-matsu/30 text-matsu"
   defp effect_color(_key, val) when val < 0, do: "bg-shu/30 text-shu"
   defp effect_color(_key, _val), do: "bg-matsu/30 text-matsu"
+
+  # =====================================================
+  # Mobile UI Components
+  # =====================================================
+
+  @doc """
+  Mobile tab bar navigation component.
+  Only visible on mobile (sm:hidden).
+  """
+  attr :active_tab, :atom, required: true
+  attr :hand_count, :integer, default: 0
+
+  def mobile_tab_bar(assigns) do
+    ~H"""
+    <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-washi border-t border-sumi/20 pb-safe">
+      <div class="flex justify-around items-center h-14">
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="game"
+          class={[
+            "flex-1 flex flex-col items-center justify-center py-2 min-h-[44px]",
+            @active_tab == :game && "text-shu",
+            @active_tab != :game && "text-sumi/60"
+          ]}
+        >
+          <span class="text-lg">🎮</span>
+          <span class="text-[10px] mt-0.5">ゲーム</span>
+        </button>
+
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="hand"
+          class={[
+            "flex-1 flex flex-col items-center justify-center py-2 min-h-[44px] relative",
+            @active_tab == :hand && "text-shu",
+            @active_tab != :hand && "text-sumi/60"
+          ]}
+        >
+          <span class="text-lg">🎴</span>
+          <span class="text-[10px] mt-0.5">手札</span>
+          <%= if @hand_count > 0 do %>
+            <span class="absolute top-1 right-1/4 bg-shu text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+              {@hand_count}
+            </span>
+          <% end %>
+        </button>
+
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="renkei"
+          class={[
+            "flex-1 flex flex-col items-center justify-center py-2 min-h-[44px]",
+            @active_tab == :renkei && "text-shu",
+            @active_tab != :renkei && "text-sumi/60"
+          ]}
+        >
+          <span class="text-lg">🤝</span>
+          <span class="text-[10px] mt-0.5">連携</span>
+        </button>
+
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="chat"
+          class={[
+            "flex-1 flex flex-col items-center justify-center py-2 min-h-[44px]",
+            @active_tab == :chat && "text-shu",
+            @active_tab != :chat && "text-sumi/60"
+          ]}
+        >
+          <span class="text-lg">💬</span>
+          <span class="text-[10px] mt-0.5">チャット</span>
+        </button>
+      </div>
+    </nav>
+    """
+  end
+
+  @doc """
+  Compact mobile header showing essential game stats.
+  Only visible on mobile (sm:hidden).
+  """
+  attr :game_state, :map, required: true
+  attr :current_phase, :string, required: true
+
+  def mobile_compact_header(assigns) do
+    ~H"""
+    <header class="sm:hidden fixed top-0 inset-x-0 z-40 bg-washi/95 backdrop-blur border-b border-sumi/20 pt-safe">
+      <div class="flex items-center justify-between px-3 py-2 h-11">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-sumi">T{@game_state.turn}</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-sumi/10 text-sumi">
+            {phase_name(@current_phase)}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 text-[10px]">
+          <span class="text-matsu">🌲{@game_state.forest}</span>
+          <span class="text-ai">🎭{@game_state.culture}</span>
+          <span class="text-shu">🤝{@game_state.social}</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-sumi/80">L:{@game_state.life_index}</span>
+          <span class="text-xs font-mono text-ai">φ{@game_state.currency}</span>
+        </div>
+      </div>
+    </header>
+    """
+  end
+
+  defp phase_name("event"), do: "災厄"
+  defp phase_name("hitoyo"), do: "人代"
+  defp phase_name("breathing"), do: "息吹"
+  defp phase_name("musuhi"), do: "結び"
+  defp phase_name("end_of_year"), do: "終年"
+  defp phase_name(phase), do: phase
+
+  @doc """
+  Full-screen card modal for mobile.
+  Shows card details with large tap target for use button.
+  """
+  attr :card, :map, default: nil
+  attr :show, :boolean, default: false
+
+  def fullscreen_card_modal(assigns) do
+    ~H"""
+    <div
+      :if={@show && @card}
+      class="sm:hidden fixed inset-0 z-[60] bg-washi flex flex-col"
+      phx-click="close_card_fullscreen"
+    >
+      <div class="flex items-center justify-between px-4 py-3 border-b border-sumi/20 pt-safe">
+        <button
+          phx-click="close_card_fullscreen"
+          class="flex items-center gap-1 text-sumi/70 min-h-[44px] px-2"
+        >
+          <span class="text-lg">←</span>
+          <span class="text-sm">戻る</span>
+        </button>
+        <span class="text-sm font-bold text-sumi">カード詳細</span>
+        <div class="w-16"></div>
+      </div>
+
+      <div class="flex-1 flex flex-col items-center justify-center p-6" phx-click="noop">
+        <div class="w-32 h-48 bg-washi border-2 border-sumi/30 rounded-xl shadow-lg flex flex-col items-center p-4 mb-6">
+          <div class="w-full border-b border-sumi pb-2 text-center mb-4">
+            <span class="text-lg font-serif font-bold text-sumi">
+              {@card[:name] || @card[:title] || "カード"}
+            </span>
+          </div>
+
+          <div class="flex-1 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full border-2 border-sumi bg-shu/10 flex items-center justify-center text-3xl font-serif text-shu">
+              {String.first(@card[:name] || @card[:title] || "?")}
+            </div>
+          </div>
+
+          <div class="w-full border-t border-sumi pt-2 flex justify-center">
+            <span class="text-sm text-sumi/60 font-mono">コスト: {@card[:cost] || 0}</span>
+          </div>
+        </div>
+
+        <div class="w-full max-w-xs bg-sumi/5 rounded-lg p-4 mb-6">
+          <p class="text-sm text-sumi leading-relaxed">
+            {@card[:description] || "効果なし"}
+          </p>
+          <%= if @card[:effect] do %>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <%= for {key, val} <- @card[:effect] || %{} do %>
+                <span class={[
+                  "px-2 py-1 rounded text-xs font-mono",
+                  effect_color(key, val)
+                ]}>
+                  {effect_label(key)}: {if val > 0, do: "+#{val}", else: val}
+                </span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <button
+          phx-click="use_card_from_fullscreen"
+          phx-value-card-id={@card[:id]}
+          class="w-full max-w-xs py-4 bg-shu text-white font-bold text-lg rounded-xl shadow-lg active:scale-95 transition-transform min-h-[56px]"
+        >
+          このカードを使う
+        </button>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Mobile hand card list item - larger tap target than desktop.
+  """
+  attr :card, :map, required: true
+  attr :selected, :boolean, default: false
+
+  def mobile_hand_card(assigns) do
+    ~H"""
+    <button
+      phx-click="show_card_fullscreen"
+      phx-value-card-id={@card.id}
+      class={[
+        "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-colors min-h-[72px]",
+        @selected && "border-shu bg-shu/5",
+        !@selected && "border-sumi/20 bg-washi active:bg-sumi/5"
+      ]}
+    >
+      <div class="w-12 h-12 rounded-full border-2 border-sumi bg-shu/10 flex items-center justify-center text-xl font-serif text-shu shrink-0">
+        {String.first(@card.name || @card.title || "?")}
+      </div>
+
+      <div class="flex-1 text-left">
+        <div class="font-bold text-sumi text-base">{@card.name || @card.title}</div>
+        <div class="text-xs text-sumi/60 mt-0.5 line-clamp-1">{@card.description}</div>
+      </div>
+
+      <div class="text-sm font-mono text-sumi/60 shrink-0">
+        φ{@card.cost || 0}
+      </div>
+    </button>
+    """
+  end
 end

@@ -69,6 +69,32 @@ defmodule Shinkanki.GameServer do
     GenServer.call(via_tuple(room_id), :start_game_with_ai)
   end
 
+  # === 連携カードAPI ===
+
+  def initiate_renkei(room_id, player_id, renkei_card_id) do
+    GenServer.call(via_tuple(room_id), {:initiate_renkei, player_id, renkei_card_id})
+  end
+
+  def join_renkei(room_id, player_id, renkei_card_id) do
+    GenServer.call(via_tuple(room_id), {:join_renkei, player_id, renkei_card_id})
+  end
+
+  def cancel_renkei(room_id, player_id, renkei_card_id) do
+    GenServer.call(via_tuple(room_id), {:cancel_renkei, player_id, renkei_card_id})
+  end
+
+  def get_available_renkei(room_id) do
+    GenServer.call(via_tuple(room_id), :get_available_renkei)
+  end
+
+  def get_pending_renkei(room_id) do
+    GenServer.call(via_tuple(room_id), :get_pending_renkei)
+  end
+
+  def get_orochi_status(room_id) do
+    GenServer.call(via_tuple(room_id), :get_orochi_status)
+  end
+
   defp via_tuple(room_id) do
     {:via, Registry, {Shinkanki.GameRegistry, room_id}}
   end
@@ -248,6 +274,65 @@ defmodule Shinkanki.GameServer do
       error ->
         {:reply, error, game}
     end
+  end
+
+  # === 連携カードのhandle_call ===
+
+  @impl true
+  def handle_call({:initiate_renkei, player_id, renkei_card_id}, _from, game) do
+    case Game.initiate_renkei(game, player_id, renkei_card_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "initiate_renkei", player_id, %{renkei_card_id: renkei_card_id})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:join_renkei, player_id, renkei_card_id}, _from, game) do
+    case Game.join_renkei(game, player_id, renkei_card_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "join_renkei", player_id, %{renkei_card_id: renkei_card_id})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call({:cancel_renkei, player_id, renkei_card_id}, _from, game) do
+    case Game.cancel_renkei(game, player_id, renkei_card_id) do
+      {:ok, new_game} = ok ->
+        log_action(new_game, "cancel_renkei", player_id, %{renkei_card_id: renkei_card_id})
+        broadcast_state(new_game)
+        {:reply, ok, new_game}
+
+      error ->
+        {:reply, error, game}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_available_renkei, _from, game) do
+    renkei_cards = Game.available_renkei_cards(game)
+    {:reply, renkei_cards, game}
+  end
+
+  @impl true
+  def handle_call(:get_pending_renkei, _from, game) do
+    pending = Game.pending_renkei_list(game)
+    {:reply, pending, game}
+  end
+
+  @impl true
+  def handle_call(:get_orochi_status, _from, game) do
+    status = Game.orochi_status(game)
+    {:reply, status, game}
   end
 
   defp broadcast_state(game) do

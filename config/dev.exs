@@ -32,7 +32,7 @@ config :rogs_identity, env: :dev
 
 # 1. ゲームUIアプリ (ShinkankiWeb) - Main Port
 config :shinkanki_web, ShinkankiWebWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT") || "4000")],
   secret_key_base: "Hu4qKBq+x1jC8q4qKBq+x1jC8q4qKBq+x1jC8q4qKBq+x1jC8q4qKBq+x1jC8q4q",
   debug_errors: true,
   code_reloader: true,

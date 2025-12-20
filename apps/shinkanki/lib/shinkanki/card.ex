@@ -3,7 +3,7 @@ defmodule Shinkanki.Card do
   Defines card structures for Action Cards and Talent Cards in Shinkanki.
   """
 
-  @type card_type :: :action | :talent | :project | :event | :hitoyo | :migaki
+  @type card_type :: :action | :talent | :project | :event | :hitoyo | :migaki | :renkei
 
   @type t :: %__MODULE__{
           id: atom(),
@@ -31,7 +31,14 @@ defmodule Shinkanki.Card do
           # For hitoyo cards: condition for delayed effects
           condition: String.t(),
           # For migaki cards: special effect description
-          special: String.t()
+          special: String.t(),
+          # === 連携カード用 ===
+          # For renkei cards: minimum players required
+          required_players: integer(),
+          # For renkei cards: cost per player (kuukan)
+          cost_per_player: integer(),
+          # For renkei cards: bonus effect when all players participate
+          full_party_bonus: map()
         }
 
   defstruct [
@@ -49,15 +56,21 @@ defmodule Shinkanki.Card do
     tags: [],
     compatible_tags: [],
     unlock_condition: %{},
-    required_progress: 0
+    required_progress: 0,
+    # 連携カード用
+    required_players: 2,
+    cost_per_player: 1,
+    full_party_bonus: %{}
   ]
 
   @doc """
-  Returns the list of all available cards (Actions, Talents, Projects, Events, Hitoyo, Migaki).
+  Returns the list of all available cards (Actions, Talents, Projects, Events, Hitoyo, Migaki, Renkei).
   """
   def list_cards do
     list_actions() ++
-      list_talents() ++ list_projects() ++ list_events() ++ list_hitoyo() ++ list_migaki()
+      list_talents() ++
+      list_projects() ++
+      list_events() ++ list_hitoyo() ++ list_migaki() ++ list_renkei()
   end
 
   @doc """
@@ -91,11 +104,26 @@ defmodule Shinkanki.Card do
   def list_migaki, do: migaki_cards()
 
   @doc """
+  Returns only renkei (連携) cards.
+  """
+  def list_renkei, do: renkei_cards()
+
+  @doc """
   Gets an event card by ID.
   """
   def get_event(id) do
     case get_card(id) do
       %__MODULE__{type: :event} = card -> card
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Gets a renkei (連携) card by ID.
+  """
+  def get_renkei(id) do
+    case get_card(id) do
+      %__MODULE__{type: :renkei} = card -> card
       _ -> nil
     end
   end
@@ -176,6 +204,18 @@ defmodule Shinkanki.Card do
     |> Enum.shuffle()
     |> Enum.take(count)
   end
+
+  @doc """
+  Draws a specific number of random hitoyo cards.
+  Used by the orochi system for precise control.
+  """
+  def draw_hitoyo_cards_count(count) when count > 0 do
+    hitoyo_cards()
+    |> Enum.shuffle()
+    |> Enum.take(count)
+  end
+
+  def draw_hitoyo_cards_count(_), do: []
 
   @doc """
   Gets all migaki cards that can counter a specific hitoyo card.
@@ -897,6 +937,159 @@ defmodule Shinkanki.Card do
         category: :ritual,
         effect: %{culture: 2, jaki: -2},
         tags: [:festival, :culture]
+      }
+    ]
+  end
+
+  # --- 連携（れんけい）カード ---
+  # 複数プレイヤーが協力して発動する強力なカード
+  # 八岐大蛇の脅威に対抗するための切り札
+  defp renkei_cards do
+    [
+      # === 祈りの連携 ===
+      %__MODULE__{
+        id: :r_collective_prayer,
+        type: :renkei,
+        name: "大祓の祈り（おおはらいのいのり）",
+        description: "全員で祈りを捧げ、八岐大蛇の力を弱める。",
+        flavor: "一人の祈りは届かなくとも、みんなの祈りは世界を変える。",
+        required_players: 2,
+        cost_per_player: 2,
+        effect: %{jaki: -2, culture: 1},
+        full_party_bonus: %{jaki: -1, orochi_suppress: true},
+        tags: [:prayer, :purification, :ritual]
+      },
+      %__MODULE__{
+        id: :r_kagura_dance,
+        type: :renkei,
+        name: "奉納神楽（ほうのうかぐら）",
+        description: "神楽を舞い、神々に感謝を捧げる。",
+        flavor: "舞い手と楽士、見守る人々。すべてが一体となる瞬間。",
+        required_players: 3,
+        cost_per_player: 2,
+        effect: %{culture: 2, social: 1, jaki: -1},
+        full_party_bonus: %{culture: 1, jaki: -1},
+        tags: [:festival, :culture, :ritual]
+      },
+
+      # === 森の連携 ===
+      %__MODULE__{
+        id: :r_forest_restoration,
+        type: :renkei,
+        name: "森林再生プロジェクト",
+        description: "みんなで力を合わせて、荒れた森を再生する。",
+        flavor: "一本の木は一人で植えられる。でも森を育てるには、みんなの力が必要。",
+        required_players: 2,
+        cost_per_player: 2,
+        effect: %{forest: 2, social: 1},
+        full_party_bonus: %{forest: 1, jaki: -1},
+        tags: [:nature, :community, :grow]
+      },
+      %__MODULE__{
+        id: :r_watershed_protection,
+        type: :renkei,
+        name: "水源の森を守る会",
+        description: "水源の森を守るため、地域全体で取り組む。",
+        flavor: "森が水を生み、水がいのちを育む。",
+        required_players: 3,
+        cost_per_player: 1,
+        effect: %{forest: 2, culture: 1},
+        full_party_bonus: %{forest: 1, social: 1},
+        tags: [:nature, :community, :protection]
+      },
+
+      # === コミュニティの連携 ===
+      %__MODULE__{
+        id: :r_community_kitchen,
+        type: :renkei,
+        name: "みんなの台所",
+        description: "共同で料理を作り、分かち合う場を作る。",
+        flavor: "一緒に作って、一緒に食べる。それが絆の始まり。",
+        required_players: 2,
+        cost_per_player: 1,
+        effect: %{social: 2, culture: 1},
+        full_party_bonus: %{social: 1, forest: 1},
+        tags: [:kitchen, :community, :care]
+      },
+      %__MODULE__{
+        id: :r_mutual_aid_network,
+        type: :renkei,
+        name: "助け合いネットワーク",
+        description: "困ったときは助け合う。そんな関係を地域全体に広げる。",
+        flavor: "一人で抱え込まなくていい。みんながいる。",
+        required_players: 2,
+        cost_per_player: 1,
+        effect: %{social: 3},
+        full_party_bonus: %{social: 1, jaki: -1},
+        tags: [:community, :care, :network]
+      },
+      %__MODULE__{
+        id: :r_intergenerational_exchange,
+        type: :renkei,
+        name: "世代をつなぐ集い",
+        description: "若者と年長者が共に学び、語り合う場を作る。",
+        flavor: "知恵は受け継がれ、新しい風が吹き込む。",
+        required_players: 2,
+        cost_per_player: 2,
+        effect: %{culture: 2, social: 2},
+        full_party_bonus: %{culture: 1},
+        tags: [:community, :culture, :dialogue],
+        special: "「h_generation_gap」の効果を打ち消す"
+      },
+
+      # === 対抗カード（人代カードへの直接対策）===
+      %__MODULE__{
+        id: :r_anti_mega_project,
+        type: :renkei,
+        name: "山を守る住民運動",
+        description: "メガプロジェクトに反対し、自然を守る。",
+        flavor: "声を上げよう。この山は、私たちのふるさとだから。",
+        required_players: 3,
+        cost_per_player: 2,
+        effect: %{forest: 2, social: 1, jaki: -1},
+        full_party_bonus: %{forest: 1},
+        tags: [:nature, :community, :activism],
+        special: "「h_mega_project」の効果を半減"
+      },
+      %__MODULE__{
+        id: :r_revive_festival,
+        type: :renkei,
+        name: "祭りを復活させよう",
+        description: "中止された祭りを、みんなの力で復活させる。",
+        flavor: "伝統は、続けようとする人がいる限り、消えない。",
+        required_players: 2,
+        cost_per_player: 2,
+        effect: %{culture: 3, social: 2},
+        full_party_bonus: %{culture: 1, jaki: -1},
+        tags: [:festival, :culture, :community],
+        special: "「h_festival_canceled」の効果を完全に無効化"
+      },
+
+      # === 大技（全員参加で発動する奥義）===
+      %__MODULE__{
+        id: :r_orochi_seal,
+        type: :renkei,
+        name: "八岐大蛇封印の儀",
+        description: "全員の力を合わせ、八岐大蛇の力を一時的に封じる。",
+        flavor: "八百万の神々よ、我らの祈りを聞き届けたまえ。",
+        required_players: 4,
+        cost_per_player: 3,
+        effect: %{jaki: -3, culture: 2, social: 2},
+        full_party_bonus: %{orochi_level_down: true, forest: 1, culture: 1, social: 1},
+        tags: [:ritual, :purification, :divine],
+        special: "八岐大蛇レベルを1下げる（最低1）"
+      },
+      %__MODULE__{
+        id: :r_world_renewal,
+        type: :renkei,
+        name: "世界再生の祈り",
+        description: "全員が心を一つにし、世界の再生を祈る。",
+        flavor: "朝日が昇るとき、世界は新しく生まれ変わる。",
+        required_players: 4,
+        cost_per_player: 2,
+        effect: %{forest: 2, culture: 2, social: 2, jaki: -2},
+        full_party_bonus: %{forest: 1, culture: 1, social: 1},
+        tags: [:ritual, :divine, :renewal]
       }
     ]
   end

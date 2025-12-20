@@ -10,7 +10,7 @@ defmodule RogsIdentity.Accounts.User do
 
   @type t :: %__MODULE__{
           id: binary() | nil,
-          email: String.t(),
+          email: String.t() | nil,
           name: String.t() | nil,
           password: String.t() | nil,
           hashed_password: String.t() | nil,
@@ -19,7 +19,7 @@ defmodule RogsIdentity.Accounts.User do
           provider: String.t() | nil,
           provider_id: String.t() | nil,
           avatar_url: String.t() | nil,
-          avatar: String.t(),
+          avatar: String.t() | nil,
           bio: String.t() | nil,
           games_played: non_neg_integer(),
           games_won: non_neg_integer(),

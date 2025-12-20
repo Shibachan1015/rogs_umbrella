@@ -22,6 +22,7 @@ defmodule RogsIdentity.Accounts do
       nil
 
   """
+  @spec get_user_by_email(String.t()) :: User.t() | nil
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end
@@ -38,6 +39,7 @@ defmodule RogsIdentity.Accounts do
       nil
 
   """
+  @spec get_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
@@ -58,6 +60,7 @@ defmodule RogsIdentity.Accounts do
       nil
 
   """
+  @spec get_user(binary()) :: User.t() | nil
   def get_user(id), do: Repo.get(User, id)
 
   @doc """
@@ -74,6 +77,7 @@ defmodule RogsIdentity.Accounts do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_user!(binary()) :: User.t()
   def get_user!(id), do: Repo.get!(User, id)
 
   ## User registration
@@ -90,6 +94,7 @@ defmodule RogsIdentity.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def register_user(attrs) do
     %User{}
     |> User.email_changeset(attrs)
@@ -104,6 +109,7 @@ defmodule RogsIdentity.Accounts do
   The user is in sudo mode when the last authentication was done no further
   than 20 minutes ago. The limit can be given as second argument in minutes.
   """
+  @spec sudo_mode?(User.t() | nil, integer()) :: boolean()
   def sudo_mode?(user, minutes \\ -20)
 
   def sudo_mode?(%User{authenticated_at: ts}, minutes) when is_struct(ts, NaiveDateTime) do
@@ -123,6 +129,7 @@ defmodule RogsIdentity.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_email(User.t(), map(), keyword()) :: Ecto.Changeset.t()
   def change_user_email(user, attrs \\ %{}, opts \\ []) do
     User.email_changeset(user, attrs, opts)
   end
@@ -136,6 +143,7 @@ defmodule RogsIdentity.Accounts do
       %Ecto.Changeset{data: %User{}}
 
   """
+  @spec change_user_name(User.t(), map()) :: Ecto.Changeset.t()
   def change_user_name(user, attrs \\ %{}) do
     User.name_changeset(user, attrs)
   end
@@ -152,6 +160,7 @@ defmodule RogsIdentity.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_user_name(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user_name(user, attrs) do
     user
     |> User.name_changeset(attrs)
@@ -219,6 +228,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Generates a session token.
   """
+  @spec generate_user_session_token(User.t()) :: binary()
   def generate_user_session_token(user) do
     {token, user_token} = UserToken.build_session_token(user)
     Repo.insert!(user_token)
@@ -230,6 +240,7 @@ defmodule RogsIdentity.Accounts do
 
   If the token is valid `{user, token_inserted_at}` is returned, otherwise `nil` is returned.
   """
+  @spec get_user_by_session_token(binary()) :: {User.t(), NaiveDateTime.t()} | nil
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
@@ -403,6 +414,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Deletes the signed token with the given context.
   """
+  @spec delete_user_session_token(binary()) :: :ok
   def delete_user_session_token(token) do
     # Log session invalidation
     log_session_invalidation(token)
@@ -522,18 +534,21 @@ defmodule RogsIdentity.Accounts do
   @doc """
   ユーザーが管理者か確認
   """
+  @spec admin?(User.t() | nil) :: boolean()
   def admin?(%User{is_admin: true}), do: true
   def admin?(_), do: false
 
   @doc """
   ユーザーがBANされているか確認
   """
+  @spec banned?(User.t()) :: boolean()
   def banned?(%User{banned_at: nil}), do: false
   def banned?(%User{banned_at: _}), do: true
 
   @doc """
   ユーザーをBANする（管理者のみ）
   """
+  @spec ban_user(User.t(), User.t(), String.t() | nil) :: {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
   def ban_user(%User{} = admin, %User{} = target, reason \\ nil) do
     if admin?(admin) do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -553,6 +568,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   BANを解除する（管理者のみ）
   """
+  @spec unban_user(User.t(), User.t()) :: {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
   def unban_user(%User{} = admin, %User{} = target) do
     if admin?(admin) do
       target
@@ -596,6 +612,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   BANされているユーザー一覧
   """
+  @spec list_banned_users() :: [User.t()]
   def list_banned_users do
     from(u in User, where: not is_nil(u.banned_at), order_by: [desc: u.banned_at])
     |> Repo.all()
@@ -604,6 +621,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   管理者一覧
   """
+  @spec list_admins() :: [User.t()]
   def list_admins do
     from(u in User, where: u.is_admin == true, order_by: u.email)
     |> Repo.all()
@@ -616,6 +634,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Returns an `%Ecto.Changeset{}` for changing the user profile.
   """
+  @spec change_user_profile(User.t(), map()) :: Ecto.Changeset.t()
   def change_user_profile(user, attrs \\ %{}) do
     User.profile_changeset(user, attrs)
   end
@@ -623,6 +642,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Updates the user profile (name, avatar, bio).
   """
+  @spec update_user_profile(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user_profile(user, attrs) do
     user
     |> User.profile_changeset(attrs)
@@ -632,16 +652,19 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Gets user display name.
   """
+  @spec display_name(User.t()) :: String.t()
   def display_name(user), do: User.display_name(user)
 
   @doc """
   Gets user avatar.
   """
+  @spec avatar(User.t()) :: String.t() | nil
   def avatar(user), do: User.avatar(user)
 
   @doc """
   Increments games played count.
   """
+  @spec increment_games_played(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def increment_games_played(user) do
     user
     |> User.increment_games_played_changeset()
@@ -651,6 +674,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Increments games won count.
   """
+  @spec increment_games_won(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def increment_games_won(user) do
     user
     |> User.increment_games_won_changeset()
@@ -660,6 +684,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Gets user game statistics.
   """
+  @spec get_user_stats(User.t()) :: %{games_played: non_neg_integer(), games_won: non_neg_integer(), win_rate: float()}
   def get_user_stats(user) do
     %{
       games_played: user.games_played || 0,
@@ -682,6 +707,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Finds or creates a user from OAuth provider data.
   """
+  @spec find_or_create_oauth_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def find_or_create_oauth_user(attrs) do
     case get_user_by_oauth(attrs.provider, attrs.provider_id) do
       nil ->
@@ -704,6 +730,7 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Gets a user by OAuth provider and provider_id.
   """
+  @spec get_user_by_oauth(String.t() | atom(), String.t()) :: User.t() | nil
   def get_user_by_oauth(provider, provider_id)
       when is_binary(provider) and is_binary(provider_id) do
     Repo.get_by(User, provider: provider, provider_id: provider_id)

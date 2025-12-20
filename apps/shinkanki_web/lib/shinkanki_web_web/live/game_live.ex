@@ -1402,7 +1402,7 @@ defmodule ShinkankiWebWeb.GameLive do
           <span class="text-xs text-[var(--color-landing-text-secondary)]">
             🎴 手札 ({length(@hand_cards)}枚)
           </span>
-          <%= if @current_phase == :action do %>
+          <%= if @current_phase == "action" do %>
             <span class="text-xs text-[var(--color-landing-gold)]">
               カードを選んでアクションを実行
             </span>
@@ -1415,11 +1415,11 @@ defmodule ShinkankiWebWeb.GameLive do
             <span class="text-2xl mb-2">🃏</span>
             <p class="text-sm text-[var(--color-landing-text-secondary)]">
               <%= cond do %>
-                <% @current_phase == :action && @game_status == :playing -> %>
+                <% @current_phase == "action" && @game_status in ["playing", "active"] -> %>
                   AIがアクションを実行中です...
-                <% @current_phase == :event -> %>
+                <% @current_phase == "event" -> %>
                   イベントフェーズ中
-                <% @current_phase == :hitoyo -> %>
+                <% @current_phase in ["hitoyo", "itonami"] -> %>
                   一夜フェーズ中
                 <% true -> %>
                   使用可能なカードがありません
@@ -2045,10 +2045,10 @@ defmodule ShinkankiWebWeb.GameLive do
     {:noreply,
      socket
      |> assign(:game_state, mock_game_state())
-     |> assign(:game_status, :playing)
+     |> assign(:game_status, "playing")
      |> assign(:show_ending, false)
      |> assign(:hand_cards, mock_hand_cards())
-     |> assign(:current_phase, :event)
+     |> assign(:current_phase, "event")
      |> assign(:current_event, mock_current_event())
      |> assign(:selected_card_id, nil)}
   end

@@ -61,8 +61,10 @@ defmodule ShinkankiWebWeb.FeatureCase do
       session
       |> visit("/users/log-in")
       |> fill_in(Query.text_field("メールアドレス"), with: user.email)
-      |> fill_in(Query.text_field("パスワード"), with: "valid_password123")
+      |> fill_in(Query.text_field("パスワード"), with: "hello world!")
       |> click(Query.button("ログイン"))
+      # Wait for redirect to complete (login form should disappear)
+      |> refute_has(Query.css("#login-form", visible: true))
     end
 
     @doc """

@@ -2,30 +2,110 @@ defmodule ShinkankiWebWeb.Features.GameTest do
   use ShinkankiWebWeb.FeatureCase, async: false
 
   import RogsIdentity.AccountsFixtures
+  import RogsComm.RoomsFixtures
+
+  alias Shinkanki.Games
+  alias Shinkanki.Games.ActionCard
+  alias Shinkanki.Repo
 
   @moduletag :feature
 
   setup do
-    user = user_fixture()
-    {:ok, user: user}
+    # Seed action cards for testing
+    seed_test_cards()
+
+    # Create user and set password for login
+    user = user_fixture() |> set_password()
+
+    # Create a room and game session for testing
+    room = room_fixture()
+    {:ok, game_session} = Games.create_game_session_from_room(room.id, [user.id])
+
+    {:ok, user: user, room: room, game_session: game_session}
   end
 
-  feature "logged in user can start a game", %{session: session, user: user} do
+  defp seed_test_cards do
+    # Create minimal test cards if none exist
+    if Repo.aggregate(ActionCard, :count) == 0 do
+      test_cards = [
+        %{name: "テストカード1", category: "forest", effect_forest: 1, cost_akasha: 0},
+        %{name: "テストカード2", category: "culture", effect_culture: 1, cost_akasha: 0},
+        %{name: "テストカード3", category: "social", effect_social: 1, cost_akasha: 0},
+        %{name: "テストカード4", category: "forest", effect_forest: 2, cost_akasha: 10},
+        %{name: "テストカード5", category: "culture", effect_culture: 2, cost_akasha: 10}
+      ]
+
+      Enum.each(test_cards, fn attrs ->
+        %ActionCard{}
+        |> ActionCard.changeset(attrs)
+        |> Repo.insert!()
+      end)
+
+      # Reload card cache
+      Shinkanki.CardCache.reload()
+    end
+  end
+
+  feature "logged in user can view game page", %{session: session, user: user, room: room} do
     session
     |> log_in_user(user)
-    |> wait_for_live_view()
-    |> visit("/game/new")
+    |> visit("/game/#{room.slug}")
     |> wait_for_live_view()
     |> assert_has(Query.css("[data-phx-main]"))
   end
 
-  feature "game page displays game title", %{session: session, user: user} do
+  feature "game page displays turn info", %{session: session, user: user, room: room} do
     session
     |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
     |> wait_for_live_view()
-    |> visit("/game/new")
+    # Verify we're on the game page by checking for turn indicator
+    |> assert_has(Query.text("T1", count: :any, minimum: 1))
+  end
+
+  feature "user can advance from event phase", %{session: session, user: user, room: room} do
+    session
+    |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
     |> wait_for_live_view()
-    # Verify we're on the game page by checking for game content
-    |> assert_has(Query.text("神環記", count: :any, minimum: 1))
+    # Should be in event phase initially (人代 phase)
+    |> assert_has(Query.text("人代", count: :any, minimum: 1))
+    # Click the advance button
+    |> click(Query.button("確認して次へ進む"))
+    # Should transition to action phase
+    |> assert_has(Query.text("アクションフェーズ", count: :any, minimum: 1))
+  end
+
+  feature "user can select a card from hand", %{session: session, user: user, room: room} do
+    session
+    |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
+    |> wait_for_live_view()
+    # Advance past event phase to action phase
+    |> click(Query.button("確認して次へ進む"))
+    # Wait for hand cards to be rendered (if any)
+    |> assert_has(Query.css("[phx-click='select_card']", count: :any, minimum: 1))
+    # Click the first card
+    |> click(Query.css("[phx-click='select_card']", at: 0))
+    # Verify the card is selected (has the ring class)
+    |> assert_has(Query.css("[phx-click='select_card'].ring-2", count: 1))
+  end
+
+  feature "selecting different card changes selection", %{session: session, user: user, room: room} do
+    session
+    |> log_in_user(user)
+    |> visit("/game/#{room.slug}")
+    |> wait_for_live_view()
+    # Advance past event phase
+    |> click(Query.button("確認して次へ進む"))
+    # Wait for at least 2 cards
+    |> assert_has(Query.css("[phx-click='select_card']", count: :any, minimum: 2))
+    # Click first card
+    |> click(Query.css("[phx-click='select_card']", at: 0))
+    |> assert_has(Query.css("[phx-click='select_card'].ring-2", count: 1))
+    # Click second card
+    |> click(Query.css("[phx-click='select_card']", at: 1))
+    # Still only one card should be selected
+    |> assert_has(Query.css("[phx-click='select_card'].ring-2", count: 1))
   end
 end

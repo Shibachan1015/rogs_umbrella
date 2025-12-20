@@ -100,6 +100,7 @@ defmodule Shinkanki.Game do
   @doc """
   Creates a new game state.
   """
+  @spec new(String.t()) :: t()
   def new(room_id) do
     %__MODULE__{
       room_id: room_id,
@@ -111,6 +112,7 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the ending type name in Japanese.
   """
+  @spec ending_name(atom() | nil) :: String.t() | nil
   def ending_name(:blessing), do: "🌈 神々の祝福エンディング"
   def ending_name(:purification), do: "🌿 浄化の兆しエンディング"
   def ending_name(:uncertainty), do: "🌙 揺らぎの未来エンディング"
@@ -122,6 +124,7 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the ending description.
   """
+  @spec ending_description(atom() | nil) :: String.t() | nil
   def ending_description(:blessing), do: "世界は神々の祝福に満ち、豊かな未来が約束されました。"
   def ending_description(:purification), do: "世界は浄化の兆しを見せ、希望の光が差し込み始めました。"
   def ending_description(:uncertainty), do: "世界の未来は揺らぎの中にあり、不確かな道が続きます。"
@@ -133,6 +136,8 @@ defmodule Shinkanki.Game do
   @doc """
   Adds a player to the game. If talents are not provided, two default talents are assigned.
   """
+  @spec join(t(), String.t(), String.t(), String.t(), [atom()] | nil) ::
+          {:ok, t()} | {:error, atom()}
   def join(%__MODULE__{} = game, player_id, name, avatar \\ "🎮", talent_ids \\ nil) do
     cond do
       game.status in [:won, :lost] ->
@@ -171,6 +176,7 @@ defmodule Shinkanki.Game do
   Resets phase to :event and automatically progresses through all phases until judgment.
   This maintains backward compatibility with existing code that expects next_turn to complete a full turn.
   """
+  @spec next_turn(t()) :: t()
   def next_turn(%__MODULE__{status: :playing} = game) do
     result =
       game
@@ -198,6 +204,7 @@ defmodule Shinkanki.Game do
   Advances to the next phase in the turn flow.
   Executes the current phase (which may auto-advance), then if still in same phase, advances to next.
   """
+  @spec next_phase(t()) :: t()
   def next_phase(%__MODULE__{status: :playing} = game) do
     # Execute current phase (some phases auto-advance)
     executed_game = execute_phase(game)
@@ -220,6 +227,7 @@ defmodule Shinkanki.Game do
   @doc """
   Updates game statistics (Forest, Culture, Social, Currency).
   """
+  @spec update_stats(t(), map()) :: t()
   def update_stats(%__MODULE__{status: :playing} = game, changes) do
     game
     |> apply_changes(changes)
@@ -234,6 +242,7 @@ defmodule Shinkanki.Game do
   @doc """
   Plays a generic card (legacy support).
   """
+  @spec play_card(t(), atom()) :: {:ok, t()} | {:error, atom()}
   def play_card(%__MODULE__{status: :playing} = game, card_id) do
     case Card.get_card(card_id) do
       nil ->
@@ -366,6 +375,7 @@ defmodule Shinkanki.Game do
   Starts the game if minimum player requirements are met.
   Returns {:ok, new_game} or {:error, reason}.
   """
+  @spec start_game(t()) :: {:ok, t()} | {:error, atom()}
   def start_game(%__MODULE__{status: :waiting} = game) do
     player_count = length(game.player_order)
 
@@ -396,6 +406,7 @@ defmodule Shinkanki.Game do
   AIプレイヤーで4人に補完してゲームを開始
   Returns {:ok, new_game} or {:error, reason}.
   """
+  @spec start_game_with_ai(t()) :: {:ok, t()} | {:error, atom()}
   def start_game_with_ai(%__MODULE__{status: :waiting} = game) do
     human_count = length(game.player_order)
 
@@ -486,6 +497,7 @@ defmodule Shinkanki.Game do
   @doc """
   Checks if all players in the waiting room are ready.
   """
+  @spec all_players_ready?(t()) :: boolean()
   def all_players_ready?(%__MODULE__{status: :waiting, players: players, player_order: order})
       when map_size(players) > 0 do
     Enum.all?(order, fn player_id ->
@@ -501,6 +513,7 @@ defmodule Shinkanki.Game do
   @doc """
   Checks if the game can be started (meets minimum player requirements).
   """
+  @spec can_start?(t()) :: boolean()
   def can_start?(%__MODULE__{status: :waiting} = game) do
     player_count = length(game.player_order)
     player_count >= @min_players and player_count <= @max_players
@@ -513,6 +526,7 @@ defmodule Shinkanki.Game do
   Note: For projects, this executes them immediately (legacy behavior).
   For new projects, use contribute_talent_to_project instead.
   """
+  @spec play_action(t(), String.t(), atom(), [atom()]) :: {:ok, t()} | {:error, atom()}
   def play_action(%__MODULE__{} = game, player_id, action_id, talent_ids \\ []) do
     with {:status, :playing} <- {:status, game.status},
          {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
@@ -709,6 +723,7 @@ defmodule Shinkanki.Game do
   Marks a player as ready for action phase (public API for AI skip).
   Also advances to next player and potentially advances the turn.
   """
+  @spec mark_player_ready_for_action(t(), String.t()) :: {:ok, t()}
   def mark_player_ready_for_action(%__MODULE__{} = game, player_id) do
     new_game =
       game
@@ -769,6 +784,7 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the current player ID in action/itonami phase.
   """
+  @spec get_current_player(t()) :: String.t() | nil
   def get_current_player(%__MODULE__{
         phase: phase,
         player_order: order,
@@ -1322,6 +1338,7 @@ defmodule Shinkanki.Game do
   @doc """
   Gets the current phase name in Japanese.
   """
+  @spec phase_name(atom()) :: String.t()
   # New phase names
   def phase_name(:hitoyo), do: "人代フェーズ"
   def phase_name(:kamihakari), do: "神議りフェーズ"
@@ -1341,6 +1358,7 @@ defmodule Shinkanki.Game do
   @doc """
   Checks if the game is in a specific phase.
   """
+  @spec in_phase?(t(), atom()) :: boolean()
   def in_phase?(%__MODULE__{} = game, phase) do
     game.phase == phase
   end
@@ -1353,6 +1371,7 @@ defmodule Shinkanki.Game do
   連携カードを提案する（開始プレイヤーが呼び出す）
   Returns {:ok, new_game} or {:error, reason}
   """
+  @spec initiate_renkei(t(), String.t(), atom()) :: {:ok, t()} | {:error, atom()}
   def initiate_renkei(%__MODULE__{status: :playing} = game, player_id, renkei_card_id) do
     with {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
          {:card, %Card{type: :renkei} = card} <- {:card, Card.get_renkei(renkei_card_id)},
@@ -1394,6 +1413,7 @@ defmodule Shinkanki.Game do
   連携カードに参加する
   Returns {:ok, new_game} or {:error, reason}
   """
+  @spec join_renkei(t(), String.t(), atom()) :: {:ok, t()} | {:error, atom()}
   def join_renkei(%__MODULE__{status: :playing} = game, player_id, renkei_card_id) do
     with {:player, %Player{} = player} <- {:player, Map.get(game.players, player_id)},
          {:pending, %{} = pending} <- {:pending, Map.get(game.pending_renkei, renkei_card_id)},
@@ -1545,6 +1565,7 @@ defmodule Shinkanki.Game do
   @doc """
   利用可能な連携カードのリストを取得
   """
+  @spec available_renkei_cards(t()) :: [Card.t()]
   def available_renkei_cards(%__MODULE__{} = game) do
     Card.list_renkei()
     |> Enum.reject(fn card ->
@@ -1562,11 +1583,13 @@ defmodule Shinkanki.Game do
   @doc """
   八岐大蛇レベルを取得
   """
+  @spec orochi_level(t()) :: integer()
   def orochi_level(%__MODULE__{orochi_level: level}), do: level
 
   @doc """
   八岐大蛇の状態を取得（UI表示用）
   """
+  @spec orochi_status(t()) :: map()
   def orochi_status(%__MODULE__{orochi_level: level, jaki: jaki}) do
     status =
       case level do

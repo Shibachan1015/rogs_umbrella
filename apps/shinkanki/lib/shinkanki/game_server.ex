@@ -400,12 +400,12 @@ defmodule Shinkanki.GameServer do
   defp get_current_player_id(game) do
     case Game.get_current_player(game) do
       nil ->
-        order = game.player_order || []
+        order = game.player_order
 
         if order == [] do
           nil
         else
-          current_index = rem(game.current_player_index || 0, length(order))
+          current_index = rem(game.current_player_index, length(order))
           Enum.at(order, current_index)
         end
 

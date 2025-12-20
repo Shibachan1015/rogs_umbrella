@@ -16,27 +16,27 @@ defmodule Shinkanki.CardCache do
   end
 
   @doc """
-  指定IDのActionCardを取得
+  指定IDのActionCardを取得（UUID文字列または整数IDを受け付け）
   """
-  def get_action_card(id) when is_integer(id) do
+  def get_action_card(id) when is_binary(id) or is_integer(id) do
     get(:action_cards, id)
   end
 
   def get_action_card(_), do: nil
 
   @doc """
-  指定IDのEventCardを取得
+  指定IDのEventCardを取得（UUID文字列または整数IDを受け付け）
   """
-  def get_event_card(id) when is_integer(id) do
+  def get_event_card(id) when is_binary(id) or is_integer(id) do
     get(:event_cards, id)
   end
 
   def get_event_card(_), do: nil
 
   @doc """
-  指定IDのTalentCardを取得
+  指定IDのTalentCardを取得（UUID文字列または整数IDを受け付け）
   """
-  def get_talent_card(id) when is_integer(id) do
+  def get_talent_card(id) when is_binary(id) or is_integer(id) do
     get(:talent_cards, id)
   end
 

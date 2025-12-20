@@ -150,9 +150,6 @@ defmodule Shinkanki.Games.TurnEngine do
 
       {:game_over, reason} ->
         {:game_over, reason}
-
-      error ->
-        error
     end
   end
 

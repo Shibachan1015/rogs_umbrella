@@ -2656,7 +2656,7 @@ defmodule ShinkankiWebWeb.GameLive do
     socket =
       if phase == "hitoyo" and socket.assigns[:drawn_hitoyo_cards] == [] do
         game_session = Games.get_game_session!(game_session_id)
-        jaki_level = game_session.evil_pool || 0
+        jaki_level = game_session.evil_pool
         hitoyo_cards = Shinkanki.Card.draw_hitoyo_cards(jaki_level)
         assign(socket, :drawn_hitoyo_cards, hitoyo_cards)
       else
@@ -2854,7 +2854,7 @@ defmodule ShinkankiWebWeb.GameLive do
     f = game_session.forest
     k = game_session.culture
     s = game_session.social
-    evil = game_session.evil_pool || 0
+    evil = game_session.evil_pool
 
     cond do
       # 邪気が高い場合は浄化優先
@@ -2902,7 +2902,7 @@ defmodule ShinkankiWebWeb.GameLive do
       f = game_session.forest
       k = game_session.culture
       s = game_session.social
-      evil = game_session.evil_pool || 0
+      evil = game_session.evil_pool
       policy = game_session.current_policy
 
       # 最も低いパラメータを特定

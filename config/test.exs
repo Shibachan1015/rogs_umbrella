@@ -62,10 +62,23 @@ config :shinkanki, Shinkanki.Repo,
 config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "fXs5MBA7YbZwilrl7rihhhMmEJ8GHMJ5f3uaoSMp8eVSv7LhhtAw+ykccnmnW0NG",
-  server: false
+  server: true  # Wallaby requires server to be running
 
-config :shinkanki, start_repo: false
-config :shinkanki, start_game_session_cache: false
+# Wallaby configuration
+config :wallaby,
+  driver: Wallaby.Chrome,
+  otp_app: :shinkanki_web,
+  base_url: "http://localhost:4002",
+  screenshot_dir: "tmp/wallaby_screenshots",
+  screenshot_on_failure: true,
+  chromedriver: [
+    headless: true
+  ]
+
+# Note: For feature tests, repos must be started
+# These settings are enabled for Wallaby E2E tests
+config :shinkanki, start_repo: true
+config :shinkanki, start_game_session_cache: true
 
 # In test we don't send emails
 config :rogs_identity, RogsIdentity.Mailer, adapter: Swoosh.Adapters.Test

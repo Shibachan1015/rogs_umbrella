@@ -7,6 +7,30 @@ defmodule RogsIdentity.Accounts.User do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          email: String.t(),
+          name: String.t() | nil,
+          password: String.t() | nil,
+          hashed_password: String.t() | nil,
+          confirmed_at: NaiveDateTime.t() | nil,
+          authenticated_at: NaiveDateTime.t() | nil,
+          provider: String.t() | nil,
+          provider_id: String.t() | nil,
+          avatar_url: String.t() | nil,
+          avatar: String.t(),
+          bio: String.t() | nil,
+          games_played: non_neg_integer(),
+          games_won: non_neg_integer(),
+          is_admin: boolean(),
+          banned_at: DateTime.t() | nil,
+          banned_reason: String.t() | nil,
+          banned_by_id: binary() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
+
   schema "users" do
     field :email, :string
     field :name, :string

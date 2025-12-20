@@ -5,8 +5,28 @@ defmodule Shinkanki.Games.ProjectTemplate do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.GameProject
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          name: String.t(),
+          description: String.t() | nil,
+          required_participants: pos_integer(),
+          required_turns: pos_integer() | nil,
+          required_dao_pool: non_neg_integer() | nil,
+          effect_forest: integer(),
+          effect_culture: integer(),
+          effect_social: integer(),
+          effect_akasha: integer(),
+          permanent_effect: String.t() | nil,
+          permanent_effect_value: integer() | nil,
+          game_projects: [GameProject.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   schema "project_templates" do
     field :name, :string

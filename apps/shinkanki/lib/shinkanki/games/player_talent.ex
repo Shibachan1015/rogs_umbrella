@@ -5,8 +5,21 @@ defmodule Shinkanki.Games.PlayerTalent do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{Player, TalentCard}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          is_used: boolean(),
+          player_id: binary() | nil,
+          player: Player.t() | Ecto.Association.NotLoaded.t() | nil,
+          talent_card_id: binary() | nil,
+          talent_card: TalentCard.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   schema "player_talents" do
     field :is_used, :boolean, default: false

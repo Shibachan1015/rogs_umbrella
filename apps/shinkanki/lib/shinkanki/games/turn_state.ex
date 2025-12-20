@@ -5,8 +5,23 @@ defmodule Shinkanki.Games.TurnState do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.GameSession
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          turn_number: pos_integer(),
+          phase: String.t(),
+          available_cards: [binary()],
+          current_event_id: binary() | nil,
+          event_choice: String.t() | nil,
+          game_session_id: binary() | nil,
+          game_session: GameSession.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   # フェーズ順序（shinkanki_rules.xmlに準拠）:
   # hitoyo(人代) -> kami_hakari(神議り) -> itonami(営み) -> kokyu(呼吸) -> musuhi(結び) -> toshiokuri(年送り)

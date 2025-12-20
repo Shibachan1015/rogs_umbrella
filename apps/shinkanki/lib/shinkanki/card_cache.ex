@@ -7,10 +7,15 @@ defmodule Shinkanki.CardCache do
 
   require Logger
 
+  alias Shinkanki.Games.{ActionCard, EventCard, TalentCard}
+
+  @type card_id :: binary() | integer()
+
   @table_name :card_cache
 
   ## Client API
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
@@ -18,33 +23,40 @@ defmodule Shinkanki.CardCache do
   @doc """
   指定IDのActionCardを取得（UUID文字列または整数IDを受け付け）
   """
+  @spec get_action_card(card_id()) :: ActionCard.t() | nil
   def get_action_card(id) when is_binary(id) or is_integer(id) do
     get(:action_cards, id)
   end
 
+  @spec get_action_card(term()) :: nil
   def get_action_card(_), do: nil
 
   @doc """
   指定IDのEventCardを取得（UUID文字列または整数IDを受け付け）
   """
+  @spec get_event_card(card_id()) :: EventCard.t() | nil
   def get_event_card(id) when is_binary(id) or is_integer(id) do
     get(:event_cards, id)
   end
 
+  @spec get_event_card(term()) :: nil
   def get_event_card(_), do: nil
 
   @doc """
   指定IDのTalentCardを取得（UUID文字列または整数IDを受け付け）
   """
+  @spec get_talent_card(card_id()) :: TalentCard.t() | nil
   def get_talent_card(id) when is_binary(id) or is_integer(id) do
     get(:talent_cards, id)
   end
 
+  @spec get_talent_card(term()) :: nil
   def get_talent_card(_), do: nil
 
   @doc """
   全ActionCardを取得
   """
+  @spec all_action_cards() :: [ActionCard.t()]
   def all_action_cards do
     get_all(:action_cards)
   end
@@ -52,6 +64,7 @@ defmodule Shinkanki.CardCache do
   @doc """
   全EventCardを取得
   """
+  @spec all_event_cards() :: [EventCard.t()]
   def all_event_cards do
     get_all(:event_cards)
   end
@@ -59,6 +72,7 @@ defmodule Shinkanki.CardCache do
   @doc """
   全TalentCardを取得
   """
+  @spec all_talent_cards() :: [TalentCard.t()]
   def all_talent_cards do
     get_all(:talent_cards)
   end
@@ -66,6 +80,7 @@ defmodule Shinkanki.CardCache do
   @doc """
   指定されたIDリストに含まれるActionCardのみを取得
   """
+  @spec action_cards_by_ids([card_id()]) :: [ActionCard.t()]
   def action_cards_by_ids(ids) when is_list(ids) do
     id_set = MapSet.new(ids)
 
@@ -73,11 +88,13 @@ defmodule Shinkanki.CardCache do
     |> Enum.filter(&MapSet.member?(id_set, &1.id))
   end
 
+  @spec action_cards_by_ids(term()) :: []
   def action_cards_by_ids(_), do: []
 
   @doc """
   キャッシュを再読み込み（カードデータ更新時に使用）
   """
+  @spec reload() :: {:ok, non_neg_integer()}
   def reload do
     GenServer.call(__MODULE__, :reload)
   end

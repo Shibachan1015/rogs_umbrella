@@ -5,8 +5,21 @@ defmodule Shinkanki.Games.ProjectParticipation do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{GameProject, Player}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          turn: pos_integer(),
+          game_project_id: binary() | nil,
+          game_project: GameProject.t() | Ecto.Association.NotLoaded.t() | nil,
+          player_id: binary() | nil,
+          player: Player.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   schema "project_participations" do
     field :turn, :integer

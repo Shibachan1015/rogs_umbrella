@@ -5,8 +5,29 @@ defmodule Shinkanki.Games.Player do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{GameSession, GameAction, ProjectParticipation, PlayerTalent}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          akasha: non_neg_integer(),
+          role: String.t(),
+          player_order: pos_integer(),
+          is_ai: boolean(),
+          ai_name: String.t() | nil,
+          evil_tokens: non_neg_integer(),
+          titles: [String.t()],
+          game_session_id: binary() | nil,
+          game_session: GameSession.t() | Ecto.Association.NotLoaded.t() | nil,
+          user_id: binary() | nil,
+          game_actions: [GameAction.t()] | Ecto.Association.NotLoaded.t(),
+          project_participations: [ProjectParticipation.t()] | Ecto.Association.NotLoaded.t(),
+          player_talents: [PlayerTalent.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   @roles ~w(forest_guardian heritage_weaver community_keeper akasha_architect)
 

@@ -8,6 +8,18 @@ defmodule Shinkanki.Games.TalentCard do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          name: String.t(),
+          category: String.t(),
+          description: String.t() | nil,
+          compatible_tags: [String.t()],
+          effect_type: String.t() | nil,
+          effect_value: integer(),
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
+
   @categories ~w(forest culture social akasha universal)
 
   schema "talent_cards" do

@@ -8,6 +8,24 @@ defmodule Shinkanki.Games.ActionCard do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          name: String.t(),
+          category: String.t(),
+          effect_forest: integer(),
+          effect_culture: integer(),
+          effect_social: integer(),
+          effect_akasha: integer(),
+          cost_forest: non_neg_integer(),
+          cost_culture: non_neg_integer(),
+          cost_social: non_neg_integer(),
+          cost_akasha: non_neg_integer(),
+          description: String.t() | nil,
+          special_effect: String.t() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
+
   @categories ~w(forest culture social akasha)
 
   schema "action_cards" do

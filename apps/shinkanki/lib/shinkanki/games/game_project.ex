@@ -5,8 +5,24 @@ defmodule Shinkanki.Games.GameProject do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{GameSession, ProjectTemplate, ProjectParticipation}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          started_turn: pos_integer(),
+          status: String.t(),
+          completed_turn: pos_integer() | nil,
+          game_session_id: binary() | nil,
+          game_session: GameSession.t() | Ecto.Association.NotLoaded.t() | nil,
+          project_template_id: binary() | nil,
+          project_template: ProjectTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
+          project_participations: [ProjectParticipation.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   @statuses ~w(active completed failed)
 

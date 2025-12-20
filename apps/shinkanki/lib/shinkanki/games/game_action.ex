@@ -5,8 +5,25 @@ defmodule Shinkanki.Games.GameAction do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{GameSession, Player, ActionCard}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          turn: pos_integer(),
+          action_type: String.t(),
+          details: map() | nil,
+          game_session_id: binary() | nil,
+          game_session: GameSession.t() | Ecto.Association.NotLoaded.t() | nil,
+          player_id: binary() | nil,
+          player: Player.t() | Ecto.Association.NotLoaded.t() | nil,
+          action_card_id: binary() | nil,
+          action_card: ActionCard.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   @action_types ~w(play_card join_project dao_vote gift_akasha pass play_card_with_talents)
 

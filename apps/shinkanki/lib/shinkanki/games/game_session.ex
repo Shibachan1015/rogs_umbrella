@@ -5,8 +5,33 @@ defmodule Shinkanki.Games.GameSession do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Shinkanki.Games.{Player, GameProject, GameAction, TurnState}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          turn: pos_integer(),
+          forest: non_neg_integer(),
+          culture: non_neg_integer(),
+          social: non_neg_integer(),
+          life_index: integer(),
+          dao_pool: non_neg_integer(),
+          status: String.t(),
+          seed: String.t() | nil,
+          room_id: binary() | nil,
+          evil_pool: non_neg_integer(),
+          evil_threshold: pos_integer(),
+          orochi_level: non_neg_integer(),
+          current_policy: String.t() | nil,
+          players: [Player.t()] | Ecto.Association.NotLoaded.t(),
+          game_projects: [GameProject.t()] | Ecto.Association.NotLoaded.t(),
+          game_actions: [GameAction.t()] | Ecto.Association.NotLoaded.t(),
+          turn_states: [TurnState.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
 
   @policies ~w(forest culture community purify)
 

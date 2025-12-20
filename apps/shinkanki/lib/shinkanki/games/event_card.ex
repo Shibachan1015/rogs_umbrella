@@ -8,6 +8,24 @@ defmodule Shinkanki.Games.EventCard do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  @type t :: %__MODULE__{
+          id: binary() | nil,
+          name: String.t(),
+          type: String.t(),
+          effect_forest: integer(),
+          effect_culture: integer(),
+          effect_social: integer(),
+          effect_akasha: integer(),
+          description: String.t() | nil,
+          has_choice: boolean(),
+          choice_a_text: String.t() | nil,
+          choice_a_effects: map() | nil,
+          choice_b_text: String.t() | nil,
+          choice_b_effects: map() | nil,
+          inserted_at: NaiveDateTime.t() | nil,
+          updated_at: NaiveDateTime.t() | nil
+        }
+
   @types ~w(positive negative choice)
 
   schema "event_cards" do

@@ -6,6 +6,11 @@ import Config
 # and secrets from environment variables or elsewhere. Do not define
 # any compile-time configuration in here, as it won't be applied.
 
+# --- Debug Logging Configuration ---
+# Set DEBUG_LOGGING=true to enable verbose debug logs
+debug_logging = System.get_env("DEBUG_LOGGING") in ~w(true 1)
+config :shinkanki_web, :debug_logging, debug_logging
+
 # --- OAuth and API Key Configuration (loaded from environment) ---
 
 if claude_api_key = System.get_env("ANTHROPIC_API_KEY") do

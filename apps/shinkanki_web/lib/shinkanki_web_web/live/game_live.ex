@@ -82,6 +82,9 @@ defmodule ShinkankiWebWeb.GameLive do
 
     require Logger
     Logger.info("[GameLive] mount: phase=#{current_phase}, hand_cards=#{length(hand_cards)}")
+    if Application.get_env(:shinkanki_web, :debug_logging, false) do
+      Logger.debug("[GameLive] turn_state=#{inspect(turn_state != nil)}, available_cards=#{inspect(turn_state && turn_state.available_cards)}")
+    end
 
     socket =
       socket
@@ -1634,6 +1637,9 @@ defmodule ShinkankiWebWeb.GameLive do
     require Logger
     card = Enum.find(socket.assigns.hand_cards, &(&1.id == card_id))
     Logger.info("[GameLive] select_card: card_id=#{card_id}, found=#{card != nil}")
+    if Application.get_env(:shinkanki_web, :debug_logging, false) do
+      Logger.debug("[GameLive] hand_cards ids: #{inspect(Enum.map(socket.assigns.hand_cards, & &1.id))}")
+    end
 
     if card do
       {:noreply,

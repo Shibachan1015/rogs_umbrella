@@ -8649,6 +8649,11 @@ kbd {
     position: relative;
   }
 
+  /* Header is now relative, so remove padding-top to avoid double spacing */
+  .landing-container {
+    padding-top: 0;
+  }
+
   .landing-nav .nav-dropdown {
     position: static;
   }

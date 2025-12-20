@@ -133,6 +133,11 @@ defmodule ShinkankiWebWeb.GameLive do
       |> assign(:active_tab, :game)
       |> assign(:show_card_fullscreen, false)
       |> assign(:fullscreen_card, nil)
+      # 連携カードシステム
+      |> assign(:available_renkei_cards, get_available_renkei_cards())
+      |> assign(:pending_renkei, %{})
+      |> assign(:show_renkei_detail, false)
+      |> assign(:selected_renkei_id, nil)
 
     socket =
       if connected?(socket) do
@@ -342,31 +347,110 @@ defmodule ShinkankiWebWeb.GameLive do
         </div>
 
         <!-- Renkei Tab -->
-        <div :if={@active_tab == :renkei} class="p-4 space-y-4">
-          <div class="bg-white/5 rounded-xl p-4">
-            <h3 class="text-lg font-bold text-[var(--color-landing-gold)] mb-3">🤝 連携プロジェクト</h3>
-            <%= if Enum.empty?(@active_projects) do %>
-              <p class="text-sm text-[var(--color-landing-text-secondary)]">
-                進行中のプロジェクトはありません
-              </p>
-            <% else %>
+        <div :if={@active_tab == :renkei} class="p-4 space-y-4 pb-20">
+          <!-- 八岐大蛇ステータス -->
+          <div class="bg-gradient-to-r from-red-900/30 to-purple-900/30 rounded-xl p-4 border border-red-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-bold text-red-400">🐉 八岐大蛇</h3>
+              <span class="text-2xl font-bold text-red-300">Lv.{@game_state[:orochi_level] || 1}</span>
+            </div>
+            <div class="flex gap-1 mb-2">
+              <%= for i <- 1..3 do %>
+                <div class={"flex-1 h-2 rounded-full #{if i <= (@game_state[:orochi_level] || 1), do: "bg-red-500", else: "bg-red-900/50"}"}></div>
+              <% end %>
+            </div>
+            <p class="text-xs text-red-200/70">
+              <%= case @game_state[:orochi_level] || 1 do %>
+                <% 1 -> %>眠りについている...
+                <% 2 -> %>⚠️ 覚醒の兆し！人代カード効果1.5倍
+                <% 3 -> %>🔥 完全覚醒！人代カード効果2倍
+              <% end %>
+            </p>
+          </div>
+
+          <!-- 進行中の連携 -->
+          <%= if map_size(@pending_renkei) > 0 do %>
+            <div class="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30">
+              <h3 class="text-lg font-bold text-purple-400 mb-3">🔮 進行中の連携</h3>
               <div class="space-y-2">
-                <%= for project <- @active_projects do %>
-                  <div class="bg-white/5 rounded-lg p-3 border border-[var(--color-landing-gold)]/20">
-                    <div class="font-bold text-[var(--color-landing-pale)]">{project.name}</div>
-                    <div class="text-xs text-[var(--color-landing-text-secondary)] mt-1">
-                      進捗: {project.progress}/{project.required}
+                <%= for {renkei_id, pending} <- @pending_renkei do %>
+                  <% card = Enum.find(@available_renkei_cards, &(&1.id == renkei_id)) %>
+                  <%= if card do %>
+                    <div class="bg-white/5 rounded-lg p-3 border border-purple-400/30">
+                      <div class="flex items-center justify-between">
+                        <div class="font-bold text-[var(--color-landing-pale)]">{card.name}</div>
+                        <span class="text-xs text-purple-300">
+                          {length(pending.participants)}/{card.required_players}人
+                        </span>
+                      </div>
+                      <div class="mt-2 flex gap-2">
+                        <%= if @user_id in pending.participants do %>
+                          <span class="text-xs text-green-400">✓ 参加中</span>
+                        <% else %>
+                          <button
+                            phx-click="join_renkei"
+                            phx-value-renkei-id={renkei_id}
+                            class="px-3 py-1 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-400"
+                          >
+                            参加する
+                          </button>
+                        <% end %>
+                        <%= if pending.initiator == @user_id do %>
+                          <button
+                            phx-click="cancel_renkei"
+                            phx-value-renkei-id={renkei_id}
+                            class="px-3 py-1 text-xs bg-red-500/50 text-white rounded-lg hover:bg-red-500"
+                          >
+                            キャンセル
+                          </button>
+                        <% end %>
+                      </div>
                     </div>
-                  </div>
+                  <% end %>
                 <% end %>
               </div>
-            <% end %>
-          </div>
+            </div>
+          <% end %>
+
+          <!-- 利用可能な連携カード -->
           <div class="bg-white/5 rounded-xl p-4">
-            <h3 class="text-lg font-bold text-purple-400 mb-3">✨ 利用可能な連携カード</h3>
-            <p class="text-sm text-[var(--color-landing-text-secondary)]">
-              連携機能は開発中です
-            </p>
+            <h3 class="text-lg font-bold text-[var(--color-landing-gold)] mb-3">✨ 利用可能な連携カード</h3>
+            <div class="space-y-3">
+              <%= for card <- @available_renkei_cards do %>
+                <% is_pending = Map.has_key?(@pending_renkei, card.id) %>
+                <div class={"bg-white/5 rounded-lg p-3 border transition-all #{if is_pending, do: "border-purple-400/50 opacity-50", else: "border-[var(--color-landing-gold)]/20 hover:border-[var(--color-landing-gold)]/50"}"}>
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1">
+                      <div class="font-bold text-[var(--color-landing-pale)] text-sm">{card.name}</div>
+                      <p class="text-xs text-[var(--color-landing-text-secondary)] mt-1">{card.description}</p>
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        <%= for tag <- card.tags || [] do %>
+                          <span class="text-xs px-1.5 py-0.5 bg-white/10 rounded">{renkei_tag_emoji(tag)}</span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="text-xs text-purple-300">{card.required_players}人必要</div>
+                      <div class="text-xs text-yellow-300">各{card.cost_per_player}P</div>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between">
+                    <div class="text-xs text-green-300">
+                      効果: <%= render_effect_summary(card.effect) %>
+                    </div>
+                    <%= unless is_pending do %>
+                      <button
+                        phx-click="initiate_renkei"
+                        phx-value-renkei-id={card.id}
+                        class="px-3 py-1 text-xs bg-[var(--color-landing-gold)] text-black font-bold rounded-lg hover:opacity-80"
+                      >
+                        提案する
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
           </div>
         </div>
 
@@ -1777,6 +1861,91 @@ defmodule ShinkankiWebWeb.GameLive do
      |> assign(:confirm_card_id, nil)}
   end
 
+  # ============================================================================
+  # 連携（Renkei）イベントハンドラ
+  # ============================================================================
+
+  # 連携カードの提案を開始する
+  def handle_event("initiate_renkei", %{"renkei-id" => renkei_id}, socket) do
+    room_id = socket.assigns.room_id
+    player_id = socket.assigns.player_id
+
+    case Shinkanki.GameServer.initiate_renkei(room_id, player_id, renkei_id) do
+      {:ok, _game} ->
+        # 成功 - pending_renkei を更新
+        pending = Shinkanki.GameServer.get_pending_renkei(room_id)
+
+        {:noreply,
+         socket
+         |> assign(:pending_renkei, pending)
+         |> put_flash(:info, "連携を提案しました。他のプレイヤーの参加を待っています...")}
+
+      {:error, :already_pending} ->
+        {:noreply, put_flash(socket, :error, "この連携は既に提案されています")}
+
+      {:error, :insufficient_cost} ->
+        {:noreply, put_flash(socket, :error, "アカーシャ通貨が足りません")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "連携提案エラー: #{inspect(reason)}")}
+    end
+  end
+
+  # 他プレイヤーが提案した連携に参加する
+  def handle_event("join_renkei", %{"renkei-id" => renkei_id}, socket) do
+    room_id = socket.assigns.room_id
+    player_id = socket.assigns.player_id
+
+    case Shinkanki.GameServer.join_renkei(room_id, player_id, renkei_id) do
+      {:ok, _game} ->
+        # 成功 - pending_renkei を更新
+        pending = Shinkanki.GameServer.get_pending_renkei(room_id)
+
+        {:noreply,
+         socket
+         |> assign(:pending_renkei, pending)
+         |> put_flash(:info, "連携に参加しました！")}
+
+      {:error, :already_joined} ->
+        {:noreply, put_flash(socket, :error, "既に参加しています")}
+
+      {:error, :not_pending} ->
+        {:noreply, put_flash(socket, :error, "この連携は存在しません")}
+
+      {:error, :insufficient_cost} ->
+        {:noreply, put_flash(socket, :error, "アカーシャ通貨が足りません")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "連携参加エラー: #{inspect(reason)}")}
+    end
+  end
+
+  # 自分が提案した連携をキャンセルする
+  def handle_event("cancel_renkei", %{"renkei-id" => renkei_id}, socket) do
+    room_id = socket.assigns.room_id
+    player_id = socket.assigns.player_id
+
+    case Shinkanki.GameServer.cancel_renkei(room_id, player_id, renkei_id) do
+      {:ok, _game} ->
+        # 成功 - pending_renkei を更新
+        pending = Shinkanki.GameServer.get_pending_renkei(room_id)
+
+        {:noreply,
+         socket
+         |> assign(:pending_renkei, pending)
+         |> put_flash(:info, "連携をキャンセルしました")}
+
+      {:error, :not_initiator} ->
+        {:noreply, put_flash(socket, :error, "提案者のみキャンセルできます")}
+
+      {:error, :not_pending} ->
+        {:noreply, put_flash(socket, :error, "この連携は存在しません")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "連携キャンセルエラー: #{inspect(reason)}")}
+    end
+  end
+
   def handle_event("show_event_modal", _params, socket) do
     {:noreply, assign(socket, :show_event_modal, true)}
   end
@@ -3055,7 +3224,7 @@ defmodule ShinkankiWebWeb.GameLive do
             <div class="flex items-center justify-between text-sm">
               <span class="text-[var(--color-landing-pale)] truncate">{project.name}</span>
               <span class="text-[var(--color-landing-text-secondary)]">
-                {project.progress}/{project.required}
+                {project.progress}/{project.required_participants}
               </span>
             </div>
           <% end %>
@@ -3491,6 +3660,7 @@ defmodule ShinkankiWebWeb.GameLive do
       |> Enum.map(fn card ->
         %{
           id: card.id,
+          name: card.name,
           title: card.name,
           cost: card.cost_akasha,
           cost_akasha: card.cost_akasha,
@@ -3504,6 +3674,13 @@ defmodule ShinkankiWebWeb.GameLive do
           effect_culture: card.effect_culture,
           effect_social: card.effect_social,
           effect_akasha: card.effect_akasha,
+          # Effect map for modal preview
+          effect: %{
+            forest: card.effect_forest || 0,
+            culture: card.effect_culture || 0,
+            social: card.effect_social || 0,
+            currency: card.effect_akasha || 0
+          },
           tags: [String.to_existing_atom(card.category)]
         }
       end)
@@ -3536,6 +3713,63 @@ defmodule ShinkankiWebWeb.GameLive do
       }
     end)
   end
+
+  # 連携カードの取得
+  defp get_available_renkei_cards do
+    Shinkanki.Card.list_renkei()
+    |> Enum.map(fn card ->
+      %{
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        flavor: card.flavor,
+        required_players: card.required_players,
+        cost_per_player: card.cost_per_player,
+        effect: card.effect,
+        full_party_bonus: card.full_party_bonus,
+        tags: card.tags,
+        special: card.special
+      }
+    end)
+  end
+
+  # 効果サマリーの表示
+  defp render_effect_summary(effect) when is_map(effect) do
+    effect
+    |> Enum.map(fn
+      {:forest, v} when v > 0 -> "🌲+#{v}"
+      {:forest, v} when v < 0 -> "🌲#{v}"
+      {:culture, v} when v > 0 -> "🎭+#{v}"
+      {:culture, v} when v < 0 -> "🎭#{v}"
+      {:social, v} when v > 0 -> "🤝+#{v}"
+      {:social, v} when v < 0 -> "🤝#{v}"
+      {:jaki, v} when v > 0 -> "👹+#{v}"
+      {:jaki, v} when v < 0 -> "👹#{v}"
+      {:orochi_suppress, true} -> "🐉抑制"
+      {:orochi_level_down, true} -> "🐉-1"
+      _ -> nil
+    end)
+    |> Enum.filter(&(&1 != nil))
+    |> Enum.join(" ")
+  end
+  defp render_effect_summary(_), do: ""
+
+  # 連携カードタグの絵文字
+  defp renkei_tag_emoji(:prayer), do: "🙏"
+  defp renkei_tag_emoji(:purification), do: "✨"
+  defp renkei_tag_emoji(:ritual), do: "🎐"
+  defp renkei_tag_emoji(:festival), do: "🎉"
+  defp renkei_tag_emoji(:culture), do: "🎭"
+  defp renkei_tag_emoji(:nature), do: "🌿"
+  defp renkei_tag_emoji(:community), do: "🤝"
+  defp renkei_tag_emoji(:grow), do: "🌱"
+  defp renkei_tag_emoji(:protection), do: "🛡️"
+  defp renkei_tag_emoji(:kitchen), do: "🍳"
+  defp renkei_tag_emoji(:care), do: "💝"
+  defp renkei_tag_emoji(:network), do: "🔗"
+  defp renkei_tag_emoji(:dialogue), do: "💬"
+  defp renkei_tag_emoji(:resistance), do: "✊"
+  defp renkei_tag_emoji(_), do: "📿"
 
   # 磨きカードカテゴリの絵文字
   defp migaki_category_emoji(:kitchen), do: "🍳"

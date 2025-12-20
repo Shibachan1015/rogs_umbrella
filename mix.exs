@@ -9,6 +9,11 @@ defmodule Rogs.Umbrella.MixProject do
       deps: deps(),
       aliases: aliases(),
       listeners: [Phoenix.CodeReloader],
+      dialyzer: [
+        plt_local_path: "_build/plts",
+        plt_core_path: "_build/plts",
+        ignore_warnings: ".dialyzer_ignore.exs"
+      ],
       releases: [
         rogs_umbrella: [
           applications: [
@@ -45,7 +50,8 @@ defmodule Rogs.Umbrella.MixProject do
       # Security & Static Analysis
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false}
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -66,7 +72,9 @@ defmodule Rogs.Umbrella.MixProject do
       # Security checks (light to heavy)
       security: ["deps.audit", "hex.audit", "credo --strict", "sobelow --config"],
       "security.quick": ["deps.audit", "hex.audit"],
-      "security.full": ["deps.audit", "hex.audit", "credo --strict", "sobelow --config", "test"]
+      "security.full": ["deps.audit", "hex.audit", "credo --strict", "sobelow --config", "test"],
+      # Type checking
+      typecheck: ["dialyzer"]
     ]
   end
 end

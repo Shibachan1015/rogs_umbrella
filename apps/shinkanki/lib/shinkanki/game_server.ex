@@ -471,15 +471,10 @@ defmodule Shinkanki.GameServer do
         end
 
         # Mark AI as ready so turn can advance
-        case Game.mark_player_ready_for_action(game, player_id) do
-          {:ok, new_game} ->
-            log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_affordable_cards})
-            broadcast_state(new_game)
-            {:noreply, new_game}
-
-          _ ->
-            {:noreply, game}
-        end
+        {:ok, new_game} = Game.mark_player_ready_for_action(game, player_id)
+        log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_affordable_cards})
+        broadcast_state(new_game)
+        {:noreply, new_game}
 
       {:error, :no_cards} ->
         # Broadcast AI's inability to act
@@ -490,15 +485,10 @@ defmodule Shinkanki.GameServer do
           broadcast_ai_chat(game, player_id, message)
         end
 
-        case Game.mark_player_ready_for_action(game, player_id) do
-          {:ok, new_game} ->
-            log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_cards})
-            broadcast_state(new_game)
-            {:noreply, new_game}
-
-          _ ->
-            {:noreply, game}
-        end
+        {:ok, new_game} = Game.mark_player_ready_for_action(game, player_id)
+        log_action(new_game, "ai_skip_turn", player_id, %{reason: :no_cards})
+        broadcast_state(new_game)
+        {:noreply, new_game}
 
       _ ->
         {:noreply, game}

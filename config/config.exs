@@ -41,7 +41,8 @@ config :shinkanki,
 
 # shinkanki_web は画面だけなのでRepoは持たないが、generatorsの設定はしておく
 config :shinkanki_web,
-  generators: [context_name: :shinkanki]
+  generators: [context_name: :shinkanki],
+  env: config_env()
 
 # --- 2. 共通DB接続設定 (Project ROGs) ---
 # ※ すべて "rogs_dev" という1つのDBを見に行きます

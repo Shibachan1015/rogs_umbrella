@@ -395,6 +395,7 @@ defmodule RogsIdentity.Accounts do
       {:ok, user}
     else
       nil -> {:error, :invalid_token}
+      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
       _ -> {:error, :invalid_token}
     end
   end

@@ -87,5 +87,4 @@ defmodule RogsIdentityWeb.OAuthController do
       not String.starts_with?(path, "//")
   end
 
-  defp safe_return_path?(_), do: false
 end

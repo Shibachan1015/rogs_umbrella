@@ -50,9 +50,10 @@ if System.get_env("PHX_SERVER") == "true" || System.get_env("RELEASE_NAME") do
     secret_key_base: secret_key_base,
     server: true,
     check_origin: [
-      "https://rogs.live",
-      "https://www.rogs.live",
-      "https://rogs-umbrella.fly.dev"
+      "//*.rogs.live",
+      "//rogs.live",
+      "//*.fly.dev",
+      "//rogs-umbrella.fly.dev"
     ]
 
   # Database Configuration

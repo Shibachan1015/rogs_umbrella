@@ -49,8 +49,11 @@ if System.get_env("PHX_SERVER") == "true" || System.get_env("RELEASE_NAME") do
     ],
     secret_key_base: secret_key_base,
     server: true,
-    # Temporarily disabled to debug WebSocket connection issues
-    check_origin: false
+    check_origin: [
+      "//rogs.live",
+      "//*.rogs.live",
+      "//rogs-umbrella.fly.dev"
+    ]
 
   # Database Configuration
   # This single DATABASE_URL is used for all Ecto repos in the umbrella app.

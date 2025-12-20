@@ -7,7 +7,7 @@ app = 'rogs-umbrella'
 primary_region = 'nrt'
 
 [env]
-  PHX_HOST = 'rogs-umbrella.fly.dev'
+  PHX_HOST = 'rogs.live'
   PORT = '8080'
 
 [http_service]

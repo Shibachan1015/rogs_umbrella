@@ -28,8 +28,8 @@ defmodule ShinkankiWebWeb.Router do
     # 静的ページ（認証不要）
     # ==============================
     get "/", PageController, :home
-    get "/rulebook", PageController, :rulebook
-    get "/story", PageController, :story
+    live "/rulebook", RulebookLive
+    live "/story", StoryLive
     get "/privacy", PageController, :privacy
     get "/cards/talent", PageController, :talent_cards
     get "/cards/cocreation", PageController, :cocreation_cards

@@ -7676,6 +7676,941 @@ kbd {
   }
 }
 
+/* Rulebook Wiki Editing Styles (Light Theme) */
+.rulebook .wiki-notice {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: rgba(196, 163, 90, 0.15);
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #8b6914;
+}
+
+.rulebook .wiki-notice p {
+  margin: 0;
+}
+
+.rulebook .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rulebook .section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rulebook .btn-edit,
+.rulebook .btn-history {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rulebook .btn-edit {
+  background: rgba(196, 163, 90, 0.2);
+  border: 1px solid rgba(196, 163, 90, 0.5);
+  color: #8b6914;
+}
+
+.rulebook .btn-edit:hover {
+  background: rgba(196, 163, 90, 0.3);
+  border-color: #c4a35a;
+}
+
+.rulebook .btn-history {
+  background: rgba(100, 100, 100, 0.1);
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  color: #666;
+}
+
+.rulebook .btn-history:hover {
+  background: rgba(100, 100, 100, 0.2);
+  color: #444;
+}
+
+.rulebook .section-content {
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: #2d2d2d;
+}
+
+.rulebook .section-editor {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(196, 163, 90, 0.3);
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* Rulebook Edit Form (Light Theme) */
+.rulebook .edit-form {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.rulebook .edit-field {
+  margin-bottom: 20px;
+}
+
+.rulebook .edit-field label {
+  display: block;
+  color: #8b6914;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.rulebook .edit-title-input,
+.rulebook .edit-nickname-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  border-radius: 6px;
+  background: #fff;
+  color: #2d2d2d;
+  font-size: 1.1rem;
+  font-family: inherit;
+}
+
+.rulebook .edit-content-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  border-radius: 6px;
+  background: #fff;
+  color: #2d2d2d;
+  font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.8;
+  resize: vertical;
+}
+
+.rulebook .edit-title-input:focus,
+.rulebook .edit-content-input:focus,
+.rulebook .edit-nickname-input:focus {
+  outline: none;
+  border-color: #c4a35a;
+  box-shadow: 0 0 0 3px rgba(196, 163, 90, 0.15);
+}
+
+.rulebook .edit-title-input::placeholder,
+.rulebook .edit-content-input::placeholder,
+.rulebook .edit-nickname-input::placeholder {
+  color: #aaa;
+}
+
+.rulebook .edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.rulebook .btn-save {
+  background: linear-gradient(135deg, #c4a35a, #a08030);
+  border: none;
+  color: #fff;
+  padding: 10px 28px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rulebook .btn-save:hover {
+  background: linear-gradient(135deg, #d4b36a, #b09040);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(196, 163, 90, 0.3);
+}
+
+.rulebook .btn-cancel {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rulebook .btn-cancel:hover {
+  background: #eee;
+  color: #444;
+}
+
+/* Rulebook History Panel (Light Theme) */
+.rulebook .history-panel {
+  margin-top: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.rulebook .history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(196, 163, 90, 0.2);
+}
+
+.rulebook .history-header h3 {
+  color: #8b6914;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.rulebook .btn-close {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.rulebook .btn-close:hover {
+  color: #444;
+}
+
+.rulebook .history-empty {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 20px;
+}
+
+.rulebook .history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rulebook .history-item {
+  background: rgba(196, 163, 90, 0.05);
+  border: 1px solid rgba(196, 163, 90, 0.2);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.rulebook .history-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.rulebook .history-version {
+  color: #8b6914;
+  font-weight: 600;
+}
+
+.rulebook .history-date {
+  color: #888;
+}
+
+.rulebook .history-author {
+  color: #666;
+}
+
+.rulebook .history-title {
+  color: #2d2d2d;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+.rulebook .history-actions {
+  text-align: right;
+}
+
+.rulebook .btn-rollback {
+  background: rgba(70, 130, 180, 0.1);
+  border: 1px solid rgba(70, 130, 180, 0.4);
+  color: #4682b4;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rulebook .btn-rollback:hover {
+  background: rgba(70, 130, 180, 0.2);
+  border-color: #4682b4;
+}
+
+.rulebook-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.rulebook-loading p {
+  font-style: italic;
+}
+
+/* Rulebook Wiki Responsive */
+@media (max-width: 768px) {
+  .rulebook .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rulebook .section-actions {
+    width: 100%;
+  }
+
+  .rulebook .btn-edit,
+  .rulebook .btn-history {
+    flex: 1;
+    text-align: center;
+  }
+
+  .rulebook .edit-form {
+    padding: 16px;
+  }
+
+  .rulebook .edit-actions {
+    flex-direction: column;
+  }
+
+  .rulebook .btn-save,
+  .rulebook .btn-cancel {
+    width: 100%;
+  }
+
+  .rulebook .history-meta {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* ========================================
+   Rulebook Comment Section
+   ======================================== */
+
+.comment-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(196, 163, 90, 0.2);
+}
+
+.comment-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(196, 163, 90, 0.1);
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+  color: #c4a35a;
+  font-size: 0.9rem;
+}
+
+.comment-toggle:hover {
+  background: rgba(196, 163, 90, 0.2);
+  border-color: rgba(196, 163, 90, 0.5);
+}
+
+.comment-icon {
+  font-size: 1.1rem;
+}
+
+.comment-label {
+  flex: 1;
+}
+
+.comment-count {
+  color: #a08030;
+}
+
+.comment-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.comment-panel {
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(196, 163, 90, 0.2);
+}
+
+.comment-loading,
+.comment-empty {
+  text-align: center;
+  color: #888;
+  padding: 16px;
+  font-style: italic;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.comment-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(196, 163, 90, 0.1);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.comment-author {
+  color: #c4a35a;
+  font-weight: 500;
+}
+
+.comment-date {
+  color: #888;
+}
+
+.comment-delete {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  color: #ff6666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comment-delete:hover {
+  background: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.6);
+}
+
+.comment-content {
+  color: #e0e0e0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-form textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  background: rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.comment-form textarea:focus {
+  outline: none;
+  border-color: rgba(196, 163, 90, 0.6);
+  box-shadow: 0 0 0 2px rgba(196, 163, 90, 0.1);
+}
+
+.comment-form textarea::placeholder {
+  color: #888;
+}
+
+.comment-submit {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #c4a35a, #a08030);
+  border: none;
+  color: #1a1a1a;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comment-submit:hover {
+  background: linear-gradient(135deg, #d4b36a, #b09040);
+  transform: translateY(-1px);
+}
+
+.comment-login-prompt {
+  text-align: center;
+  padding: 16px;
+}
+
+.login-prompt-text {
+  color: #888;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.login-prompt-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.login-btn-google {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.login-btn-google:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.login-btn-github {
+  background: #24292e;
+  color: #fff;
+  border: 1px solid #24292e;
+}
+
+.login-btn-github:hover {
+  background: #2f363d;
+}
+
+@media (max-width: 768px) {
+  .comment-toggle {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .comment-panel {
+    padding: 12px;
+  }
+
+  .comment-item {
+    padding: 10px;
+  }
+
+  .comment-header {
+    flex-wrap: wrap;
+  }
+
+  .comment-delete {
+    margin-left: 0;
+  }
+}
+
+/* ========================================
+   Story Page (Wiki)
+   ======================================== */
+
+.story {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px 40px;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+  background: linear-gradient(to bottom, #1a1a1a, #0f0f0f);
+  min-height: 100vh;
+  font-size: 1.1rem;
+  line-height: 2;
+}
+
+.story-header {
+  text-align: center;
+  padding: 40px 0 30px;
+  border-bottom: 1px solid rgba(196, 163, 90, 0.3);
+  margin-bottom: 30px;
+}
+
+.story-header .back-link {
+  display: inline-block;
+  color: #c4a35a;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  transition: color 0.3s;
+}
+
+.story-header .back-link:hover {
+  color: #e0c878;
+}
+
+.story-header .eyebrow {
+  font-size: 0.85rem;
+  color: #888;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.story-header h1 {
+  font-size: 2.2rem;
+  color: #c4a35a;
+  margin: 0 0 16px;
+  letter-spacing: 0.15em;
+}
+
+.story-header .lede {
+  color: #b0a89a;
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.story-wiki-notice {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: rgba(196, 163, 90, 0.1);
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #c4a35a;
+}
+
+.story-content {
+  color: #e0e0e0;
+}
+
+.story-section {
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid rgba(196, 163, 90, 0.15);
+}
+
+.story-section:last-child {
+  border-bottom: none;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-header h2 {
+  font-size: 1.4rem;
+  color: #c4a35a;
+  margin: 0;
+  border-left: 4px solid #c4a35a;
+  padding-left: 12px;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit,
+.btn-history {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit {
+  background: rgba(196, 163, 90, 0.2);
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  color: #c4a35a;
+}
+
+.btn-edit:hover {
+  background: rgba(196, 163, 90, 0.3);
+}
+
+.btn-history {
+  background: transparent;
+  border: 1px solid rgba(150, 150, 150, 0.4);
+  color: #999;
+}
+
+.btn-history:hover {
+  background: rgba(150, 150, 150, 0.1);
+  color: #ccc;
+}
+
+.section-content {
+  line-height: 2;
+  color: #d4cfc5;
+  font-size: 1.05rem;
+  padding: 0 8px;
+}
+
+.section-content strong {
+  color: #c4a35a;
+}
+
+.section-content li {
+  margin-bottom: 12px;
+  margin-left: 20px;
+}
+
+/* Edit Form */
+.edit-form {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.edit-field {
+  margin-bottom: 16px;
+}
+
+.edit-field label {
+  display: block;
+  color: #c4a35a;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.edit-title-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  font-family: inherit;
+}
+
+.edit-content-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(196, 163, 90, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.edit-title-input:focus,
+.edit-content-input:focus {
+  outline: none;
+  border-color: rgba(196, 163, 90, 0.6);
+  box-shadow: 0 0 0 2px rgba(196, 163, 90, 0.1);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #c4a35a, #a08030);
+  border: none;
+  color: #1a1a1a;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save:hover {
+  background: linear-gradient(135deg, #d4b36a, #b09040);
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(150, 150, 150, 0.4);
+  color: #999;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: rgba(150, 150, 150, 0.1);
+  color: #ccc;
+}
+
+/* History Panel */
+.history-panel {
+  margin-top: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(196, 163, 90, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.history-header h3 {
+  color: #c4a35a;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.btn-close:hover {
+  color: #ccc;
+}
+
+.history-empty {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(196, 163, 90, 0.1);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.history-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.history-version {
+  color: #c4a35a;
+  font-weight: 500;
+}
+
+.history-date {
+  color: #888;
+}
+
+.history-author {
+  color: #999;
+}
+
+.history-title {
+  color: #d4cfc5;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.history-actions {
+  text-align: right;
+}
+
+.btn-rollback {
+  background: transparent;
+  border: 1px solid rgba(100, 180, 255, 0.4);
+  color: #64b4ff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-rollback:hover {
+  background: rgba(100, 180, 255, 0.1);
+}
+
+.story-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+@media (max-width: 768px) {
+  .story {
+    padding: 20px 16px;
+  }
+
+  .story-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .section-actions {
+    width: 100%;
+  }
+
+  .btn-edit,
+  .btn-history {
+    flex: 1;
+    text-align: center;
+  }
+}
+
 /* ========================================
    Card Catalog Pages
    ======================================== */

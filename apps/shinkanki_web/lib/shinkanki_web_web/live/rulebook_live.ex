@@ -26,7 +26,6 @@ defmodule ShinkankiWebWeb.RulebookLive do
       |> assign(:editing_section, nil)
       |> assign(:edit_title, "")
       |> assign(:edit_content, "")
-      |> assign(:edit_nickname, "")
       |> assign(:show_history, nil)
       |> assign(:history, [])
       |> assign(:user_cache, %{})
@@ -43,8 +42,7 @@ defmodule ShinkankiWebWeb.RulebookLive do
        socket
        |> assign(:editing_section, section_id)
        |> assign(:edit_title, section.title)
-       |> assign(:edit_content, section.content)
-       |> assign(:edit_nickname, "")}
+       |> assign(:edit_content, section.content)}
     else
       {:noreply, put_flash(socket, :error, "セクションが見つかりません")}
     end
@@ -56,8 +54,7 @@ defmodule ShinkankiWebWeb.RulebookLive do
      socket
      |> assign(:editing_section, nil)
      |> assign(:edit_title, "")
-     |> assign(:edit_content, "")
-     |> assign(:edit_nickname, "")}
+     |> assign(:edit_content, "")}
   end
 
   @impl true
@@ -71,16 +68,10 @@ defmodule ShinkankiWebWeb.RulebookLive do
   end
 
   @impl true
-  def handle_event("update_nickname", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :edit_nickname, value)}
-  end
-
-  @impl true
   def handle_event("save_edit", _params, socket) do
     section_id = socket.assigns.editing_section
     title = String.trim(socket.assigns.edit_title)
     content = String.trim(socket.assigns.edit_content)
-    nickname = String.trim(socket.assigns.edit_nickname)
     user = socket.assigns.current_user
 
     cond do
@@ -89,9 +80,6 @@ defmodule ShinkankiWebWeb.RulebookLive do
 
       content == "" ->
         {:noreply, put_flash(socket, :error, "内容を入力してください")}
-
-      nickname == "" ->
-        {:noreply, put_flash(socket, :error, "ニックネームを入力してください（編集者の署名として記録されます）")}
 
       true ->
         section = Rulebook.get_section(section_id)
@@ -102,8 +90,7 @@ defmodule ShinkankiWebWeb.RulebookLive do
           case Rulebook.update_section(section, %{
                  title: title,
                  content: content,
-                 updated_by: user_id,
-                 editor_name: nickname
+                 updated_by: user_id
                }) do
             {:ok, _updated} ->
               sections = Rulebook.list_sections()
@@ -114,8 +101,7 @@ defmodule ShinkankiWebWeb.RulebookLive do
                |> assign(:editing_section, nil)
                |> assign(:edit_title, "")
                |> assign(:edit_content, "")
-               |> assign(:edit_nickname, "")
-               |> put_flash(:info, "保存しました（v#{section.version + 1}）- 編集者: #{nickname}")}
+               |> put_flash(:info, "保存しました（v#{section.version + 1}）")}
 
             {:error, _} ->
               {:noreply, put_flash(socket, :error, "保存に失敗しました")}
@@ -228,24 +214,13 @@ defmodule ShinkankiWebWeb.RulebookLive do
                   />
                 </div>
                 <div class="edit-field">
-                  <label>内容（Markdown記法可：**太字**、- リスト、1. 番号付きリスト）</label>
+                  <label>内容（Markdown記法可：**太字**、- リスト）</label>
                   <textarea
                     phx-keyup="update_content"
                     phx-debounce="100"
-                    rows="15"
+                    rows="12"
                     class="edit-content-input"
                   ><%= @edit_content %></textarea>
-                </div>
-                <div class="edit-field">
-                  <label>ニックネーム（署名として記録されます）</label>
-                  <input
-                    type="text"
-                    value={@edit_nickname}
-                    phx-keyup="update_nickname"
-                    phx-debounce="100"
-                    class="edit-nickname-input"
-                    placeholder="あなたのニックネームを入力"
-                  />
                 </div>
                 <div class="edit-actions">
                   <button type="button" class="btn-save" phx-click="save_edit">
@@ -282,11 +257,6 @@ defmodule ShinkankiWebWeb.RulebookLive do
               <div class="section-content">
                 <%= render_markdown(section.content) %>
               </div>
-              <%= if section.editor_name do %>
-                <div class="section-editor">
-                  最終編集: <%= section.editor_name %> (<%= format_datetime(section.updated_at) %>)
-                </div>
-              <% end %>
             <% end %>
 
             <%!-- 履歴パネル --%>

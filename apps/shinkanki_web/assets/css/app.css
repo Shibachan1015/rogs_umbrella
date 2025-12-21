@@ -4011,7 +4011,83 @@ input[type="radio"] {
 
 /* Lobby Actions */
 .lobby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
   margin-bottom: 2rem;
+}
+
+.quick-match-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  border: none;
+  color: white;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.quick-match-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #66BB6A, #388E3C);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.quick-match-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.invite-code-form form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.invite-code-input {
+  width: 100px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--color-landing-pale);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.invite-code-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.invite-code-input:focus {
+  outline: none;
+  border-color: var(--color-landing-gold);
+}
+
+.invite-code-btn {
+  padding: 0.6rem 1rem;
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid var(--color-landing-gold);
+  color: var(--color-landing-gold);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.invite-code-btn:hover {
+  background: var(--color-landing-gold);
+  color: var(--color-midnight);
 }
 
 .create-room-btn {
@@ -4333,6 +4409,46 @@ input[type="radio"] {
 
 .back-link:hover {
   color: var(--color-landing-gold);
+}
+
+/* Invite Code Display in Waiting Room */
+.invite-code-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+}
+
+.invite-label {
+  color: var(--color-landing-text-secondary);
+  font-size: 0.8rem;
+}
+
+.invite-code {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-landing-gold);
+  letter-spacing: 0.15em;
+  user-select: all;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+  opacity: 1;
 }
 
 .waiting-room-content {

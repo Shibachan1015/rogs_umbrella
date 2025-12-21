@@ -36,6 +36,8 @@ defmodule ShinkankiWebWeb.LobbyLive do
       |> assign(:show_create_form, false)
       |> assign(:rooms, nil)
       |> assign(:loading_rooms, true)
+      |> assign(:invite_code, "")
+      |> assign(:quick_matching, false)
 
     # 非同期でルーム一覧を読み込み（初期表示高速化）
     # category: "game" でフィルタ（神議りの間のチャンネルは除外）
@@ -144,9 +146,34 @@ defmodule ShinkankiWebWeb.LobbyLive do
         
     <!-- メインコンテンツ -->
         <main class="lobby-main">
-          <!-- ルーム作成ボタン（ログイン時のみ） -->
+          <!-- アクションボタン（ログイン時のみ） -->
           <%= if @logged_in do %>
             <div class="lobby-actions">
+              <button
+                type="button"
+                class="quick-match-btn"
+                phx-click="quick_match"
+                disabled={@quick_matching}
+              >
+                <span class="btn-icon">⚡</span>
+                <span><%= if @quick_matching, do: "マッチング中...", else: "クイックマッチ" %></span>
+              </button>
+
+              <div class="invite-code-form">
+                <form phx-submit="join_by_code">
+                  <input
+                    type="text"
+                    name="code"
+                    value={@invite_code}
+                    placeholder="招待コード"
+                    maxlength="6"
+                    class="invite-code-input"
+                    phx-change="update_invite_code"
+                  />
+                  <button type="submit" class="invite-code-btn">参加</button>
+                </form>
+              </div>
+
               <button
                 type="button"
                 class="create-room-btn"
@@ -395,6 +422,55 @@ defmodule ShinkankiWebWeb.LobbyLive do
          socket
          |> put_flash(:error, "ルームの作成に失敗しました。同じ名前のルームが既に存在する可能性があります。")
          |> assign(form: to_form(changeset))}
+    end
+  end
+
+  # クイックマッチ
+  @impl true
+  def handle_event("quick_match", _params, socket) do
+    host_id = socket.assigns.current_user.id
+
+    case Rooms.quick_match(host_id) do
+      {:ok, room} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "ルーム「#{room.name}」に参加します")
+         |> push_navigate(to: ~p"/room/#{room.slug}")}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "マッチングに失敗しました。もう一度お試しください。")}
+    end
+  end
+
+  # 招待コード入力更新
+  @impl true
+  def handle_event("update_invite_code", %{"code" => code}, socket) do
+    {:noreply, assign(socket, :invite_code, String.upcase(code))}
+  end
+
+  # 招待コードで参加
+  @impl true
+  def handle_event("join_by_code", %{"code" => code}, socket) do
+    code = String.trim(code)
+
+    if code == "" do
+      {:noreply, put_flash(socket, :error, "招待コードを入力してください")}
+    else
+      case Rooms.get_room_by_invite_code(code) do
+        nil ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "招待コード「#{code}」のルームが見つかりません")
+           |> assign(:invite_code, "")}
+
+        room ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "ルーム「#{room.name}」に参加します")
+           |> push_navigate(to: ~p"/room/#{room.slug}")}
+      end
     end
   end
 end

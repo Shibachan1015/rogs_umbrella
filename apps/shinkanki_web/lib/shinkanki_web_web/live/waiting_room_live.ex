@@ -211,6 +211,13 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
             <%= if @room.topic do %>
               <p class="room-topic">{@room.topic}</p>
             <% end %>
+            <%= if @room.invite_code do %>
+              <div class="invite-code-display">
+                <span class="invite-label">招待コード:</span>
+                <span class="invite-code" id="invite-code" phx-hook="CopyToClipboard">{@room.invite_code}</span>
+                <button type="button" class="copy-btn" phx-click="copy_invite_code" title="コピー">📋</button>
+              </div>
+            <% end %>
           </div>
         </header>
 
@@ -804,6 +811,11 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("copy_invite_code", _params, socket) do
+    {:noreply, put_flash(socket, :info, "招待コードをコピーしました: #{socket.assigns.room.invite_code}")}
   end
 
   @impl true

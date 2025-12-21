@@ -25,6 +25,9 @@ defmodule RogsComm.Rooms.Room do
     field :deletion_votes, {:array, :binary_id}, default: []
     field :current_participants, :integer, default: 0
 
+    # 招待コード（6桁英数字）
+    field :invite_code, :string
+
     timestamps(type: :utc_datetime)
   end
 
@@ -33,6 +36,7 @@ defmodule RogsComm.Rooms.Room do
     room
     |> cast(attrs, [:name, :slug, :topic, :is_private, :max_participants, :category])
     |> ensure_slug()
+    |> ensure_invite_code()
     |> validate_required([:name, :slug, :max_participants])
     |> validate_length(:name, min: 3, max: 120)
     |> validate_length(:slug, min: 3, max: 50)
@@ -40,6 +44,7 @@ defmodule RogsComm.Rooms.Room do
     |> validate_inclusion(:category, ["game", "kamihakari"])
     |> validate_max_participants()
     |> unique_constraint(:slug)
+    |> unique_constraint(:invite_code)
   end
 
   # 神議りの間は参加者数無制限（100人まで）、ゲームは2-4人
@@ -97,5 +102,30 @@ defmodule RogsComm.Rooms.Room do
     # room-xxxx の形式でランダムslugを生成
     random = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     "room-#{random}"
+  end
+
+  # 招待コードがなければ生成
+  defp ensure_invite_code(%Ecto.Changeset{} = changeset) do
+    invite_code = get_field(changeset, :invite_code)
+
+    case invite_code do
+      value when is_binary(value) and value != "" ->
+        changeset
+
+      _ ->
+        put_change(changeset, :invite_code, generate_invite_code())
+    end
+  end
+
+  @doc """
+  6桁の招待コードを生成（大文字英数字、紛らわしい文字を除外）
+  """
+  def generate_invite_code do
+    # 紛らわしい文字を除外: 0, O, I, 1, L
+    chars = ~c"ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+    1..6
+    |> Enum.map(fn _ -> Enum.random(chars) end)
+    |> List.to_string()
   end
 end

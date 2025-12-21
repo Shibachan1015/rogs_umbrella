@@ -61,8 +61,7 @@ defmodule RogsComm.Rooms do
   defp maybe_filter_has_space(query, false), do: query
 
   defp maybe_filter_has_space(query, true) do
-    # 現在は max_participants > 0 のルームを返す（仮実装）
-    from r in query, where: r.max_participants > 0
+    from r in query, where: r.current_participants < r.max_participants
   end
 
   defp maybe_limit(query, nil), do: query
@@ -311,6 +310,57 @@ defmodule RogsComm.Rooms do
       end
     else
       {:error, :not_admin}
+    end
+  end
+
+  # ============================================================
+  # Quick Match & Invite Code
+  # ============================================================
+
+  @doc """
+  招待コードでルームを取得
+  """
+  def get_room_by_invite_code(code) when is_binary(code) do
+    code = String.upcase(String.trim(code))
+    Repo.get_by(Room, invite_code: code)
+  end
+
+  @doc """
+  クイックマッチ用に空きのあるゲームルームを1つ取得
+  - 公開ルームのみ
+  - ゲームカテゴリのみ
+  - 空きがあるルーム
+  - 参加者が多い順（にぎやかなルームを優先）
+  """
+  def find_available_room do
+    Room
+    |> where([r], r.category == "game")
+    |> where([r], r.is_private == false)
+    |> where([r], r.current_participants > 0)
+    |> where([r], r.current_participants < r.max_participants)
+    |> order_by([r], desc: r.current_participants, asc: r.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
+  クイックマッチを実行
+  - 空きルームがあれば返す
+  - なければ新規ルームを作成
+  """
+  def quick_match(host_id) do
+    case find_available_room() do
+      nil ->
+        # 空きルームがないので新規作成
+        room_name = "クイックマッチ ##{:rand.uniform(9999)}"
+
+        create_room_with_host(
+          %{"name" => room_name, "category" => "game", "max_participants" => 4},
+          host_id
+        )
+
+      room ->
+        {:ok, room}
     end
   end
 end

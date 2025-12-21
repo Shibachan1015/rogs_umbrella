@@ -30,6 +30,9 @@ defmodule ShinkankiWebWeb.StoryLive do
       |> assign(:show_history, nil)
       |> assign(:history, [])
       |> assign(:user_cache, %{})
+      |> assign(:show_new_form, false)
+      |> assign(:new_title, "")
+      |> assign(:new_content, "")
 
     {:ok, socket}
   end
@@ -173,6 +176,77 @@ defmodule ShinkankiWebWeb.StoryLive do
     end
   end
 
+  @impl true
+  def handle_event("start_new", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_form, true)
+     |> assign(:new_title, "")
+     |> assign(:new_content, "")}
+  end
+
+  @impl true
+  def handle_event("cancel_new", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_new_form, false)
+     |> assign(:new_title, "")
+     |> assign(:new_content, "")}
+  end
+
+  @impl true
+  def handle_event("update_new_title", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :new_title, value)}
+  end
+
+  @impl true
+  def handle_event("update_new_content", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :new_content, value)}
+  end
+
+  @impl true
+  def handle_event("create_section", _params, socket) do
+    title = String.trim(socket.assigns.new_title)
+    content = String.trim(socket.assigns.new_content)
+    user = socket.assigns.current_user
+
+    cond do
+      title == "" ->
+        {:noreply, put_flash(socket, :error, "タイトルを入力してください")}
+
+      content == "" ->
+        {:noreply, put_flash(socket, :error, "内容を入力してください")}
+
+      true ->
+        sections = Stories.list_sections()
+        max_order = sections |> Enum.map(& &1.order_index) |> Enum.max(fn -> -1 end)
+        section_id = "section-#{System.unique_integer([:positive])}"
+        user_id = if user, do: user.id, else: nil
+
+        case Stories.create_section(%{
+               section_id: section_id,
+               title: title,
+               content: content,
+               order_index: max_order + 1,
+               updated_by: user_id
+             }) do
+          {:ok, _section} ->
+            sections = Stories.list_sections()
+
+            {:noreply,
+             socket
+             |> assign(:sections, sections)
+             |> assign(:show_new_form, false)
+             |> assign(:new_title, "")
+             |> assign(:new_content, "")
+             |> put_flash(:info, "新しいセクションを作成しました")}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "セクションの作成に失敗しました")}
+        end
+    end
+  end
+
   defp format_datetime(datetime) do
     Calendar.strftime(datetime, "%Y-%m-%d %H:%M")
   end
@@ -206,6 +280,11 @@ defmodule ShinkankiWebWeb.StoryLive do
         </p>
         <div class="story-wiki-notice">
           <p>このページは誰でも編集できます。各セクションの「編集」ボタンから内容を改善してください。</p>
+        </div>
+        <div class="wiki-actions">
+          <button type="button" class="btn-add-section" phx-click="start_new">
+            ＋ 新規セクション追加
+          </button>
         </div>
       </header>
 
@@ -317,6 +396,44 @@ defmodule ShinkankiWebWeb.StoryLive do
           <div class="story-loading">
             <p>物語を読み込み中...</p>
           </div>
+        <% end %>
+
+        <%!-- 新規セクション作成フォーム --%>
+        <%= if @show_new_form do %>
+          <section class="story-section new-section-form">
+            <div class="edit-form">
+              <h3>新規セクション作成</h3>
+              <div class="edit-field">
+                <label>タイトル</label>
+                <input
+                  type="text"
+                  value={@new_title}
+                  phx-keyup="update_new_title"
+                  phx-debounce="100"
+                  class="edit-title-input"
+                  placeholder="セクションのタイトルを入力"
+                />
+              </div>
+              <div class="edit-field">
+                <label>内容（Markdown記法可：**太字**、- リスト）</label>
+                <textarea
+                  phx-keyup="update_new_content"
+                  phx-debounce="100"
+                  rows="12"
+                  class="edit-content-input"
+                  placeholder="セクションの内容を入力"
+                ><%= @new_content %></textarea>
+              </div>
+              <div class="edit-actions">
+                <button type="button" class="btn-save" phx-click="create_section">
+                  作成
+                </button>
+                <button type="button" class="btn-cancel" phx-click="cancel_new">
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          </section>
         <% end %>
       </article>
     </main>

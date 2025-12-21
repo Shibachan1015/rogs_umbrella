@@ -7807,6 +7807,43 @@ kbd {
   margin: 0;
 }
 
+.wiki-actions {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.btn-add-section {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(196, 163, 90, 0.3), rgba(196, 163, 90, 0.15));
+  border: 1px solid rgba(196, 163, 90, 0.6);
+  border-radius: 8px;
+  color: #8b6914;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-section:hover {
+  background: linear-gradient(135deg, rgba(196, 163, 90, 0.4), rgba(196, 163, 90, 0.25));
+  border-color: rgba(196, 163, 90, 0.8);
+  transform: translateY(-1px);
+}
+
+.new-section-form {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(196, 163, 90, 0.08);
+  border: 1px dashed rgba(196, 163, 90, 0.5);
+  border-radius: 12px;
+}
+
+.new-section-form h3 {
+  margin: 0 0 20px 0;
+  color: #8b6914;
+  font-size: 1.2rem;
+}
+
 .rulebook .section-header {
   display: flex;
   align-items: center;
@@ -10534,4 +10571,110 @@ kbd {
   .avatar-initial {
     font-size: 0.85rem;
   }
+}
+
+/* ============================================================
+   Card Editing Styles
+   ============================================================ */
+
+.card-edit-form {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.card-form-field {
+  margin-bottom: 12px;
+}
+
+.card-form-field label {
+  display: block;
+  font-size: 0.85rem;
+  color: #c4a35a;
+  margin-bottom: 4px;
+}
+
+.card-form-field input,
+.card-form-field textarea,
+.card-form-field select {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  border-radius: 6px;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+}
+
+.card-form-field input:focus,
+.card-form-field textarea:focus,
+.card-form-field select:focus {
+  outline: none;
+  border-color: #c4a35a;
+}
+
+.card-form-field.small {
+  flex: 1;
+  min-width: 70px;
+}
+
+.card-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.card-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-edit-card {
+  padding: 4px 10px;
+  background: rgba(196, 163, 90, 0.2);
+  border: 1px solid rgba(196, 163, 90, 0.5);
+  border-radius: 4px;
+  color: #c4a35a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-card:hover {
+  background: rgba(196, 163, 90, 0.35);
+  border-color: #c4a35a;
+}
+
+.new-card-form-section {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(196, 163, 90, 0.08);
+  border: 1px dashed rgba(196, 163, 90, 0.5);
+  border-radius: 12px;
+}
+
+.new-card-form-section h3 {
+  margin: 0 0 20px 0;
+  color: #c4a35a;
+  font-size: 1.2rem;
+}
+
+.no-cards {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-style: italic;
+}
+
+/* Card header with edit button */
+.game-card .card-header {
+  position: relative;
+}
+
+.game-card .card-header .btn-edit-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }

@@ -1392,9 +1392,7 @@ defmodule Shinkanki.Game do
       new_game =
         game
         |> Map.update!(:pending_renkei, &Map.put(&1, renkei_card_id, pending_entry))
-        |> add_log(
-          "#{player.name}が「#{card.name}」の連携を提案！（#{card.required_players}人必要）"
-        )
+        |> add_log("#{player.name}が「#{card.name}」の連携を提案！（#{card.required_players}人必要）")
 
       {:ok, new_game}
     else
@@ -1423,8 +1421,7 @@ defmodule Shinkanki.Game do
       updated_pending = %{
         pending
         | participants: pending.participants ++ [player_id],
-          kuukan_pledged:
-            Map.put(pending.kuukan_pledged, player_id, pending.card.cost_per_player)
+          kuukan_pledged: Map.put(pending.kuukan_pledged, player_id, pending.card.cost_per_player)
       }
 
       new_game =

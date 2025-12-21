@@ -276,4 +276,14 @@ defmodule RogsIdentity.Accounts.User do
     |> unique_constraint(:email)
     |> unique_constraint([:provider, :provider_id])
   end
+
+  @doc """
+  Changeset for linking an OAuth provider to an existing account.
+  """
+  def oauth_link_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:provider, :provider_id, :avatar_url])
+    |> validate_required([:provider, :provider_id])
+    |> unique_constraint([:provider, :provider_id])
+  end
 end

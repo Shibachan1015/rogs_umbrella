@@ -128,8 +128,8 @@ defmodule ShinkankiWebWeb.KamihakariLive do
             </.link>
           </div>
         </aside>
-
-        <!-- メイン: チャットエリア -->
+        
+    <!-- メイン: チャットエリア -->
         <main class="kamihakari-main">
           <%= if @current_channel do %>
             <!-- チャンネルヘッダー -->
@@ -137,8 +137,8 @@ defmodule ShinkankiWebWeb.KamihakariLive do
               <h3 class="chat-channel-name">{@current_channel.name}</h3>
               <p class="chat-channel-topic">{@current_channel.topic}</p>
             </header>
-
-            <!-- メッセージ一覧 -->
+            
+    <!-- メッセージ一覧 -->
             <div class="messages-container" id="messages-container" phx-hook="ScrollToBottom">
               <%= if @loading_messages do %>
                 <div class="loading-messages">
@@ -158,8 +158,8 @@ defmodule ShinkankiWebWeb.KamihakariLive do
                 <% end %>
               <% end %>
             </div>
-
-            <!-- メッセージ入力 -->
+            
+    <!-- メッセージ入力 -->
             <%= if @logged_in do %>
               <form class="message-form" phx-submit="send_message">
                 <input
@@ -176,7 +176,10 @@ defmodule ShinkankiWebWeb.KamihakariLive do
             <% else %>
               <div class="login-prompt">
                 <p>メッセージを送信するには</p>
-                <.link href={~p"/auth/google?return_to=/kamihakari/#{@current_channel.slug}"} class="login-link">
+                <.link
+                  href={~p"/auth/google?return_to=/kamihakari/#{@current_channel.slug}"}
+                  class="login-link"
+                >
                   ログイン
                 </.link>
                 <span>してください</span>
@@ -237,7 +240,12 @@ defmodule ShinkankiWebWeb.KamihakariLive do
         {:noreply, socket}
 
       content_length > @max_message_length ->
-        {:noreply, put_flash(socket, :error, "メッセージは#{@max_message_length}文字以内にしてください（現在#{content_length}文字）")}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "メッセージは#{@max_message_length}文字以内にしてください（現在#{content_length}文字）"
+         )}
 
       is_nil(socket.assigns.current_user) or is_nil(socket.assigns.current_channel) ->
         {:noreply, socket}

@@ -464,6 +464,7 @@ defmodule Shinkanki.GameServer do
       {:error, :no_affordable_cards} ->
         # Broadcast AI's inability to act
         player = Map.get(game.players, player_id)
+
         if player do
           ai_index = get_ai_index(game, player_id)
           message = get_skip_message(ai_index, :no_affordable_cards)
@@ -479,6 +480,7 @@ defmodule Shinkanki.GameServer do
       {:error, :no_cards} ->
         # Broadcast AI's inability to act
         player = Map.get(game.players, player_id)
+
         if player do
           ai_index = get_ai_index(game, player_id)
           message = get_skip_message(ai_index, :no_cards)

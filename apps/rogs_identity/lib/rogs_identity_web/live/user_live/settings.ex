@@ -4,6 +4,7 @@ defmodule RogsIdentityWeb.UserLive.Settings do
   on_mount {RogsIdentityWeb.UserAuth, :require_sudo_mode}
 
   alias RogsIdentity.Accounts
+  alias RogsIdentity.Accounts.Scope
 
   @impl true
   def render(assigns) do
@@ -125,6 +126,54 @@ defmodule RogsIdentityWeb.UserLive.Settings do
               Save Password
             </.button>
           </.form>
+        </section>
+
+        <div class="torii-divider" aria-hidden="true"></div>
+
+        <section class="stack">
+          <h2 class="section-title">External accounts</h2>
+          <p class="section-copy">
+            Google / GitHub は連携専用です。ログインは常にメールとパスワードで実施します。
+          </p>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <%= for provider <- ["google", "github"] do %>
+              <% linked? = @current_scope.user.provider == provider %>
+              <div class="session-card">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-[var(--color-landing-text-primary)]">
+                    {String.capitalize(provider)} アカウント
+                  </span>
+                  <span class={"badge-pill #{if linked?, do: "", else: "badge-pill--muted"}"}>
+                    {if linked?, do: "Linked", else: "Not linked"}
+                  </span>
+                </div>
+                <p class="session-card__meta">
+                  {if linked?,
+                    do: "神環記アカウントと連携済みです。",
+                    else: "プロフィール同期のみに使用します。連携すると称号やアバターに利用できます。"}
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <.link
+                    :if={!linked?}
+                    href={~p"/auth/#{provider}?return_to=/users/settings"}
+                    class="cta-button cta-outline inline"
+                  >
+                    {String.capitalize(provider)} と連携
+                  </.link>
+                  <button
+                    :if={linked?}
+                    phx-click="unlink_provider"
+                    phx-value-provider={provider}
+                    phx-disable-with="Unlinking..."
+                    class="cta-button cta-outline inline"
+                  >
+                    連携を解除
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </section>
 
         <div class="torii-divider" aria-hidden="true"></div>
@@ -383,6 +432,26 @@ defmodule RogsIdentityWeb.UserLive.Settings do
        |> assign(:sessions, sessions)}
     else
       {:noreply, put_flash(socket, :error, "Unable to identify current session.")}
+    end
+  end
+
+  @impl true
+  def handle_event("unlink_provider", %{"provider" => provider}, socket) do
+    user = socket.assigns.current_scope.user
+
+    if user.provider == provider do
+      case Accounts.unlink_user_oauth(user) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:current_scope, Scope.for_user(updated_user))
+           |> put_flash(:info, "#{String.capitalize(provider)}アカウントの連携を解除しました。")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "連携解除に失敗しました。")}
+      end
+    else
+      {:noreply, socket}
     end
   end
 end

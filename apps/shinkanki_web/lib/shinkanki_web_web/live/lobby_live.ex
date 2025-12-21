@@ -73,10 +73,12 @@ defmodule ShinkankiWebWeb.LobbyLive do
   defp get_or_create_dev_user do
     alias RogsIdentity.Accounts
     email = "dev@example.com"
+
     case Accounts.get_user_by_email(email) do
       nil ->
         {:ok, user} = Accounts.register_user(%{email: email, password: "devpassword123"})
         user
+
       user ->
         user
     end
@@ -107,6 +109,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <.link navigate={~p"/"} class="lobby-logo">神環記</.link>
             <nav class="lobby-nav">
               <a href="/rulebook" class="nav-link">ルールブック</a>
+              <a href="/story" class="nav-link">物語</a>
               <div class="nav-dropdown" id="card-list-dropdown" phx-hook="NavDropdown">
                 <span class="nav-link dropdown-toggle">カード一覧</span>
                 <div class="dropdown-menu">
@@ -268,7 +271,7 @@ defmodule ShinkankiWebWeb.LobbyLive do
             <div class="section-header">
               <h2 class="section-title">公開ルーム</h2>
               <span class="room-count">
-                <%= if @loading_rooms, do: "読み込み中...", else: "#{length(@rooms || [])}件" %>
+                {if @loading_rooms, do: "読み込み中...", else: "#{length(@rooms || [])}件"}
               </span>
             </div>
 
@@ -278,23 +281,23 @@ defmodule ShinkankiWebWeb.LobbyLive do
                 <p>ルームを読み込んでいます...</p>
               </div>
             <% else %>
-            <%= if @rooms == [] do %>
-              <div class="empty-rooms">
-                <%= if @search != "" do %>
-                  <p>「{@search}」に一致するルームが見つかりません</p>
-                  <p class="empty-rooms-hint">別のキーワードで検索してみてください</p>
-                <% else %>
-                  <p>まだルームがありません</p>
-                  <p class="empty-rooms-hint">新しいルームを作成して、仲間を待ちましょう</p>
-                <% end %>
-              </div>
-            <% else %>
-              <div class="rooms-grid">
-                <%= for room <- @rooms do %>
-                  <.room_card room={room} logged_in={@logged_in} />
-                <% end %>
-              </div>
-            <% end %>
+              <%= if @rooms == [] do %>
+                <div class="empty-rooms">
+                  <%= if @search != "" do %>
+                    <p>「{@search}」に一致するルームが見つかりません</p>
+                    <p class="empty-rooms-hint">別のキーワードで検索してみてください</p>
+                  <% else %>
+                    <p>まだルームがありません</p>
+                    <p class="empty-rooms-hint">新しいルームを作成して、仲間を待ちましょう</p>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="rooms-grid">
+                  <%= for room <- @rooms do %>
+                    <.room_card room={room} logged_in={@logged_in} />
+                  <% end %>
+                </div>
+              <% end %>
             <% end %>
           </div>
         </main>

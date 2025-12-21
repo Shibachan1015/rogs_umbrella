@@ -26,6 +26,7 @@ defmodule ShinkankiWebWeb.WaitingRoomLive do
     # 本番環境では未ログインの場合はログインページにリダイレクト
     # 開発環境ではゲストモードを許可
     is_prod = Application.get_env(:shinkanki_web, :env) == :prod
+
     if current_user == nil and is_prod do
       {:ok,
        socket

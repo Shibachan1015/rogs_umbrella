@@ -15,7 +15,8 @@ defmodule RogsComm.RoomsFixtures do
       slug: unique_room_slug(),
       topic: "A room used for testing",
       is_private: false,
-      max_participants: 4  # Room schema allows 2-4
+      # Room schema allows 2-4
+      max_participants: 4
     })
   end
 

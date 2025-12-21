@@ -162,7 +162,10 @@ defmodule Shinkanki.CardCache do
     talent_count = load_talent_cards()
 
     total = action_count + event_count + talent_count
-    Logger.info("CardCache: Loaded #{total} cards (Action: #{action_count}, Event: #{event_count}, Talent: #{talent_count})")
+
+    Logger.info(
+      "CardCache: Loaded #{total} cards (Action: #{action_count}, Event: #{event_count}, Talent: #{talent_count})"
+    )
 
     total
   end

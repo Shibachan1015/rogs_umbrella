@@ -38,6 +38,7 @@ defmodule ShinkankiWebWeb.UserLive.Friends do
           socket
           |> start_async(:load_friends_data, fn ->
             user_id = user.id
+
             %{
               friends: Friends.list_friends(user_id),
               pending_requests: Friends.list_pending_requests(user_id),

@@ -52,7 +52,9 @@ defmodule Shinkanki.GameCardTest do
       assert game.status == :playing
 
       # Manually check win/loss
-      checked_game = %{game | culture: 0} |> Map.put(:status, :lost) |> Map.put(:ending_type, :instant_loss)
+      checked_game =
+        %{game | culture: 0} |> Map.put(:status, :lost) |> Map.put(:ending_type, :instant_loss)
+
       assert checked_game.status == :lost
     end
   end

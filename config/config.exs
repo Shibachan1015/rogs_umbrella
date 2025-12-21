@@ -10,7 +10,23 @@ import Config
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :room_id, :error, :errors, :current_participants, :max_participants, :user_id, :message_id, :message_room_id, :message_owner_id, :event, :reason, :retry_count, :current_room_id, :target_user_id]
+  metadata: [
+    :request_id,
+    :room_id,
+    :error,
+    :errors,
+    :current_participants,
+    :max_participants,
+    :user_id,
+    :message_id,
+    :message_room_id,
+    :message_owner_id,
+    :event,
+    :reason,
+    :retry_count,
+    :current_room_id,
+    :target_user_id
+  ]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

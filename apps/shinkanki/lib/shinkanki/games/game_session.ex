@@ -49,7 +49,7 @@ defmodule Shinkanki.Games.GameSession do
     # 邪気・オロチシステム
     field :evil_pool, :integer, default: 0
     field :evil_threshold, :integer, default: 3
-    field :orochi_level, :integer, default: 0
+    field :orochi_level, :integer, default: 1
     # 神議りで決めた今年の方針
     field :current_policy, :string
 

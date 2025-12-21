@@ -65,6 +65,7 @@ defmodule RogsIdentity.Plug do
       %{assigns: %{current_user: nil}} = conn ->
         # ログインしていない場合、開発用ユーザーを取得または作成
         dev_user = get_or_create_dev_user()
+
         conn
         |> assign(:current_user, dev_user)
         |> assign(:current_scope, Scope.for_user(dev_user))
@@ -90,13 +91,16 @@ defmodule RogsIdentity.Plug do
 
   defp get_or_create_dev_user do
     email = "dev@example.com"
+
     case Accounts.get_user_by_email(email) do
       nil ->
         # 開発用ユーザーを作成
-        {:ok, user} = Accounts.register_user(%{
-          email: email,
-          password: "devpassword123"
-        })
+        {:ok, user} =
+          Accounts.register_user(%{
+            email: email,
+            password: "devpassword123"
+          })
+
         user
 
       user ->

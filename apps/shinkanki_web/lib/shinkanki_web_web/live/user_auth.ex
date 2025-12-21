@@ -57,12 +57,15 @@ defmodule ShinkankiWebWeb.UserAuth do
 
   defp get_or_create_dev_user do
     email = "dev@example.com"
+
     case Accounts.get_user_by_email(email) do
       nil ->
-        {:ok, user} = Accounts.register_user(%{
-          email: email,
-          password: "devpassword123"
-        })
+        {:ok, user} =
+          Accounts.register_user(%{
+            email: email,
+            password: "devpassword123"
+          })
+
         user
 
       user ->

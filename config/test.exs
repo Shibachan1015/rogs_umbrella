@@ -62,7 +62,8 @@ config :shinkanki, Shinkanki.Repo,
 config :shinkanki_web, ShinkankiWebWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "fXs5MBA7YbZwilrl7rihhhMmEJ8GHMJ5f3uaoSMp8eVSv7LhhtAw+ykccnmnW0NG",
-  server: true  # Wallaby requires server to be running
+  # Wallaby requires server to be running
+  server: true
 
 # Wallaby configuration
 config :wallaby,

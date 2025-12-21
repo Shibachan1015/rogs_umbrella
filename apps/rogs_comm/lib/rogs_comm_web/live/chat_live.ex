@@ -92,12 +92,12 @@ defmodule RogsCommWeb.ChatLive do
       {:ok, socket}
     else
       {:ok,
-        socket
-        |> assign(:presences, %{})
-        |> stream(:messages, [])}
+       socket
+       |> assign(:presences, %{})
+       |> stream(:messages, [])}
     end
   end
-  
+
   @impl true
   def handle_event("submit", %{"content" => content}, socket) do
     trimmed = String.trim(content || "")
@@ -150,10 +150,12 @@ defmodule RogsCommWeb.ChatLive do
       rescue
         Ecto.NoResultsError ->
           user_id = socket.assigns[:current_user_id]
+
           Logger.warning("ChatLive: Message not found for edit",
             user_id: user_id,
             message_id: message_id
           )
+
           {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
       end
     end
@@ -653,6 +655,7 @@ defmodule RogsCommWeb.ChatLive do
         content: updated_message.content,
         edited_at: updated_message.edited_at
       }
+
       RogsCommWeb.Endpoint.broadcast(topic(room_id), "message_edited", payload)
       {:noreply, socket}
     else
@@ -663,26 +666,34 @@ defmodule RogsCommWeb.ChatLive do
           message_room_id: message.room_id,
           current_room_id: room_id
         )
+
         {:noreply, put_flash(socket, :error, "このルームのメッセージではありません")}
+
       {:error, :not_message_owner, message} ->
         Logger.warning("ChatLive: Attempted to edit another user's message",
           user_id: user_id,
           message_id: message_id,
           message_owner_id: message.user_id
         )
+
         {:noreply, put_flash(socket, :error, "自分のメッセージのみ編集できます")}
+
       {:error, :unknown_message_validation_failure} ->
         Logger.warning("ChatLive: Attempted to edit unknown message",
           user_id: user_id,
           message_id: message_id
         )
+
         {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+
       {:error, :message_not_found} ->
         Logger.warning("ChatLive: Message not found for edit",
           user_id: user_id,
           message_id: message_id
         )
+
         {:noreply, put_flash(socket, :error, "メッセージが見つかりません")}
+
       {:error, changeset} ->
         error_message =
           case changeset.errors do
@@ -690,12 +701,14 @@ defmodule RogsCommWeb.ChatLive do
             [{:content, msg}] when is_binary(msg) -> "メッセージ: #{msg}"
             _ -> "メッセージの編集に失敗しました"
           end
+
         Logger.error("ChatLive: Failed to edit message",
           user_id: user_id,
           message_id: message_id,
           room_id: room_id,
           errors: inspect(changeset.errors)
         )
+
         {:noreply, put_flash(socket, :error, error_message)}
     end
   end
@@ -730,10 +743,13 @@ defmodule RogsCommWeb.ChatLive do
     case Messages.get_message!(message_id) do
       message when message.room_id == room_id and message.user_id == user_id ->
         {:ok, message}
+
       message when message.room_id != room_id ->
         {:error, :message_not_in_this_room, message}
+
       message when message.user_id != user_id ->
         {:error, :not_message_owner, message}
+
       _ ->
         {:error, :unknown_message_validation_failure}
     end

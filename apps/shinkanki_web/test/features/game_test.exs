@@ -91,7 +91,11 @@ defmodule ShinkankiWebWeb.Features.GameTest do
     |> assert_has(Query.css("[phx-click='select_card'].ring-2", count: 1))
   end
 
-  feature "selecting different card changes selection", %{session: session, user: user, room: room} do
+  feature "selecting different card changes selection", %{
+    session: session,
+    user: user,
+    room: room
+  } do
     session
     |> log_in_user(user)
     |> visit("/game/#{room.slug}")

@@ -5,6 +5,8 @@ defmodule Shinkanki.AI.ClaudeAgent do
   """
 
   alias Shinkanki.{Game, Card}
+  alias Shinkanki.CardCache
+  alias Shinkanki.Games.{GameSession, Player, TurnState}
 
   require Logger
 
@@ -55,6 +57,26 @@ defmodule Shinkanki.AI.ClaudeAgent do
       :local ->
         # フォールバック: ローカルAIを使用
         decide_with_local(game, player_id, player, character)
+    end
+  end
+
+  @doc """
+  GameSessionベース（DB管理）のAIプレイヤーに対してアクションを決定させる。
+  Returns {:ok, action_card_id, thought_message} or {:error, reason}
+  """
+  @spec decide_action_for_session(GameSession.t(), TurnState.t() | nil, Player.t()) ::
+          {:ok, binary(), String.t()} | {:error, term()}
+  def decide_action_for_session(
+        %GameSession{} = game_session,
+        turn_state,
+        %Player{} = player
+      ) do
+    case Application.get_env(:shinkanki, :ai_provider, :local) do
+      :claude ->
+        decide_session_with_claude(game_session, turn_state, player)
+
+      _ ->
+        {:error, :provider_not_configured}
     end
   end
 
@@ -223,6 +245,7 @@ defmodule Shinkanki.AI.ClaudeAgent do
       {:ok, {{_, 200, _}, _headers, response_body}} ->
         # Convert charlist to binary with proper UTF-8 encoding
         body_string = :erlang.list_to_binary(response_body)
+
         case Jason.decode(body_string) do
           {:ok, %{"content" => [%{"text" => text} | _]}} ->
             {:ok, text}
@@ -470,4 +493,259 @@ defmodule Shinkanki.AI.ClaudeAgent do
       []
     end
   end
+
+  # ======================
+  # GameSession対応ロジック
+  # ======================
+
+  defp decide_session_with_claude(game_session, turn_state, player) do
+    api_key = Application.get_env(:shinkanki, :claude_api_key)
+    available_cards = session_available_cards(turn_state)
+    ai_index = session_ai_index(player)
+    character = Map.get(@ai_characters, ai_index, @ai_characters[1])
+
+    cond do
+      is_nil(api_key) ->
+        {:error, :missing_api_key}
+
+      available_cards == [] ->
+        {:error, :no_available_cards}
+
+      true ->
+        prompt =
+          build_session_action_prompt(
+            game_session,
+            turn_state,
+            player,
+            character,
+            available_cards
+          )
+
+        case call_claude_api(api_key, prompt) do
+          {:ok, response} ->
+            parse_session_action_response(response, available_cards, player, character)
+
+          {:error, reason} ->
+            Logger.error("Claude API error (session): #{inspect(reason)}")
+            {:error, reason}
+        end
+    end
+  end
+
+  defp session_available_cards(%TurnState{available_cards: ids}) when is_list(ids) do
+    ids
+    |> CardCache.action_cards_by_ids()
+    |> Enum.reject(&is_nil/1)
+    |> Enum.map(fn card ->
+      %{
+        id: card.id,
+        name: card.name,
+        category: card.category,
+        description: card.description,
+        cost_akasha: card.cost_akasha || 0,
+        cost_forest: card.cost_forest || 0,
+        cost_culture: card.cost_culture || 0,
+        cost_social: card.cost_social || 0,
+        effect_forest: card.effect_forest || 0,
+        effect_culture: card.effect_culture || 0,
+        effect_social: card.effect_social || 0,
+        effect_akasha: card.effect_akasha || 0,
+        special_effect: card.special_effect
+      }
+    end)
+  end
+
+  defp session_available_cards(_), do: []
+
+  defp build_session_action_prompt(
+         game_session,
+         turn_state,
+         player,
+         character,
+         available_cards
+       ) do
+    phase =
+      case turn_state do
+        %TurnState{phase: phase_value} -> session_phase_name(phase_value)
+        _ -> "不明"
+      end
+
+    cards_text = format_session_cards(available_cards)
+
+    """
+    あなたは「神環記」という協力型ボードゲームのAIプレイヤーです。
+
+    【あなたのキャラクター】
+    名前: #{character.name}
+    性格: #{character.personality}
+    口調: #{character.speech_style}
+
+    【現在のゲーム状態】
+    - 年: #{game_session.turn}年目 / 20年
+    - フェーズ: #{phase}
+    - 方針: #{session_policy_name(game_session.current_policy)}
+    - 森（F）: #{game_session.forest}/20
+    - 文化（K）: #{game_session.culture}/20
+    - コミュニティ（S）: #{game_session.social}/20
+    - 邪気: #{game_session.evil_pool}/8
+    - DAOプール: #{game_session.dao_pool}
+    - あなたの空環: #{player.akasha}
+
+    【使用可能なカード】
+    #{cards_text}
+
+    【タスク】
+    1. 現在の危機や優先事項を分析してください
+    2. 他のプレイヤーに向けて、キャラクターの口調で2〜3文まとめてください
+    3. どのカードを使うか決め、必ずその「ID」を出力してください（例: 1行目のIDは #{available_cards |> List.first() |> Map.get(:id)})
+
+    出力形式:
+    ```thought
+    [キャラクターの思考（日本語）]
+    ```
+    ```action
+    [上記リストのIDをそのまま記入してください]
+    ```
+    """
+  end
+
+  defp format_session_cards([]), do: "（使用可能なカードがありません）"
+
+  defp format_session_cards(cards) do
+    cards
+    |> Enum.with_index(1)
+    |> Enum.map(fn {card, idx} ->
+      cost =
+        [
+          card.cost_akasha > 0 && "空環#{card.cost_akasha}",
+          card.cost_forest > 0 && "F#{card.cost_forest}",
+          card.cost_culture > 0 && "K#{card.cost_culture}",
+          card.cost_social > 0 && "S#{card.cost_social}"
+        ]
+        |> Enum.reject(&(!&1))
+        |> Enum.join(" / ")
+        |> case do
+          "" -> "なし"
+          text -> text
+        end
+
+      effects =
+        [
+          effect_line("F", card.effect_forest),
+          effect_line("K", card.effect_culture),
+          effect_line("S", card.effect_social),
+          effect_line("空環", card.effect_akasha)
+        ]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.join(", ")
+        |> case do
+          "" -> "なし"
+          text -> text
+        end
+
+      """
+      #{idx}. #{card.name} (ID: #{card.id})
+         カテゴリ: #{session_category_name(card.category)}
+         コスト: #{cost}
+         効果: #{effects}
+         説明: #{card.description || "（詳細不明）"}
+      """
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp effect_line(_label, value) when value == 0, do: nil
+  defp effect_line(label, value), do: "#{label}#{if value >= 0, do: "+", else: ""}#{value}"
+
+  defp parse_session_action_response(response, available_cards, player, character) do
+    thought =
+      case Regex.run(~r/```thought\s*\n?(.*?)\n?```/s, response) do
+        [_, captured] -> String.trim(captured)
+        _ -> extract_thought_fallback(response, character)
+      end
+
+    raw_action =
+      case Regex.run(~r/```action\s*\n?(.*?)\n?```/s, response) do
+        [_, captured] -> String.trim(captured)
+        _ -> nil
+      end
+
+    with {:ok, action_id} <- normalize_session_choice(raw_action, available_cards) do
+      name = player.ai_name || character.name
+      formatted_thought = "#{character.emoji} #{name}: #{thought}"
+      {:ok, action_id, formatted_thought}
+    else
+      _ -> {:error, :invalid_choice}
+    end
+  end
+
+  defp normalize_session_choice(nil, _cards), do: {:error, :missing_action}
+
+  defp normalize_session_choice(choice, cards) do
+    trimmed =
+      choice
+      |> String.trim()
+      |> String.trim_leading(":")
+      |> String.trim()
+
+    card_ids = Enum.map(cards, & &1.id)
+
+    cond do
+      trimmed in card_ids ->
+        {:ok, trimmed}
+
+      match_index?(trimmed) ->
+        {index, _} = Integer.parse(trimmed)
+
+        case Enum.at(card_ids, index - 1) do
+          nil -> {:error, :invalid_index}
+          id -> {:ok, id}
+        end
+
+      true ->
+        # 該当カード名から推測
+        case Enum.find(cards, fn card ->
+               String.downcase(String.trim(card.name)) ==
+                 String.downcase(String.trim(trimmed))
+             end) do
+          nil -> {:error, :unknown_card}
+          card -> {:ok, card.id}
+        end
+    end
+  end
+
+  defp match_index?(value) do
+    case Integer.parse(value) do
+      {number, ""} when number > 0 -> true
+      _ -> false
+    end
+  end
+
+  defp session_phase_name("hitoyo"), do: "人代フェーズ"
+  defp session_phase_name("kami_hakari"), do: "神議りフェーズ"
+  defp session_phase_name("itonami"), do: "営みフェーズ"
+  defp session_phase_name("action"), do: "営みフェーズ"
+  defp session_phase_name("kokyu"), do: "呼吸フェーズ"
+  defp session_phase_name("breathing"), do: "呼吸フェーズ"
+  defp session_phase_name("musuhi"), do: "結びフェーズ"
+  defp session_phase_name("toshiokuri"), do: "年送りフェーズ"
+  defp session_phase_name(other), do: to_string(other)
+
+  defp session_policy_name("forest"), do: "森優先"
+  defp session_policy_name("culture"), do: "文化優先"
+  defp session_policy_name("community"), do: "コミュニティ優先"
+  defp session_policy_name("purify"), do: "祓い優先"
+  defp session_policy_name(_), do: "未選択"
+
+  defp session_category_name("forest"), do: "森系"
+  defp session_category_name("culture"), do: "文化系"
+  defp session_category_name("social"), do: "コミュニティ系"
+  defp session_category_name("akasha"), do: "空環系"
+  defp session_category_name(_), do: "その他"
+
+  defp session_ai_index(%Player{player_order: order}) when is_integer(order) do
+    ((order - 1) |> max(0) |> rem(4)) + 1
+  end
+
+  defp session_ai_index(_), do: 1
 end

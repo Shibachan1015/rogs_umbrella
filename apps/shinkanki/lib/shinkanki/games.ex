@@ -39,6 +39,7 @@ defmodule Shinkanki.Games do
       turn: 1,
       dao_pool: 0,
       status: "active",
+      orochi_level: 1,
       seed: generate_seed()
     }
 
@@ -53,7 +54,8 @@ defmodule Shinkanki.Games do
   @doc """
   ルームIDとユーザーIDリストからゲームセッションを作成し、プレイヤーも作成
   """
-  @spec create_game_session_from_room(binary(), [binary()]) :: {:ok, GameSession.t()} | {:error, term()}
+  @spec create_game_session_from_room(binary(), [binary()]) ::
+          {:ok, GameSession.t()} | {:error, term()}
   def create_game_session_from_room(room_id, user_ids) do
     Repo.transaction(fn ->
       # ゲームセッションを作成（room_idを含める）
@@ -128,7 +130,8 @@ defmodule Shinkanki.Games do
   ゲームセッションのパラメータを更新
   Invalidates cache after update.
   """
-  @spec update_game_session(GameSession.t(), map()) :: {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_game_session(GameSession.t(), map()) ::
+          {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
   def update_game_session(%GameSession{} = game_session, attrs) do
     result =
       game_session
@@ -150,7 +153,8 @@ defmodule Shinkanki.Games do
   生命指数を再計算して更新
   L = F + K + S
   """
-  @spec update_life_index(GameSession.t()) :: {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_life_index(GameSession.t()) ::
+          {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
   def update_life_index(%GameSession{} = game_session) do
     life_index = game_session.forest + game_session.culture + game_session.social
 
@@ -209,7 +213,8 @@ defmodule Shinkanki.Games do
   @doc """
   プレイヤーのAkashaを更新
   """
-  @spec update_player_akasha(Player.t(), integer()) :: {:ok, Player.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_player_akasha(Player.t(), integer()) ::
+          {:ok, Player.t()} | {:error, Ecto.Changeset.t()}
   def update_player_akasha(%Player{} = player, amount) do
     new_akasha = max(0, player.akasha + amount)
 
@@ -334,6 +339,14 @@ defmodule Shinkanki.Games do
     turn_state
     |> TurnState.changeset(%{phase: next_phase})
     |> Repo.update()
+    |> case do
+      {:ok, updated_turn_state} = ok ->
+        maybe_notify_phase_change(updated_turn_state.game_session_id)
+        ok
+
+      error ->
+        error
+    end
   end
 
   # game_session_idからターンのフェーズを進める
@@ -414,7 +427,8 @@ defmodule Shinkanki.Games do
   - 方針違反チェック
   - アクション履歴記録
   """
-  @spec execute_action_card(Player.t(), ActionCard.t(), GameSession.t()) :: {:ok, GameSession.t()} | {:error, atom()}
+  @spec execute_action_card(Player.t(), ActionCard.t(), GameSession.t()) ::
+          {:ok, GameSession.t()} | {:error, atom()}
   def execute_action_card(%Player{} = player, %ActionCard{} = card, %GameSession{} = game_session) do
     # コストチェック
     if ActionCard.check_costs(card, game_session, player) do
@@ -511,7 +525,8 @@ defmodule Shinkanki.Games do
   タレント付きでアクションカードを実行
   talent_ids: 使用するタレントのPlayerTalent IDリスト（最大2枚）
   """
-  @spec execute_action_card_with_talents(Player.t(), ActionCard.t(), GameSession.t(), [binary()]) :: {:ok, GameSession.t()} | {:error, atom()}
+  @spec execute_action_card_with_talents(Player.t(), ActionCard.t(), GameSession.t(), [binary()]) ::
+          {:ok, GameSession.t()} | {:error, atom()}
   def execute_action_card_with_talents(
         %Player{} = player,
         %ActionCard{} = card,
@@ -667,7 +682,8 @@ defmodule Shinkanki.Games do
   イベントカードの効果を適用
   選択肢がある場合はchoiceを指定（:choice_a or :choice_b）
   """
-  @spec apply_event_card(EventCard.t(), GameSession.t(), atom() | nil) :: {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
+  @spec apply_event_card(EventCard.t(), GameSession.t(), atom() | nil) ::
+          {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
   def apply_event_card(%EventCard{} = event, %GameSession{} = game_session, choice \\ nil) do
     effects =
       if event.has_choice and choice do
@@ -694,7 +710,9 @@ defmodule Shinkanki.Games do
   @doc """
   ゲーム開始時にプロジェクトを2〜3個配置
   """
-  @spec setup_initial_projects(GameSession.t()) :: [{:ok, GameProject.t()} | {:error, Ecto.Changeset.t()}]
+  @spec setup_initial_projects(GameSession.t()) :: [
+          {:ok, GameProject.t()} | {:error, Ecto.Changeset.t()}
+        ]
   def setup_initial_projects(%GameSession{} = game_session) do
     count = Enum.random(2..3)
 
@@ -719,7 +737,8 @@ defmodule Shinkanki.Games do
   @doc """
   プレイヤーがプロジェクトに参加
   """
-  @spec join_project(Player.t(), GameProject.t(), pos_integer()) :: {:ok, ProjectParticipation.t()} | {:error, Ecto.Changeset.t()}
+  @spec join_project(Player.t(), GameProject.t(), pos_integer()) ::
+          {:ok, ProjectParticipation.t()} | {:error, Ecto.Changeset.t()}
   def join_project(%Player{} = player, %GameProject{} = project, turn) do
     %ProjectParticipation{}
     |> ProjectParticipation.changeset(%{
@@ -830,7 +849,8 @@ defmodule Shinkanki.Games do
   @doc """
   地域DAOプールにAkashaを追加
   """
-  @spec add_to_dao_pool(GameSession.t(), integer()) :: {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
+  @spec add_to_dao_pool(GameSession.t(), integer()) ::
+          {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
   def add_to_dao_pool(%GameSession{} = game_session, amount) do
     new_dao_pool = game_session.dao_pool + amount
     update_game_session(game_session, %{dao_pool: new_dao_pool})
@@ -920,7 +940,8 @@ defmodule Shinkanki.Games do
   ゲーム終了判定
   返り値: {:continue, nil} | {:immediate_loss, reason} | {:completed, ending}
   """
-  @spec check_game_end(GameSession.t()) :: {:continue, nil} | {:immediate_loss, atom()} | {:completed, atom()}
+  @spec check_game_end(GameSession.t()) ::
+          {:continue, nil} | {:immediate_loss, atom()} | {:completed, atom()}
   def check_game_end(%GameSession{} = game_session) do
     cond do
       check_immediate_loss(game_session) -> {:immediate_loss, get_loss_reason(game_session)}
@@ -958,6 +979,13 @@ defmodule Shinkanki.Games do
     value
     |> max(min_val)
     |> min(max_val)
+  end
+
+  defp life_index_after_update(game_session, field, new_value) do
+    forest = if field == :forest, do: new_value, else: game_session.forest
+    culture = if field == :culture, do: new_value, else: game_session.culture
+    social = if field == :social, do: new_value, else: game_session.social
+    forest + culture + social
   end
 
   # ===================
@@ -1128,9 +1156,8 @@ defmodule Shinkanki.Games do
       |> Repo.update()
       |> case do
         {:ok, _} ->
-          updated_session = get_game_session!(game_session_id)
-          GamePubSub.broadcast_state_update(game_session_id, updated_session)
-          {:ok, updated_session}
+          maybe_notify_phase_change(game_session_id)
+          {:ok, get_game_session!(game_session_id)}
 
         error ->
           error
@@ -1172,6 +1199,12 @@ defmodule Shinkanki.Games do
     else
       {:ok, game_session}
     end
+  end
+
+  defp maybe_notify_phase_change(game_session_id) do
+    GameSessionCache.invalidate(game_session_id)
+    updated_session = get_game_session!(game_session_id)
+    GamePubSub.broadcast_state_update(game_session_id, updated_session)
   end
 
   @doc """
@@ -1392,7 +1425,8 @@ defmodule Shinkanki.Games do
   邪気を追加（共有プールへ）
   amount: 増減量（マイナス値も可）
   """
-  @spec add_evil(GameSession.t(), integer()) :: {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
+  @spec add_evil(GameSession.t(), integer()) ::
+          {:ok, GameSession.t()} | {:error, Ecto.Changeset.t()}
   def add_evil(%GameSession{} = game_session, amount) do
     new_evil_pool = max(0, game_session.evil_pool + amount)
     update_game_session(game_session, %{evil_pool: new_evil_pool})
@@ -1552,20 +1586,49 @@ defmodule Shinkanki.Games do
   amount: 還流するP量
   target: "forest" | "culture" | "social"（どの基金に還流するか）
   """
-  def voluntary_circulation(%Player{} = player, amount, target)
+  @voluntary_rate 10
+
+  def voluntary_circulation(game_session_id, player_id, amount, target)
       when amount > 0 and target in ~w(forest culture social) do
-    if player.akasha >= amount do
-      # Pを減らす
-      {:ok, updated_player} = update_player_akasha(player, -amount)
-      # 邪気も減らす（還流量と同じ）
-      {:ok, _} = add_player_evil(updated_player, -amount)
+    game_session = get_game_session!(game_session_id)
+    player = Enum.find(game_session.players, fn p -> p.id == player_id end)
 
-      # 対応するパラメータを増やす（将来的に実装）
-      # 今は単に還流したことを記録
+    cond do
+      is_nil(player) ->
+        {:error, :player_not_found}
 
-      {:ok, updated_player}
-    else
-      {:error, :insufficient_akasha}
+      player.akasha < amount * @voluntary_rate ->
+        {:error, :insufficient_akasha}
+
+      true ->
+        {:ok, updated_player} = update_player_akasha(player, -(amount * @voluntary_rate))
+        {:ok, _} = add_player_evil(updated_player, -amount)
+
+        {stat_key, current_value} =
+          case target do
+            "forest" -> {:forest, game_session.forest}
+            "culture" -> {:culture, game_session.culture}
+            "social" -> {:social, game_session.social}
+          end
+
+        new_value = clamp(current_value + amount, 0, 20)
+
+        new_stats =
+          %{}
+          |> Map.put(stat_key, new_value)
+          |> Map.put(:life_index, life_index_after_update(game_session, stat_key, new_value))
+
+        {:ok, updated_session} = update_game_session(game_session, new_stats)
+        GamePubSub.broadcast_state_update(game_session_id, updated_session)
+
+        {:ok,
+         %{
+           player: updated_player,
+           game_session: updated_session,
+           cost: amount * @voluntary_rate,
+           amount: amount,
+           target: stat_key
+         }}
     end
   end
 

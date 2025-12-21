@@ -4,11 +4,13 @@ defmodule ShinkankiWebWeb.OAuthController do
 
   alias RogsIdentity.Accounts
 
-  def request(conn, params) do
+  def request(%{assigns: %{current_scope: %{user: %Accounts.User{} = _user}}} = conn, params) do
     # return_toパラメータがあればセッションに保存（内部パスのみ許可）
     conn =
       case params["return_to"] do
-        nil -> conn
+        nil ->
+          conn
+
         return_to ->
           if safe_return_path?(return_to) do
             put_session(conn, :oauth_return_to, return_to)
@@ -21,6 +23,13 @@ defmodule ShinkankiWebWeb.OAuthController do
     conn
   end
 
+  def request(conn, _params) do
+    conn
+    |> put_flash(:error, "外部アカウント連携はログイン後に利用できます。")
+    |> redirect(to: ~p"/users/log-in")
+    |> halt()
+  end
+
   # Validate that return path is internal and safe
   defp safe_return_path?(path) when is_binary(path) do
     # Must start with / and not contain protocol or double slashes
@@ -28,6 +37,7 @@ defmodule ShinkankiWebWeb.OAuthController do
       not String.contains?(path, "://") and
       not String.starts_with?(path, "//")
   end
+
   defp safe_return_path?(_), do: false
 
   def callback(%{assigns: %{ueberauth_failure: _fails}} = conn, _params) do
@@ -36,38 +46,43 @@ defmodule ShinkankiWebWeb.OAuthController do
     |> redirect(to: get_return_to(conn) || ~p"/users/log-in")
   end
 
-  def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
+  def callback(%{assigns: %{ueberauth_auth: auth, current_scope: %{user: user}}} = conn, _params)
+      when not is_nil(user) do
     user_attrs = %{
-      email: get_email(auth),
-      name: get_name(auth),
       provider: to_string(auth.provider),
       provider_id: to_string(auth.uid),
-      avatar_url: get_avatar(auth)
+      avatar_url: get_avatar(auth),
+      email: get_email(auth),
+      name: get_name(auth)
     }
 
-    case Accounts.find_or_create_oauth_user(user_attrs) do
-      {:ok, user} ->
-        return_to = get_return_to(conn) || "/lobby"
-        token = RogsIdentity.Accounts.generate_user_session_token(user)
+    case Accounts.link_user_oauth(user, user_attrs) do
+      {:ok, _updated_user} ->
+        return_to = get_return_to(conn) || ~p"/profile"
 
         conn
-        |> put_flash(:info, "ログインしました。")
-        |> put_session(:user_token, token)
-        |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
-        |> put_resp_cookie("_rogs_identity_web_user_remember_me", token,
-          sign: true,
-          max_age: 14 * 24 * 60 * 60,
-          same_site: "Strict",
-          secure: true,
-          http_only: true
-        )
+        |> put_flash(:info, "#{String.capitalize(user_attrs.provider)}アカウントを連携しました。")
         |> redirect(to: return_to)
+
+      {:error, :taken} ->
+        conn
+        |> put_flash(
+          :error,
+          "この#{String.capitalize(user_attrs.provider)}アカウントは既に他のプレイヤーに使用されています。"
+        )
+        |> redirect(to: ~p"/profile")
 
       {:error, _changeset} ->
         conn
-        |> put_flash(:error, "アカウントの作成に失敗しました。")
-        |> redirect(to: ~p"/users/log-in")
+        |> put_flash(:error, "外部アカウントの連携に失敗しました。")
+        |> redirect(to: ~p"/profile")
     end
+  end
+
+  def callback(conn, _params) do
+    conn
+    |> put_flash(:error, "外部アカウント連携はログイン後に利用できます。")
+    |> redirect(to: ~p"/users/log-in")
   end
 
   defp get_email(auth) do

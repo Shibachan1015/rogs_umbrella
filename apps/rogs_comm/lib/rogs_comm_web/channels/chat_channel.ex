@@ -283,28 +283,37 @@ defmodule RogsCommWeb.ChatChannel do
           handle_valid_message_edit(socket, message, trimmed_content, user_id)
 
         {:error, :message_not_in_this_room, message} ->
-          handle_message_from_different_room(socket, user_id, message_id, message.room_id, room_id)
+          handle_message_from_different_room(
+            socket,
+            user_id,
+            message_id,
+            message.room_id,
+            room_id
+          )
 
         {:error, :not_message_owner, message} ->
           handle_message_from_another_user(socket, user_id, message_id, message.user_id)
-        
+
         {:error, :unknown_message_validation_failure} ->
           handle_unknown_message_edit_case(socket, user_id, message_id)
-        
+
         {:error, :message_not_found} ->
-           Logger.warning("ChatChannel: Message not found for edit",
+          Logger.warning("ChatChannel: Message not found for edit",
             user_id: user_id,
             message_id: message_id
           )
+
           {:reply, {:error, %{reason: "message not found"}}, socket}
       end
     rescue
       Ecto.NoResultsError ->
         user_id = socket.assigns.user_id
+
         Logger.warning("ChatChannel: Message not found for edit",
           user_id: user_id,
           message_id: message_id
         )
+
         {:reply, {:error, %{reason: "message not found"}}, socket}
     end
   end
@@ -340,7 +349,13 @@ defmodule RogsCommWeb.ChatChannel do
     end
   end
 
-  defp handle_message_from_different_room(socket, user_id, message_id, message_room_id, current_room_id) do
+  defp handle_message_from_different_room(
+         socket,
+         user_id,
+         message_id,
+         message_room_id,
+         current_room_id
+       ) do
     Logger.warning("ChatChannel: Attempted to edit message from different room",
       user_id: user_id,
       message_id: message_id,
@@ -374,10 +389,13 @@ defmodule RogsCommWeb.ChatChannel do
     case Messages.get_message!(message_id) do
       message when message.room_id == room_id and message.user_id == user_id ->
         {:ok, message}
+
       message when message.room_id != room_id ->
         {:error, :message_not_in_this_room, message}
+
       message when message.user_id != user_id ->
         {:error, :not_message_owner, message}
+
       _ ->
         {:error, :unknown_message_validation_failure}
     end

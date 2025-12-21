@@ -8,6 +8,7 @@
     </a>
     <nav class="landing-nav" id="landing-nav">
       <a href="/rulebook" class="nav-link">ルールブック</a>
+      <a href="/story" class="nav-link">物語</a>
       <div class="nav-dropdown">
         <span class="nav-link dropdown-toggle">カード一覧</span>
         <div class="dropdown-menu">
@@ -37,7 +38,13 @@
       <div class="auth-buttons">
         <span class="user-info">
           <%= if @current_user.avatar_url do %>
-            <img src={@current_user.avatar_url} alt="" class="user-avatar" loading="lazy" decoding="async" />
+            <img
+              src={@current_user.avatar_url}
+              alt=""
+              class="user-avatar"
+              loading="lazy"
+              decoding="async"
+            />
           <% end %>
           <span class="user-name">{RogsIdentity.Accounts.display_name(@current_user)}</span>
         </span>

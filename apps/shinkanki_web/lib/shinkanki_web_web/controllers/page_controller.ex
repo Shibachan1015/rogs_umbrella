@@ -9,6 +9,10 @@ defmodule ShinkankiWebWeb.PageController do
     render(conn, :rulebook)
   end
 
+  def story(conn, _params) do
+    render(conn, :story)
+  end
+
   def privacy(conn, _params) do
     render(conn, :privacy)
   end

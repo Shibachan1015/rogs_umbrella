@@ -548,7 +548,8 @@ defmodule RogsIdentity.Accounts do
   @doc """
   ユーザーをBANする（管理者のみ）
   """
-  @spec ban_user(User.t(), User.t(), String.t() | nil) :: {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
+  @spec ban_user(User.t(), User.t(), String.t() | nil) ::
+          {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
   def ban_user(%User{} = admin, %User{} = target, reason \\ nil) do
     if admin?(admin) do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -684,7 +685,11 @@ defmodule RogsIdentity.Accounts do
   @doc """
   Gets user game statistics.
   """
-  @spec get_user_stats(User.t()) :: %{games_played: non_neg_integer(), games_won: non_neg_integer(), win_rate: float()}
+  @spec get_user_stats(User.t()) :: %{
+          games_played: non_neg_integer(),
+          games_won: non_neg_integer(),
+          win_rate: float()
+        }
   def get_user_stats(user) do
     %{
       games_played: user.games_played || 0,
@@ -750,6 +755,50 @@ defmodule RogsIdentity.Accounts do
   defp update_oauth_user(user, attrs) do
     user
     |> User.oauth_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Links an external OAuth provider to an existing user.
+  """
+  @spec link_user_oauth(User.t(), map()) :: {:ok, User.t()} | {:error, term()}
+  def link_user_oauth(%User{} = user, attrs) do
+    provider = to_string(attrs.provider)
+    provider_id = to_string(attrs.provider_id)
+
+    case get_user_by_oauth(provider, provider_id) do
+      nil ->
+        do_link_user_oauth(user, %{
+          provider: provider,
+          provider_id: provider_id,
+          avatar_url: attrs.avatar_url
+        })
+
+      %User{id: id} = existing when id == user.id ->
+        do_link_user_oauth(existing, %{
+          provider: provider,
+          provider_id: provider_id,
+          avatar_url: attrs.avatar_url
+        })
+
+      _ ->
+        {:error, :taken}
+    end
+  end
+
+  defp do_link_user_oauth(user, attrs) do
+    user
+    |> User.oauth_link_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Unlinks any OAuth provider associated with the user.
+  """
+  @spec unlink_user_oauth(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def unlink_user_oauth(%User{} = user) do
+    user
+    |> Ecto.Changeset.change(provider: nil, provider_id: nil)
     |> Repo.update()
   end
 end

@@ -29,6 +29,7 @@ defmodule ShinkankiWebWeb.Router do
     # ==============================
     get "/", PageController, :home
     get "/rulebook", PageController, :rulebook
+    get "/story", PageController, :story
     get "/privacy", PageController, :privacy
     get "/cards/talent", PageController, :talent_cards
     get "/cards/cocreation", PageController, :cocreation_cards

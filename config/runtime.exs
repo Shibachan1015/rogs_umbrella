@@ -11,6 +11,21 @@ import Config
 debug_logging = System.get_env("DEBUG_LOGGING") in ~w(true 1)
 config :shinkanki_web, :debug_logging, debug_logging
 
+phase_auto_advance_ms =
+  System.get_env("PHASE_AUTO_ADVANCE_MS")
+  |> case do
+    nil -> 300_000
+    value -> String.to_integer(value)
+  end
+
+config :shinkanki_web,
+       :phase_auto_advance_ms,
+       phase_auto_advance_ms
+
+config :shinkanki_web,
+       :phase_auto_advance_seconds,
+       div(phase_auto_advance_ms, 1000)
+
 # --- OAuth and API Key Configuration (loaded from environment) ---
 
 if claude_api_key = System.get_env("ANTHROPIC_API_KEY") do
@@ -42,6 +57,7 @@ if System.get_env("PHX_SERVER") == "true" || System.get_env("RELEASE_NAME") do
   # This section configures the main web endpoint for the application.
   host = System.get_env("PHX_HOST") || "rogs-umbrella.fly.dev"
   port = String.to_integer(System.get_env("PORT") || "8080")
+
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
       raise "environment variable SECRET_KEY_BASE is missing"

@@ -11,12 +11,13 @@ defmodule Shinkanki.GameDeckRecycleTest do
   describe "deck recycling" do
     test "reshuffles discard pile when deck is empty" do
       # Create game with empty deck and some cards in discard pile
-      game = playing_game(%{
-        deck: [],
-        discard_pile: [:shokurin, :saiji, :koueki],
-        event_deck: [],
-        event_discard_pile: []
-      })
+      game =
+        playing_game(%{
+          deck: [],
+          discard_pile: [:shokurin, :saiji, :koueki],
+          event_deck: [],
+          event_discard_pile: []
+        })
 
       # Join player to enable drawing cards (this is in waiting, but we set status to playing)
       {:ok, game} = Game.join(%{game | status: :waiting}, "p1", "Player 1")

@@ -96,6 +96,7 @@ defmodule Shinkanki.OrochiRenkeiTest do
 
     test "同じ連携カードを重複して提案できない", %{game: game} do
       {:ok, game_with_pending} = Game.initiate_renkei(game, "player1", :r_collective_prayer)
+
       {:error, :renkei_already_pending} =
         Game.initiate_renkei(game_with_pending, "player2", :r_collective_prayer)
     end
@@ -123,7 +124,9 @@ defmodule Shinkanki.OrochiRenkeiTest do
       {:ok, game_with_pending} = Game.initiate_renkei(game, "player1", :r_collective_prayer)
 
       # 提案者がキャンセル
-      {:ok, cancelled_game} = Game.cancel_renkei(game_with_pending, "player1", :r_collective_prayer)
+      {:ok, cancelled_game} =
+        Game.cancel_renkei(game_with_pending, "player1", :r_collective_prayer)
+
       assert not Map.has_key?(cancelled_game.pending_renkei, :r_collective_prayer)
     end
 

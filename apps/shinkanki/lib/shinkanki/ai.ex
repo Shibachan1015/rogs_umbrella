@@ -106,7 +106,9 @@ defmodule Shinkanki.AI do
 
   defp get_playable_project(game, card_id) do
     case Card.get_project(card_id) do
-      nil -> nil
+      nil ->
+        nil
+
       project ->
         if project.id in game.available_projects and game.currency >= project.cost do
           {project, card_id}
@@ -128,9 +130,9 @@ defmodule Shinkanki.AI do
   # Uses cond to return only the first match (not cumulative)
   defp calculate_balance_bonus(game, effect) do
     cond do
-      game.forest < 20 and effect[:forest] && effect[:forest] > 0 -> 5
-      game.culture < 20 and effect[:culture] && effect[:culture] > 0 -> 5
-      game.social < 20 and effect[:social] && effect[:social] > 0 -> 5
+      (game.forest < 20 and effect[:forest]) && effect[:forest] > 0 -> 5
+      (game.culture < 20 and effect[:culture]) && effect[:culture] > 0 -> 5
+      (game.social < 20 and effect[:social]) && effect[:social] > 0 -> 5
       true -> 0
     end
   end

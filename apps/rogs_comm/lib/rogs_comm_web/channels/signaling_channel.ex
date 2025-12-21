@@ -108,7 +108,7 @@ defmodule RogsCommWeb.SignalingChannel do
           nil ->
             broadcast(socket, event, normalized)
             {:noreply, socket}
-          
+
           target_user_id when is_binary(target_user_id) ->
             broadcast(socket, event, normalized)
             {:noreply, socket}
@@ -119,9 +119,10 @@ defmodule RogsCommWeb.SignalingChannel do
               room_id: socket.assigns.room_id,
               target_user_id: to_user_id
             )
+
             {:reply, {:error, %{reason: "invalid target user"}}, socket}
         end
-        
+
       {:error, reason} ->
         Logger.error("SignalingChannel: Failed to normalize payload",
           user_id: user_id,
@@ -129,6 +130,7 @@ defmodule RogsCommWeb.SignalingChannel do
           event: event,
           reason: reason
         )
+
         {:reply, {:error, %{reason: reason}}, socket}
     end
   end

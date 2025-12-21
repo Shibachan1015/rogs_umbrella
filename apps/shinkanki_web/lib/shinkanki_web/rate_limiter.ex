@@ -98,11 +98,13 @@ defmodule ShinkankiWeb.RateLimiter do
     :ets.foldl(
       fn {key, timestamps}, acc ->
         valid = Enum.filter(timestamps, fn {ts, _} -> ts > now - max_window end)
+
         if Enum.empty?(valid) do
           :ets.delete(@table_name, key)
         else
           :ets.insert(@table_name, {key, valid})
         end
+
         acc
       end,
       nil,

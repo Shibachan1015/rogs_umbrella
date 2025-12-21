@@ -36,6 +36,7 @@ defmodule ShinkankiWebWeb.Router do
     live "/cards/action", ActionCardsLive
     live "/cards/hitoyo", HitoyoCardsLive
     live "/cards/migaki", MigakiCardsLive
+    live "/cards/okami", OkamiCardsLive
     get "/kuukan", PageController, :kuukan
 
     # ==============================

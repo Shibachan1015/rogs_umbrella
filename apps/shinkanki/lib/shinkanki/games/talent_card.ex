@@ -29,6 +29,7 @@ defmodule Shinkanki.Games.TalentCard do
     field :compatible_tags, {:array, :string}, default: []
     field :effect_type, :string
     field :effect_value, :integer, default: 1
+    field :image_url, :string
 
     timestamps()
   end
@@ -36,7 +37,7 @@ defmodule Shinkanki.Games.TalentCard do
   @doc false
   def changeset(talent_card, attrs) do
     talent_card
-    |> cast(attrs, [:name, :category, :description, :compatible_tags, :effect_type, :effect_value])
+    |> cast(attrs, [:name, :category, :description, :compatible_tags, :effect_type, :effect_value, :image_url])
     |> validate_required([:name, :category, :description])
     |> validate_inclusion(:category, @categories)
   end

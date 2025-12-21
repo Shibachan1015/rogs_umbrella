@@ -145,6 +145,7 @@ defmodule ShinkankiWebWeb.ActionCardsLive do
         <a href="/cards/action" class="active">アクション</a>
         <a href="/cards/hitoyo">人代</a>
         <a href="/cards/migaki">磨き</a>
+        <a href="/cards/okami">大神様</a>
         <a href="/kuukan">空環</a>
       </nav>
 
@@ -226,6 +227,10 @@ defmodule ShinkankiWebWeb.ActionCardsLive do
                   <label>特殊効果</label>
                   <input type="text" name="action_card[special_effect]" value={@changeset.data.special_effect} />
                 </div>
+                <div class="card-form-field">
+                  <label>画像URL</label>
+                  <input type="url" name="action_card[image_url]" value={@changeset.data.image_url} placeholder="https://example.com/image.jpg" />
+                </div>
                 <div class="card-form-actions">
                   <button type="submit" class="btn-save">保存</button>
                   <button type="button" class="btn-cancel" phx-click="cancel_edit">キャンセル</button>
@@ -240,6 +245,11 @@ defmodule ShinkankiWebWeb.ActionCardsLive do
                 </button>
               </div>
               <div class="card-body">
+                <%= if card.image_url do %>
+                  <div class="card-image">
+                    <img src={card.image_url} alt={card.name} />
+                  </div>
+                <% end %>
                 <%= if card.description do %>
                   <p class="card-flavor"><%= card.description %></p>
                 <% end %>
@@ -324,6 +334,10 @@ defmodule ShinkankiWebWeb.ActionCardsLive do
             <div class="card-form-field">
               <label>特殊効果</label>
               <input type="text" name="action_card[special_effect]" placeholder="特殊効果があれば記入" />
+            </div>
+            <div class="card-form-field">
+              <label>画像URL</label>
+              <input type="url" name="action_card[image_url]" placeholder="https://example.com/image.jpg" />
             </div>
             <div class="card-form-actions">
               <button type="submit" class="btn-save">作成</button>

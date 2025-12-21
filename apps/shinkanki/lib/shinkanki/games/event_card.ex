@@ -41,6 +41,7 @@ defmodule Shinkanki.Games.EventCard do
     field :choice_a_effects, :map
     field :choice_b_text, :string
     field :choice_b_effects, :map
+    field :image_url, :string
 
     timestamps()
   end
@@ -60,7 +61,8 @@ defmodule Shinkanki.Games.EventCard do
       :choice_a_text,
       :choice_a_effects,
       :choice_b_text,
-      :choice_b_effects
+      :choice_b_effects,
+      :image_url
     ])
     |> validate_required([:name, :type])
     |> validate_inclusion(:type, @types)

@@ -159,6 +159,7 @@ defmodule ShinkankiWebWeb.TalentCardsLive do
         <a href="/cards/action">アクション</a>
         <a href="/cards/hitoyo">人代</a>
         <a href="/cards/migaki">磨き</a>
+        <a href="/cards/okami">大神様</a>
         <a href="/kuukan">空環</a>
       </nav>
 
@@ -218,6 +219,10 @@ defmodule ShinkankiWebWeb.TalentCardsLive do
                     <input type="number" name="talent_card[effect_value]" value={@changeset.data.effect_value || 1} min="1" />
                   </div>
                 </div>
+                <div class="card-form-field">
+                  <label>画像URL</label>
+                  <input type="url" name="talent_card[image_url]" value={@changeset.data.image_url} placeholder="https://example.com/image.jpg" />
+                </div>
                 <div class="card-form-actions">
                   <button type="submit" class="btn-save">保存</button>
                   <button type="button" class="btn-cancel" phx-click="cancel_edit">キャンセル</button>
@@ -232,6 +237,11 @@ defmodule ShinkankiWebWeb.TalentCardsLive do
                 </button>
               </div>
               <div class="card-body">
+                <%= if card.image_url do %>
+                  <div class="card-image">
+                    <img src={card.image_url} alt={card.name} />
+                  </div>
+                <% end %>
                 <%= if card.description do %>
                   <p class="card-flavor"><%= card.description %></p>
                 <% end %>
@@ -296,6 +306,10 @@ defmodule ShinkankiWebWeb.TalentCardsLive do
                 <label>効果値</label>
                 <input type="number" name="talent_card[effect_value]" value="1" min="1" />
               </div>
+            </div>
+            <div class="card-form-field">
+              <label>画像URL</label>
+              <input type="url" name="talent_card[image_url]" placeholder="https://example.com/image.jpg" />
             </div>
             <div class="card-form-actions">
               <button type="submit" class="btn-save">作成</button>

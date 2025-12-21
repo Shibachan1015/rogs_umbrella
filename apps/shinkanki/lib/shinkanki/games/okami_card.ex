@@ -1,7 +1,7 @@
-defmodule Shinkanki.Games.MigakiCard do
+defmodule Shinkanki.Games.OkamiCard do
   @moduledoc """
-  磨きカード（Migaki Card）のスキーマ
-  世界を「きれいにしていく」行動のカード。
+  大神様カード（Okami Card）のスキーマ
+  神々の祝福を表すカード。
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -9,36 +9,32 @@ defmodule Shinkanki.Games.MigakiCard do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "migaki_cards" do
+  schema "okami_cards" do
     field :name, :string
-    field :category, :string
+    field :deity_name, :string
     field :description, :string
-    field :cost_akasha, :integer, default: 0
     field :effect_forest, :integer, default: 0
     field :effect_culture, :integer, default: 0
     field :effect_social, :integer, default: 0
-    field :effect_jaki, :integer, default: 0
+    field :effect_akasha, :integer, default: 0
     field :special_effect, :string
-    field :tags, {:array, :string}, default: []
     field :image_url, :string
 
     timestamps()
   end
 
   @doc false
-  def changeset(migaki_card, attrs) do
-    migaki_card
+  def changeset(okami_card, attrs) do
+    okami_card
     |> cast(attrs, [
       :name,
-      :category,
+      :deity_name,
       :description,
-      :cost_akasha,
       :effect_forest,
       :effect_culture,
       :effect_social,
-      :effect_jaki,
+      :effect_akasha,
       :special_effect,
-      :tags,
       :image_url
     ])
     |> validate_required([:name])

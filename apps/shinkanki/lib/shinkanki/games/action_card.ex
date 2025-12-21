@@ -41,6 +41,7 @@ defmodule Shinkanki.Games.ActionCard do
     field :cost_akasha, :integer, default: 0
     field :description, :string
     field :special_effect, :string
+    field :image_url, :string
 
     timestamps()
   end
@@ -60,7 +61,8 @@ defmodule Shinkanki.Games.ActionCard do
       :cost_social,
       :cost_akasha,
       :description,
-      :special_effect
+      :special_effect,
+      :image_url
     ])
     |> validate_required([:name, :category])
     |> validate_inclusion(:category, @categories)

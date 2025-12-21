@@ -139,6 +139,7 @@ defmodule ShinkankiWebWeb.CocreationCardsLive do
         <a href="/cards/action">アクション</a>
         <a href="/cards/hitoyo">人代</a>
         <a href="/cards/migaki">磨き</a>
+        <a href="/cards/okami">大神様</a>
         <a href="/kuukan">空環</a>
       </nav>
 
@@ -203,6 +204,10 @@ defmodule ShinkankiWebWeb.CocreationCardsLive do
                     <input type="number" name="project_template[effect_akasha]" value={@changeset.data.effect_akasha || 0} />
                   </div>
                 </div>
+                <div class="card-form-field">
+                  <label>画像URL</label>
+                  <input type="url" name="project_template[image_url]" value={@changeset.data.image_url} placeholder="https://example.com/image.jpg" />
+                </div>
                 <div class="card-form-actions">
                   <button type="submit" class="btn-save">保存</button>
                   <button type="button" class="btn-cancel" phx-click="cancel_edit">キャンセル</button>
@@ -217,6 +222,11 @@ defmodule ShinkankiWebWeb.CocreationCardsLive do
                 </button>
               </div>
               <div class="card-body">
+                <%= if card.image_url do %>
+                  <div class="card-image">
+                    <img src={card.image_url} alt={card.name} />
+                  </div>
+                <% end %>
                 <%= if card.description do %>
                   <p class="card-flavor"><%= card.description %></p>
                 <% end %>
@@ -283,6 +293,10 @@ defmodule ShinkankiWebWeb.CocreationCardsLive do
                 <label>φ効果</label>
                 <input type="number" name="project_template[effect_akasha]" value="0" />
               </div>
+            </div>
+            <div class="card-form-field">
+              <label>画像URL</label>
+              <input type="url" name="project_template[image_url]" placeholder="https://example.com/image.jpg" />
             </div>
             <div class="card-form-actions">
               <button type="submit" class="btn-save">作成</button>

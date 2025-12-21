@@ -8,7 +8,7 @@ defmodule Shinkanki.Cards do
   import Ecto.Query, warn: false
   alias Shinkanki.Repo
   alias Shinkanki.CardCache
-  alias Shinkanki.Games.{ActionCard, EventCard, TalentCard, ProjectTemplate, MigakiCard}
+  alias Shinkanki.Games.{ActionCard, EventCard, TalentCard, ProjectTemplate, MigakiCard, OkamiCard}
 
   # ============================================================
   # Action Cards
@@ -226,5 +226,39 @@ defmodule Shinkanki.Cards do
 
   def change_migaki_card(%MigakiCard{} = card, attrs \\ %{}) do
     MigakiCard.changeset(card, attrs)
+  end
+
+  # ============================================================
+  # Okami Cards (大神様カード)
+  # ============================================================
+
+  def list_okami_cards do
+    OkamiCard
+    |> order_by([o], asc: o.name)
+    |> Repo.all()
+  end
+
+  def get_okami_card(id) do
+    Repo.get(OkamiCard, id)
+  end
+
+  def get_okami_card!(id) do
+    Repo.get!(OkamiCard, id)
+  end
+
+  def create_okami_card(attrs \\ %{}) do
+    %OkamiCard{}
+    |> OkamiCard.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_okami_card(%OkamiCard{} = card, attrs) do
+    card
+    |> OkamiCard.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def change_okami_card(%OkamiCard{} = card, attrs \\ %{}) do
+    OkamiCard.changeset(card, attrs)
   end
 end

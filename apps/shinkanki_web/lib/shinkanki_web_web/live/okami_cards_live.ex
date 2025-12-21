@@ -1,16 +1,16 @@
-defmodule ShinkankiWebWeb.HitoyoCardsLive do
+defmodule ShinkankiWebWeb.OkamiCardsLive do
   @moduledoc """
-  Hitoyo (Event) Cards catalog with wiki-style editing.
+  Okami Cards (大神様カード) catalog with wiki-style editing.
   """
   use ShinkankiWebWeb, :live_view
 
   alias Shinkanki.Cards
-  alias Shinkanki.Games.EventCard
+  alias Shinkanki.Games.OkamiCard
   alias ShinkankiWebWeb.Layouts
 
   @impl true
   def mount(_params, _session, socket) do
-    cards = Cards.list_event_cards()
+    cards = Cards.list_okami_cards()
 
     socket =
       socket
@@ -24,10 +24,10 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
 
   @impl true
   def handle_event("start_edit", %{"card-id" => card_id}, socket) do
-    card = Cards.get_event_card(card_id)
+    card = Cards.get_okami_card(card_id)
 
     if card do
-      changeset = Cards.change_event_card(card)
+      changeset = Cards.change_okami_card(card)
 
       {:noreply,
        socket
@@ -47,12 +47,12 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
   end
 
   @impl true
-  def handle_event("save_edit", %{"event_card" => params}, socket) do
-    card = Cards.get_event_card(socket.assigns.editing_card)
+  def handle_event("save_edit", %{"okami_card" => params}, socket) do
+    card = Cards.get_okami_card(socket.assigns.editing_card)
 
-    case Cards.update_event_card(card, params) do
+    case Cards.update_okami_card(card, params) do
       {:ok, _updated} ->
-        cards = Cards.list_event_cards()
+        cards = Cards.list_okami_cards()
 
         {:noreply,
          socket
@@ -71,7 +71,7 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
 
   @impl true
   def handle_event("start_new", _params, socket) do
-    changeset = Cards.change_event_card(%EventCard{})
+    changeset = Cards.change_okami_card(%OkamiCard{})
 
     {:noreply,
      socket
@@ -88,10 +88,10 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
   end
 
   @impl true
-  def handle_event("create_card", %{"event_card" => params}, socket) do
-    case Cards.create_event_card(params) do
+  def handle_event("create_card", %{"okami_card" => params}, socket) do
+    case Cards.create_okami_card(params) do
       {:ok, _card} ->
-        cards = Cards.list_event_cards()
+        cards = Cards.list_okami_cards()
 
         {:noreply,
          socket
@@ -108,24 +108,18 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
     end
   end
 
-  defp type_label("positive"), do: "✨ ポジティブ"
-  defp type_label("negative"), do: "💀 ネガティブ"
-  defp type_label("choice"), do: "🔀 選択"
-  defp type_label(_), do: "その他"
-
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.flash_group flash={@flash} />
 
-    <main class="card-catalog hitoyo-catalog">
+    <main class="card-catalog okami-catalog">
       <header class="catalog-header">
         <a href="/" class="back-link">← トップに戻る</a>
-        <h1>人代カード</h1>
-        <p class="subtitle">Hitoyo Cards</p>
+        <h1>大神様カード</h1>
+        <p class="subtitle">Okami Cards</p>
         <p class="description">
-          現代社会の流れ（環境破壊・物理的誘惑・文化の切り捨て・分断など）を表すカード。
-          引かれると、F/K/Sが減ったり、邪気が増えたりします。
+          神々の祝福を表すカード。神様からの恵みにより、大地と人々に幸福をもたらします。
         </p>
         <div class="wiki-notice">
           <p>このページは誰でも編集できます。各カードの「編集」ボタンから内容を改善してください。</p>
@@ -142,70 +136,69 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
         <a href="/cards/talent">才能</a>
         <a href="/cards/cocreation">共創</a>
         <a href="/cards/action">アクション</a>
-        <a href="/cards/hitoyo" class="active">人代</a>
+        <a href="/cards/hitoyo">人代</a>
         <a href="/cards/migaki">磨き</a>
-        <a href="/cards/okami">大神様</a>
+        <a href="/cards/okami" class="active">大神様</a>
         <a href="/kuukan">空環</a>
       </nav>
 
       <section class="catalog-intro">
-        <h2>人代カードとは</h2>
+        <h2>大神様カードとは</h2>
         <ul>
-          <li>毎年の<strong>人代フェイズ</strong>で公開される「社会の圧力」</li>
-          <li>邪気レベルに応じて引く枚数が変わる（邪気6〜8なら<strong>3枚</strong>）</li>
-          <li><strong>ポジティブ</strong>：良い影響 / <strong>ネガティブ</strong>：悪い影響</li>
-          <li><strong>選択</strong>：プレイヤーが選べる</li>
+          <li>神々の<strong>祝福</strong>を表すカード</li>
+          <li>森・文化・絆に<strong>ポジティブな効果</strong>をもたらす</li>
+          <li>特別なイベントとして発動される</li>
         </ul>
       </section>
 
       <section class="card-grid">
-        <h2>人代カード一覧 (<%= length(@cards) %>枚)</h2>
+        <h2>大神様カード一覧 (<%= length(@cards) %>枚)</h2>
 
         <%= if Enum.empty?(@cards) do %>
           <p class="no-cards">カードがまだありません。「新規カード追加」から作成してください。</p>
         <% end %>
 
         <%= for card <- @cards do %>
-          <article class="game-card hitoyo-card">
+          <article class="game-card okami-card">
             <%= if @editing_card == card.id do %>
               <.form for={@changeset} phx-submit="save_edit" class="card-edit-form">
                 <div class="card-form-field">
                   <label>カード名</label>
-                  <input type="text" name="event_card[name]" value={@changeset.data.name} required />
+                  <input type="text" name="okami_card[name]" value={@changeset.data.name} required />
                 </div>
                 <div class="card-form-field">
-                  <label>タイプ</label>
-                  <select name="event_card[type]">
-                    <option value="positive" selected={@changeset.data.type == "positive"}>✨ ポジティブ</option>
-                    <option value="negative" selected={@changeset.data.type == "negative"}>💀 ネガティブ</option>
-                    <option value="choice" selected={@changeset.data.type == "choice"}>🔀 選択</option>
-                  </select>
+                  <label>神様の名前</label>
+                  <input type="text" name="okami_card[deity_name]" value={@changeset.data.deity_name} placeholder="天照大御神" />
                 </div>
                 <div class="card-form-field">
                   <label>説明</label>
-                  <textarea name="event_card[description]" rows="2"><%= @changeset.data.description %></textarea>
+                  <textarea name="okami_card[description]" rows="2"><%= @changeset.data.description %></textarea>
+                </div>
+                <div class="card-form-field">
+                  <label>画像URL</label>
+                  <input type="url" name="okami_card[image_url]" value={@changeset.data.image_url} placeholder="https://example.com/image.jpg" />
                 </div>
                 <div class="card-form-row">
                   <div class="card-form-field small">
                     <label>F効果</label>
-                    <input type="number" name="event_card[effect_forest]" value={@changeset.data.effect_forest || 0} />
+                    <input type="number" name="okami_card[effect_forest]" value={@changeset.data.effect_forest || 0} />
                   </div>
                   <div class="card-form-field small">
                     <label>K効果</label>
-                    <input type="number" name="event_card[effect_culture]" value={@changeset.data.effect_culture || 0} />
+                    <input type="number" name="okami_card[effect_culture]" value={@changeset.data.effect_culture || 0} />
                   </div>
                   <div class="card-form-field small">
                     <label>S効果</label>
-                    <input type="number" name="event_card[effect_social]" value={@changeset.data.effect_social || 0} />
+                    <input type="number" name="okami_card[effect_social]" value={@changeset.data.effect_social || 0} />
                   </div>
                   <div class="card-form-field small">
                     <label>φ効果</label>
-                    <input type="number" name="event_card[effect_akasha]" value={@changeset.data.effect_akasha || 0} />
+                    <input type="number" name="okami_card[effect_akasha]" value={@changeset.data.effect_akasha || 0} />
                   </div>
                 </div>
                 <div class="card-form-field">
-                  <label>画像URL</label>
-                  <input type="url" name="event_card[image_url]" value={@changeset.data.image_url} placeholder="https://example.com/image.jpg" />
+                  <label>特殊効果</label>
+                  <input type="text" name="okami_card[special_effect]" value={@changeset.data.special_effect} placeholder="特殊効果があれば" />
                 </div>
                 <div class="card-form-actions">
                   <button type="submit" class="btn-save">保存</button>
@@ -214,7 +207,7 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
               </.form>
             <% else %>
               <div class="card-header">
-                <span class="card-type-badge danger"><%= type_label(card.type) %></span>
+                <span class="card-type-badge divine">大神様</span>
                 <h3><%= card.name %></h3>
                 <button type="button" class="btn-edit-card" phx-click="start_edit" phx-value-card-id={card.id}>
                   編集
@@ -226,17 +219,23 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
                     <img src={card.image_url} alt={card.name} />
                   </div>
                 <% end %>
+                <%= if card.deity_name do %>
+                  <p class="card-deity"><%= card.deity_name %></p>
+                <% end %>
                 <%= if card.description do %>
                   <p class="card-flavor"><%= card.description %></p>
                 <% end %>
               </div>
               <div class="card-footer">
-                <p class="card-effect negative">
-                  効果: F:<%= if(card.effect_forest >= 0, do: "+", else: "") %><%= card.effect_forest %>
-                  K:<%= if(card.effect_culture >= 0, do: "+", else: "") %><%= card.effect_culture %>
-                  S:<%= if(card.effect_social >= 0, do: "+", else: "") %><%= card.effect_social %>
-                  φ:<%= if(card.effect_akasha >= 0, do: "+", else: "") %><%= card.effect_akasha %>
+                <p class="card-effect positive">
+                  <%= if card.effect_forest && card.effect_forest != 0 do %>F<%= if(card.effect_forest > 0, do: "+", else: "") %><%= card.effect_forest %> <% end %>
+                  <%= if card.effect_culture && card.effect_culture != 0 do %>K<%= if(card.effect_culture > 0, do: "+", else: "") %><%= card.effect_culture %> <% end %>
+                  <%= if card.effect_social && card.effect_social != 0 do %>S<%= if(card.effect_social > 0, do: "+", else: "") %><%= card.effect_social %> <% end %>
+                  <%= if card.effect_akasha && card.effect_akasha != 0 do %>φ<%= if(card.effect_akasha > 0, do: "+", else: "") %><%= card.effect_akasha %><% end %>
                 </p>
+                <%= if card.special_effect do %>
+                  <p class="card-special"><%= card.special_effect %></p>
+                <% end %>
               </div>
             <% end %>
           </article>
@@ -246,45 +245,45 @@ defmodule ShinkankiWebWeb.HitoyoCardsLive do
       <%!-- 新規カード作成フォーム --%>
       <%= if @show_new_form do %>
         <section class="new-card-form-section">
-          <h3>新規人代カード作成</h3>
+          <h3>新規大神様カード作成</h3>
           <.form for={@changeset} phx-submit="create_card" class="card-edit-form">
             <div class="card-form-field">
               <label>カード名 *</label>
-              <input type="text" name="event_card[name]" required placeholder="カードの名前" />
+              <input type="text" name="okami_card[name]" required placeholder="〇〇の祝福" />
             </div>
             <div class="card-form-field">
-              <label>タイプ *</label>
-              <select name="event_card[type]" required>
-                <option value="positive">✨ ポジティブ</option>
-                <option value="negative">💀 ネガティブ</option>
-                <option value="choice">🔀 選択</option>
-              </select>
+              <label>神様の名前</label>
+              <input type="text" name="okami_card[deity_name]" placeholder="天照大御神" />
             </div>
             <div class="card-form-field">
               <label>説明</label>
-              <textarea name="event_card[description]" rows="2" placeholder="カードの説明"></textarea>
+              <textarea name="okami_card[description]" rows="2" placeholder="カードの説明"></textarea>
+            </div>
+            <div class="card-form-field">
+              <label>画像URL</label>
+              <input type="url" name="okami_card[image_url]" placeholder="https://example.com/image.jpg" />
             </div>
             <div class="card-form-row">
               <div class="card-form-field small">
                 <label>F効果</label>
-                <input type="number" name="event_card[effect_forest]" value="0" />
+                <input type="number" name="okami_card[effect_forest]" value="1" />
               </div>
               <div class="card-form-field small">
                 <label>K効果</label>
-                <input type="number" name="event_card[effect_culture]" value="0" />
+                <input type="number" name="okami_card[effect_culture]" value="1" />
               </div>
               <div class="card-form-field small">
                 <label>S効果</label>
-                <input type="number" name="event_card[effect_social]" value="0" />
+                <input type="number" name="okami_card[effect_social]" value="1" />
               </div>
               <div class="card-form-field small">
                 <label>φ効果</label>
-                <input type="number" name="event_card[effect_akasha]" value="0" />
+                <input type="number" name="okami_card[effect_akasha]" value="0" />
               </div>
             </div>
             <div class="card-form-field">
-              <label>画像URL</label>
-              <input type="url" name="event_card[image_url]" placeholder="https://example.com/image.jpg" />
+              <label>特殊効果</label>
+              <input type="text" name="okami_card[special_effect]" placeholder="特殊効果があれば" />
             </div>
             <div class="card-form-actions">
               <button type="submit" class="btn-save">作成</button>

@@ -40,6 +40,7 @@ defmodule Shinkanki.Games.ProjectTemplate do
     field :effect_akasha, :integer, default: 0
     field :permanent_effect, :string
     field :permanent_effect_value, :integer
+    field :image_url, :string
 
     has_many :game_projects, Shinkanki.Games.GameProject
 
@@ -60,7 +61,8 @@ defmodule Shinkanki.Games.ProjectTemplate do
       :effect_social,
       :effect_akasha,
       :permanent_effect,
-      :permanent_effect_value
+      :permanent_effect_value,
+      :image_url
     ])
     |> validate_required([:name])
     |> validate_number(:required_participants, greater_than: 0)

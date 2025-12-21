@@ -8,7 +8,7 @@ defmodule Shinkanki.Cards do
   import Ecto.Query, warn: false
   alias Shinkanki.Repo
   alias Shinkanki.CardCache
-  alias Shinkanki.Games.{ActionCard, EventCard, TalentCard}
+  alias Shinkanki.Games.{ActionCard, EventCard, TalentCard, ProjectTemplate, MigakiCard}
 
   # ============================================================
   # Action Cards
@@ -158,5 +158,73 @@ defmodule Shinkanki.Cards do
 
   def change_talent_card(%TalentCard{} = card, attrs \\ %{}) do
     TalentCard.changeset(card, attrs)
+  end
+
+  # ============================================================
+  # Project Templates (共創カード)
+  # ============================================================
+
+  def list_project_templates do
+    ProjectTemplate
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
+  end
+
+  def get_project_template(id) do
+    Repo.get(ProjectTemplate, id)
+  end
+
+  def get_project_template!(id) do
+    Repo.get!(ProjectTemplate, id)
+  end
+
+  def create_project_template(attrs \\ %{}) do
+    %ProjectTemplate{}
+    |> ProjectTemplate.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_project_template(%ProjectTemplate{} = template, attrs) do
+    template
+    |> ProjectTemplate.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def change_project_template(%ProjectTemplate{} = template, attrs \\ %{}) do
+    ProjectTemplate.changeset(template, attrs)
+  end
+
+  # ============================================================
+  # Migaki Cards (磨きカード)
+  # ============================================================
+
+  def list_migaki_cards do
+    MigakiCard
+    |> order_by([m], asc: m.category, asc: m.name)
+    |> Repo.all()
+  end
+
+  def get_migaki_card(id) do
+    Repo.get(MigakiCard, id)
+  end
+
+  def get_migaki_card!(id) do
+    Repo.get!(MigakiCard, id)
+  end
+
+  def create_migaki_card(attrs \\ %{}) do
+    %MigakiCard{}
+    |> MigakiCard.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_migaki_card(%MigakiCard{} = card, attrs) do
+    card
+    |> MigakiCard.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def change_migaki_card(%MigakiCard{} = card, attrs \\ %{}) do
+    MigakiCard.changeset(card, attrs)
   end
 end

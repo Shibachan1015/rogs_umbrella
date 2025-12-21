@@ -32,10 +32,10 @@ defmodule ShinkankiWebWeb.Router do
     live "/story", StoryLive
     get "/privacy", PageController, :privacy
     live "/cards/talent", TalentCardsLive
-    get "/cards/cocreation", PageController, :cocreation_cards
+    live "/cards/cocreation", CocreationCardsLive
     live "/cards/action", ActionCardsLive
     live "/cards/hitoyo", HitoyoCardsLive
-    get "/cards/migaki", PageController, :migaki_cards
+    live "/cards/migaki", MigakiCardsLive
     get "/kuukan", PageController, :kuukan
 
     # ==============================
